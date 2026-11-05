@@ -1278,11 +1278,12 @@ function decorate(R, dyn, teamById) {
     plant(g, bx + 0.6, D / 2 - 0.7, 1.2, 2); plant(g, -0.1, bz + 0.6, 0.9, 1); floorLamp(g, 4.8, 2.9);
     rug(g, 2.2, 1.3, 2.6, 2.4, hex(mix(def.color, '#e2e8f0', 0.65)));
   } else if (id === 'proposal') {
-    // four seats in one row along the north wall, inset from the glass
-    desks.push(deskSet(g, -3.45, -3.05, 0, t, { kinds: ['doc', 'dash'], chair: accentChair, papers: true }));
-    desks.push(deskSet(g, -1.15, -3.05, 0, t, { kinds: ['doc', 'code'], chair: accentChair }));
-    desks.push(deskSet(g, 1.15, -3.05, 0, t, { kinds: ['dash', 'doc'], chair: accentChair, papers: true }));
-    desks.push(deskSet(g, 3.45, -3.05, 0, t, { kinds: ['doc', 'chart'], chair: accentChair }));
+    // chief sits forward at the head of the row; the other four stay along the north wall, inside the glass
+    desks.push(deskSet(g, -3.15, -2.15, 0, t, { kinds: ['dash', 'chart'], chair: accentChair, papers: true }));
+    desks.push(deskSet(g, -1.55, -3.2, 0, t, { kinds: ['doc', 'chart'], chair: accentChair }));
+    desks.push(deskSet(g, 0.25, -3.2, 0, t, { kinds: ['dash', 'doc'], chair: accentChair, papers: true }));
+    desks.push(deskSet(g, 2.05, -3.2, 0, t, { kinds: ['doc', 'code'], chair: accentChair }));
+    desks.push(deskSet(g, 3.7, -3.2, 0, t, { kinds: ['doc', 'dash'], chair: accentChair, papers: true }));
     whiteboard(g, 2.7, 0.95, bz + 0.16, 0, 2.0, t);
     box(g, 0.9, 0.75, 0.6, 2.3, 0, 3.2, M('#475569', { r: .6 }), { round: 0.02 });
     box(g, 0.75, 0.35, 0.5, 2.3, 0.75, 3.2, M('#e5e7eb', { r: .4 }), { round: 0.04 });

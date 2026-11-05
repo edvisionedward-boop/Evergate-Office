@@ -293,7 +293,7 @@ function renderPanel(id) {
   const doing = DATA.tasks.filter(x => x.team === id && x.status === 'doing');
   const doingItems = doing.length ? doing : (t.currentTask ? [{ status: 'doing', title: t.currentTask }] : []);
   const done = DATA.tasks.filter(x => x.team === id && x.status === 'done').sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 3);
-  const staff = (t.staff || []).map(s => `<li class="srow${state.staffId === s.id ? ' on' : ''}"><span class="sn">${esc(s.name)}</span><span class="scorebit">${ringHtml(s.score)}</span><span class="grow">${barHtml(s.score)}<span class="snote">${esc(s.gradeNote || '')}</span></span></li>`).join('');
+  const staff = (t.staff || []).map(s => `<li class="srow${state.staffId === s.id ? ' on' : ''}"><span class="sn">${esc(s.name)}${s.role ? `<span class="srole">${esc(s.role)}</span>` : ''}</span><span class="scorebit">${ringHtml(s.score)}</span><span class="grow">${barHtml(s.score)}<span class="snote">${esc(s.gradeNote || '')}</span></span></li>`).join('');
   const head = `<div class="ph" style="--c:${esc(t.color)}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '')}</div><div><h3>${esc(t.name)}</h3>
     <div class="sub"><span class="chip ${esc(t.status)}"><i class="dot ${esc(t.status)}"></i>${esc(lbl)}</span><span class="scorebit">${ringHtml(t.score)}</span></div></div></div>`;
   body.innerHTML = head +
@@ -612,6 +612,35 @@ function separateLabels() {
     R.labelEl.style.marginTop = y ? `${y}px` : '';
   }
 }
+function settleProposalTags() {
+  const tags = [...document.querySelectorAll('.ptag[data-room="proposal"]')];
+  if (!tags.length) return;
+  const plates = [...document.querySelectorAll('.rlabel')].filter(el => el.dataset.room !== 'proposal');
+  const hit = (a, b) => a.left < b.right - 2 && b.left < a.right - 2 && a.top < b.bottom - 2 && b.top < a.bottom - 2;
+  for (const el of tags) {
+    if (!el.dataset.baseTop) {
+      const cs = getComputedStyle(el);
+      el.dataset.baseTop = String(parseFloat(cs.marginTop) || 0);
+      el.dataset.baseLeft = String(parseFloat(cs.marginLeft) || 0);
+    }
+    const baseT = Number(el.dataset.baseTop);
+    const baseL = Number(el.dataset.baseLeft);
+    let y = 0;
+    let x = 0;
+    el.style.marginTop = `${baseT}px`;
+    el.style.marginLeft = `${baseL}px`;
+    for (let i = 0; i < 12; i++) {
+      const r = el.getBoundingClientRect();
+      if (r.width < 2) break;
+      const blocked = plates.some(p => hit(r, p.getBoundingClientRect()));
+      if (!blocked && r.top > 64) break;
+      if (r.top <= 64) x += 10;
+      y -= 12;
+      el.style.marginTop = `${baseT + y}px`;
+      el.style.marginLeft = `${baseL + x}px`;
+    }
+  }
+}
 function layoutEdBubble(el) {
   const label = office.rooms.ed?.labelEl;
   if (!label) return;
@@ -793,6 +822,7 @@ function frame() {
   if (composer) composer.render(); else renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
   separateLabels();
+  settleProposalTags();
   for (const b of activeBubbles) if (b.ed) layoutEdBubble(b.el);
   if ((T % 0.5) < dt) applyClock();
   if (first) { first = false; setTimeout(() => $('#loading').classList.add('gone'), 150); window.__ready = true; }

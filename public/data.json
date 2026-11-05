@@ -342,38 +342,50 @@
       "color": "#D0B993",
       "status": "busy",
       "statusNote": "忙碌",
-      "agents": 4,
+      "agents": 5,
       "currentTask": "三年发展战略大纲·框架 v0.3（ED 已审，内部工作稿）",
       "private": false,
-      "note": "新增战略规划 · 11-05",
+      "note": "编制调整为 5 人 · 11-05",
       "duty": "公司发展战略规划、新项目评估与计划书",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "proposal-1",
-          "name": "规划 1",
+          "name": "首席分析官",
+          "role": "团队负责人，向 ED 汇报",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "proposal-2",
-          "name": "规划 2",
+          "name": "投资分析师",
+          "role": "寻找具备战略价值的项目",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "proposal-3",
-          "name": "战略规划师 1",
+          "name": "数据分析师",
+          "role": "搭建内部数据分析模型",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "proposal-4",
-          "name": "战略规划师 2",
+          "name": "策划分析师 1",
+          "role": "策划与撰写文案",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "proposal-5",
+          "name": "策划分析师 2",
+          "role": "策划与撰写文案",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
@@ -585,7 +597,7 @@
       "team": "proposal",
       "status": "doing",
       "title": "三年发展战略大纲·框架 v0.3（ED 已审，内部工作稿）",
-      "updatedAt": "2026-11-05T22:10:00+08:00"
+      "updatedAt": "2026-11-05T22:25:00+08:00"
     },
     {
       "id": "t22",
