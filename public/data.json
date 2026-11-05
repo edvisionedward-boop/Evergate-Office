@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-05T12:40:00+08:00",
+  "updatedAt": "2026-11-05T13:10:00+08:00",
   "office": {
     "title": "Evergate AI Office",
     "company": "EVERGATE HOLDING SDN BHD",
@@ -12,6 +12,25 @@
     "meeting": "每周一 9:00 跨部门例会",
     "lastMeeting": "首次例会将于 11月09日 举行"
   },
+  "archive": {
+    "name": "档案室",
+    "folderUrl": "https://drive.google.com/drive/folders/1VdMyoUOg74lFOt0TO1NFYY4eJAbf-c98",
+    "categories": [
+      { "name": "法律文件", "items": ["项目法律备忘录"] },
+      { "name": "项目文件", "items": ["土地收购计划书 V2.3"] },
+      { "name": "财务", "items": ["2026 财务报告", "会计师资料清单"] },
+      { "name": "公司", "items": ["公司简介 Corporate Profile"] }
+    ]
+  },
+  "meetings": [
+    { "title": "每周一 9:00 跨部门例会", "weekday": 1, "start": "09:00", "end": "09:45" },
+    { "title": "每月 1 日 10:00 发展规划会", "monthday": 1, "start": "10:00", "end": "10:45" }
+  ],
+  "news": [
+    { "title": "信息部简报将在此滚动显示", "time": "2026-11-05T08:00:00+08:00" },
+    { "title": "信息部简报将在此滚动显示", "time": "2026-11-05T09:00:00+08:00" },
+    { "title": "信息部简报将在此滚动显示", "time": "2026-11-05T10:00:00+08:00" }
+  ],
   "statusLabels": {
     "busy": "忙碌",
     "confirm": "等你确认",
@@ -253,6 +272,13 @@
       "status": "doing",
       "title": "新增休息室 + 每周跨部门例会",
       "updatedAt": "2026-11-05T12:40:00+08:00"
+    },
+    {
+      "id": "t18",
+      "team": "ed",
+      "status": "doing",
+      "title": "档案室 / 会议室 / 新闻墙 / 日夜变化",
+      "updatedAt": "2026-11-05T13:10:00+08:00"
     }
   ],
   "feed": [

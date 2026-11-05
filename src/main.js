@@ -22,7 +22,7 @@ const fmtTime = (iso) => {
 const ST_LABEL = { busy: '忙碌', confirm: '等你确认', idle: '空闲', doing: '进行中', done: '已完成' };
 
 let DATA = SEED, DATA_SRC = 'embedded';
-const state = { status: {}, selected: null, dirMode: 'status' };
+const state = { status: {}, selected: null, dirMode: 'status', clock: { mode: 'auto', day: 1, offDuty: false, meeting: false } };
 
 /* ---------- renderer ---------- */
 const isMobile = matchMedia('(max-width: 760px)').matches || /iPhone|iPad|Android/i.test(navigator.userAgent);
@@ -168,8 +168,10 @@ function applyData() {
   $('#summary').innerHTML = `<span class="pill"><i class="dot busy"></i>${cnt.busy} 忙碌</span><span class="pill"><i class="dot confirm"></i>${pend} 项等你确认</span><span class="pill">${DATA.teams.length} 个团队</span>`;
   $('#updated').textContent = `更新 ${fmtTime(DATA.updatedAt)} (UTC+8)`;
   $('#company').textContent = DATA.office?.company ?? 'EVERGATE HOLDING SDN BHD';
+  if (office.setNews) office.setNews(DATA.news);
   renderBoard();
   renderDirectory();
+  paintShiftLabels();
   if (state.selected && !$('#panel').classList.contains('hidden')) renderPanel(state.selected);
 }
 
@@ -177,6 +179,23 @@ function chip(s) { return `<span class="chip ${s === 'doing' ? 'busy' : esc(s)}"
 
 function renderPanel(id) {
   const t = teamOf(id); const body = $('#panelBody');
+  if (id === 'archive') {
+    const A = DATA.archive || {};
+    const cats = (A.categories || []).map(c => `<div class="sec"><h4>${esc(c.name)}</h4><div class="card tlist">${(c.items || []).map(item => `<div class="titem"><span>${esc(item)}</span></div>`).join('') || '<div class="empty">暂无</div>'}</div></div>`).join('');
+    const link = A.folderUrl ? `<a class="drivebtn" href="${esc(A.folderUrl)}" target="_blank" rel="noopener noreferrer">在 Google Drive 打开</a>` : '';
+    body.innerHTML = `<div class="ph" style="--c:#64748b"><div class="ic">🗂</div><div><h3>${esc(A.name || '档案室')}</h3><div class="sub">分类目录 · 需登录 Google 查看原件</div></div></div>${cats}<div class="sec">${link}</div>`;
+    return;
+  }
+  if (id === 'meeting') {
+    const rows = (DATA.meetings || []).map(m => `<div class="titem"><span class="chip ${meetingActive(m, klNow()) ? 'busy' : 'idle'}">${meetingActive(m, klNow()) ? '进行中' : '安排'}</span><div>${esc(m.title)}</div></div>`).join('');
+    body.innerHTML = `<div class="ph" style="--c:#0ea5e9"><div class="ic">议</div><div><h3>会议室</h3><div class="sub">${esc(nextMeetingText(klNow()))}</div></div></div><div class="sec"><h4>议程</h4><div class="card tlist">${rows || '<div class="empty">暂无会议</div>'}</div></div>`;
+    return;
+  }
+  if (id === 'news') {
+    const rows = (DATA.news || []).map(n => `<div class="titem"><span class="chip idle">${esc(fmtTime(n.time))}</span><div>${esc(n.title)}</div></div>`).join('');
+    body.innerHTML = `<div class="ph" style="--c:#38bdf8"><div class="ic">讯</div><div><h3>大厅新闻墙</h3><div class="sub">信息部简报</div></div></div><div class="sec"><h4>滚动标题</h4><div class="card tlist">${rows || '<div class="empty">暂无</div>'}</div></div>`;
+    return;
+  }
   if (id === 'lounge') {
     const L = DATA.lounge || {};
     const n = office.rooms.lounge?.occupancy ?? 0;
@@ -359,9 +378,13 @@ function renderDirectory() {
 function sharedSpaceCard() {
   const L = DATA.lounge || {};
   const n = office.rooms.lounge?.occupancy ?? 0;
-  const sel = state.selected === 'lounge' ? ' sel' : '';
+  const sel = (id) => state.selected === id ? ' sel' : '';
   const extra = [L.meeting, L.lastMeeting].filter(Boolean).map(s => `<div class="dnone">${esc(s)}</div>`).join('');
-  return `<section class="dgroup"><h3>共享空间</h3><button type="button" class="dcard${sel}" data-team="lounge" style="--c:#f59e0b"><div class="dtop"><span class="ic">☕</span><div><div class="nm">${esc(L.name || '休息室')}</div><div class="sub">共享空间 · ${n} 人在此</div></div></div>${extra}</button></section>`;
+  const lounge = `<button type="button" class="dcard${sel('lounge')}" data-team="lounge" style="--c:#f59e0b"><div class="dtop"><span class="ic">☕</span><div><div class="nm">${esc(L.name || '休息室')}</div><div class="sub">共享空间 · ${n} 人在此</div></div></div>${extra}</button>`;
+  const archive = `<button type="button" class="dcard${sel('archive')}" data-team="archive" style="--c:#64748b"><div class="dtop"><span class="ic">🗂</span><div><div class="nm">${esc(DATA.archive?.name || '档案室')}</div><div class="sub">共享空间 · 分类目录</div></div></div></button>`;
+  const meeting = `<button type="button" class="dcard${sel('meeting')}" data-team="meeting" style="--c:#0ea5e9"><div class="dtop"><span class="ic">议</span><div><div class="nm">会议室</div><div class="sub">${esc(nextMeetingText(klNow()))}</div></div></div></button>`;
+  const news = `<button type="button" class="dcard${sel('news')}" data-team="news" style="--c:#38bdf8"><div class="dtop"><span class="ic">讯</span><div><div class="nm">新闻墙</div><div class="sub">大厅 · 信息部简报</div></div></div></button>`;
+  return `<section class="dgroup"><h3>共享空间</h3>${lounge}${archive}${meeting}${news}</section>`;
 }
 $('#dirBody').addEventListener('click', e => { const c = e.target.closest('.dcard'); if (c) selectRoom(c.dataset.team, 'directory'); });
 $('#dirMode').addEventListener('click', e => {
@@ -418,10 +441,93 @@ async function loadData() {
     console.warn('data.json fetch failed, using', DATA_SRC, e);
   }
 }
-applyData();
 loadData();
 setInterval(loadData, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) loadData(); });
+
+const DOW = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+function klNow(date = new Date()) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kuala_Lumpur', hour: '2-digit', minute: '2-digit', weekday: 'short', day: 'numeric', hourCycle: 'h23' }).formatToParts(date).map(p => [p.type, p.value]));
+  const hour = Number(parts.hour), minute = Number(parts.minute);
+  return { hour, minute, minutes: hour * 60 + minute, dow: DOW[parts.weekday] ?? 0, day: Number(parts.day) };
+}
+function hm(s) { const [h, m] = String(s || '0:0').split(':').map(Number); return h * 60 + m; }
+function meetingActive(m, kl) {
+  if (!m) return false;
+  if (m.weekday != null && kl.dow !== m.weekday) return false;
+  if (m.monthday != null && kl.day !== m.monthday) return false;
+  const t = kl.minutes;
+  return t >= hm(m.start) && t < hm(m.end);
+}
+function dayFactor(minutes) {
+  const dawn = 7 * 60, dusk = 19 * 60 + 30;
+  if (minutes < dawn - 40) return 0;
+  if (minutes < dawn + 40) return (minutes - (dawn - 40)) / 80;
+  if (minutes < dusk - 30) return 1;
+  if (minutes < dusk + 30) return 1 - (minutes - (dusk - 30)) / 60;
+  return 0;
+}
+function nextMeetingText(kl) {
+  let best = null, bestMin = 1e9;
+  for (let i = 0; i < 40; i++) {
+    const when = new Date(Date.now() + i * 86400000);
+    const p = klNow(when);
+    for (const m of DATA.meetings || []) {
+      if (m.weekday != null && p.dow !== m.weekday) continue;
+      if (m.monthday != null && p.day !== m.monthday) continue;
+      const start = hm(m.start);
+      const delta = i * 1440 + start - kl.minutes;
+      if (delta >= 0 && delta < bestMin) { bestMin = delta; best = m; }
+    }
+  }
+  if (!best) return '暂无安排';
+  const live = (DATA.meetings || []).some(m => meetingActive(m, kl));
+  return live ? '会议进行中' : best.title;
+}
+function paintShiftLabels() {
+  const off = state.clock.offDuty;
+  for (const R of Object.values(office.rooms)) {
+    const t = teamOf(R.id);
+    const span = R.labelEl?.querySelector('.st span');
+    if (!t || !span) continue;
+    if (off && t.id !== 'ed') span.textContent = '已下班';
+    else {
+      const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
+      span.textContent = `${lbl}${t.private ? ' · 私密' : ` · ${t.agents ?? 0} 位成员`}`;
+    }
+  }
+  const meet = office.rooms.meeting?.labelEl?.querySelector('.st span');
+  if (meet) meet.textContent = nextMeetingText(klNow());
+}
+function lerpColor(out, a, b, t) {
+  const ca = new THREE.Color(a), cb = new THREE.Color(b);
+  out.copy(ca).lerp(cb, t);
+}
+const dayBg = new THREE.Color('#d5e2ee'), nightBg = new THREE.Color('#0c1424');
+const dayFog = new THREE.Color('#c9d5e2'), nightFog = new THREE.Color('#101826');
+function applyClock() {
+  const kl = klNow();
+  const mode = state.clock.mode;
+  const day = mode === 'day' ? 1 : mode === 'night' ? 0 : dayFactor(kl.minutes);
+  state.clock.day = day;
+  state.clock.offDuty = mode === 'night' ? true : mode === 'day' ? false : (kl.minutes >= 19 * 60 || kl.dow === 0 || kl.dow === 6);
+  state.clock.meeting = (DATA.meetings || []).some(m => meetingActive(m, kl));
+  hemi.intensity = 0.12 + day * 0.62;
+  sun.intensity = 0.04 + day * 1.52;
+  sun.color.set(day > 0.5 ? '#fff6ea' : '#9eb6d8');
+  scene.background.copy(nightBg).lerp(dayBg, day);
+  scene.fog.color.copy(nightFog).lerp(dayFog, day);
+  if (office.applyAmbience) office.applyAmbience(day);
+  paintShiftLabels();
+  const btn = $('#dayToggle');
+  if (btn) btn.textContent = mode === 'day' ? '☀️' : mode === 'night' ? '🌙' : '自动';
+}
+$('#dayToggle')?.addEventListener('click', () => {
+  state.clock.mode = state.clock.mode === 'auto' ? 'day' : state.clock.mode === 'day' ? 'night' : 'auto';
+  applyClock();
+});
+applyData();
+applyClock();
 
 /* ---------- loop ---------- */
 let last = performance.now(), T = 0;
@@ -443,6 +549,7 @@ function frame() {
   tickBubbles(dt);
   if (composer) composer.render(); else renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
+  if ((T % 0.5) < dt) applyClock();
   if (first) { first = false; setTimeout(() => $('#loading').classList.add('gone'), 150); window.__ready = true; }
 }
 renderer.setAnimationLoop(frame);
