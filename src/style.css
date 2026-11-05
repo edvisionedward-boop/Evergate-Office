@@ -243,6 +243,9 @@ button{font:inherit;color:inherit}
 .srow .sn{font-weight:700;min-width:52px}
 .srow .snote{color:var(--mut);font-size:12px}
 .ptag{pointer-events:auto;cursor:pointer;display:flex;align-items:center;gap:4px;margin-left:14px;margin-top:22px;padding:2px 6px 2px 7px;border-radius:999px;background:rgba(6,6,6,.88);border:1px solid rgba(208,185,147,.55);white-space:nowrap}
+.ptag.s0{margin-left:-96px;margin-top:26px}
+.ptag.s1{margin-left:18px;margin-top:-18px}
+.ptag.s2{margin-left:22px;margin-top:-64px}
 .ptag .pn{font-size:11px;font-weight:700;color:#f8f4ec}
 .grade-col{max-width:720px}
 .gcard{display:block;width:100%;text-align:left;color:inherit;cursor:pointer;border:1px solid var(--line);border-left:3px solid var(--c);background:rgba(255,255,255,.04);border-radius:12px;padding:12px;margin:0 0 10px}

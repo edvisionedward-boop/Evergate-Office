@@ -266,18 +266,19 @@ export function makeAgent(o = {}) {
   root.userData = { legs, arms, headG, dot, doc, hips, bubbleAnchor, phase: rnd() * 10, mode: 'stand' };
   return root;
 }
-function nameTag(agent, staff, roomId) {
+function nameTag(agent, staff, roomId, slot = 0) {
   if (!agent || !staff) return agent;
   agent.userData.room = roomId;
   agent.userData.staffId = staff.id;
   const el = document.createElement('div');
-  el.className = 'ptag';
+  el.className = 'ptag' + (roomId === 'proposal' ? ' s' + (slot % 3) : '');
   el.dataset.room = roomId;
   el.dataset.staff = staff.id;
   el.textContent = '';
   const pn = document.createElement('span'); pn.className = 'pn'; pn.textContent = staff.name; el.appendChild(pn);
   const badge = document.createElement('i'); badge.className = 'gbadge'; el.appendChild(badge);
   const o = new CSS2DObject(el);
+  // Five name plates in one room stack on screen; stagger this room only.
   o.position.set(0.85, 0.42, 0.2);
   o.center.set(0, 1);
   o.renderOrder = 1;
@@ -593,7 +594,7 @@ function labelEl(def) {
 export const LAYOUT = {
   market:   { x: -13.5, z: -12, w: 10, d: 8.5, icon: '市', sign: '市场部', signSub: 'MARKETING & RESEARCH' },
   legal:    { x: 0,     z: -12, w: 11, d: 8.5, icon: '法', sign: '法务部', signSub: 'LEGAL' },
-  proposal: { x: 13.5,  z: -12, w: 10, d: 8.5, icon: '策', sign: '策划部', signSub: 'PLANNING & PROPOSALS' },
+  proposal: { x: 13.5,  z: -12, w: 10, d: 8.5, icon: '规', sign: '规划部', signSub: 'STRATEGY & PLANNING' },
   invest:   { x: -13.5, z: 0,   w: 10, d: 8.5, icon: '投', sign: '投资部', signSub: 'INVESTMENT' },
   ed:       { x: 0,     z: 0,   w: 11, d: 9,   icon: 'ED', walls: 'glass', sign: 'ED 中央指挥室', signSub: 'COMMAND CENTER' },
   info:     { x: 13.5,  z: 0,   w: 10, d: 8.5, icon: '信', sign: '信息部', signSub: 'AI NEWS & INFO' },
@@ -1277,19 +1278,19 @@ function decorate(R, dyn, teamById) {
     plant(g, bx + 0.6, D / 2 - 0.7, 1.2, 2); plant(g, -0.1, bz + 0.6, 0.9, 1); floorLamp(g, 4.8, 2.9);
     rug(g, 2.2, 1.3, 2.6, 2.4, hex(mix(def.color, '#e2e8f0', 0.65)));
   } else if (id === 'proposal') {
-    desks.push(deskSet(g, -2.4, bz + 1.0, 0, t, { kinds: ['doc', 'dash'], chair: accentChair, papers: true }));
-    desks.push(deskSet(g, bx + 1.0, 0.4, Math.PI / 2, t, { kinds: ['doc', 'code'], chair: accentChair }));
-    whiteboard(g, 1.6, 0.9, bz + 0.17, 0, 2.2, t);
-    // printer station
-    box(g, 0.9, 0.75, 0.6, 3.9, 0, -2.6, M('#475569', { r: .6 }), { round: 0.02 });
-    box(g, 0.75, 0.35, 0.5, 3.9, 0.75, -2.6, M('#e5e7eb', { r: .4 }), { round: 0.04 });
-    box(g, 0.28, 0.03, 0.36, 3.9, 1.1, -2.55, M('#dfe5ee', { r: .9 }));
-    // document stacks
-    for (let i = 0; i < 3; i++) box(g, 0.32, 0.12 + i * 0.06, 0.42, 2.4 + i * 0.4, 0.72, 1.2, M('#dde3ec', { r: .9 }), { ry: i * 0.2 });
-    box(g, 2.0, 0.05, 1.0, 2.8, 0.72, 1.2, M(WOOD, { r: .5 }), { round: 0.02 }); box(g, 0.06, 0.72, 0.9, 1.85, 0, 1.2, M('#1f2937')); box(g, 0.06, 0.72, 0.9, 3.75, 0, 1.2, M('#1f2937'));
-    chair(g, 2.8, 2.0, 0, '#475569');
-    bookshelf(g, bx + 0.35, -2.2, Math.PI / 2, 1.2, 1.6); plant(g, 4.1, 2.9, 1.2, 0); plant(g, -0.6, bz + 0.6, 0.9, 1); floorLamp(g, bx + 0.6, 3.0);
-    rug(g, -1.2, 1.6, 3, 2, hex(mix(def.color, '#e2e8f0', 0.65)));
+    // five seats: three along the north wall, two along the east wall, clear of the south-west door
+    desks.push(deskSet(g, -3.4, -3.15, 0, t, { kinds: ['doc', 'dash'], chair: accentChair, papers: true }));
+    desks.push(deskSet(g, -1.5, -3.15, 0, t, { kinds: ['doc', 'code'], chair: accentChair }));
+    desks.push(deskSet(g, 0.4, -3.15, 0, t, { kinds: ['dash', 'doc'], chair: accentChair, papers: true }));
+    desks.push(deskSet(g, 4.15, -1.05, Math.PI / 2, t, { kinds: ['doc', 'chart'], chair: accentChair }));
+    desks.push(deskSet(g, 4.15, 1.05, Math.PI / 2, t, { kinds: ['code', 'doc'], chair: accentChair, papers: true }));
+    whiteboard(g, 2.7, 0.95, bz + 0.16, 0, 2.0, t);
+    box(g, 0.9, 0.75, 0.6, 2.3, 0, 3.2, M('#475569', { r: .6 }), { round: 0.02 });
+    box(g, 0.75, 0.35, 0.5, 2.3, 0.75, 3.2, M('#e5e7eb', { r: .4 }), { round: 0.04 });
+    box(g, 0.28, 0.03, 0.36, 2.3, 1.1, 3.25, M('#dfe5ee', { r: .9 }));
+    for (let i = 0; i < 3; i++) box(g, 0.28, 0.1 + i * 0.04, 0.36, 3.35, 0.72, 3.15, M('#dde3ec', { r: .9 }), { ry: i * 0.15 });
+    bookshelf(g, bx + 0.35, -1.4, Math.PI / 2, 1.2, 1.6); plant(g, -4.2, 1.7, 1.05, 1); plant(g, 3.5, 3.25, 0.9, 0); floorLamp(g, -4.2, 3.15);
+    rug(g, -1.5, -2.2, 4.6, 2.2, hex(mix(def.color, '#e2e8f0', 0.65)));
   } else if (id === 'corpfin') {
     desks.push(deskSet(g, -2.3, bz + 1.0, 0, t, { kinds: ['chart', 'chart'], chair: accentChair, dim: idle }));
     desks.push(deskSet(g, -0.3, bz + 1.0, 0, t, { kinds: ['dash', 'chart'], chair: accentChair, papers: true, dim: idle }));
@@ -1434,6 +1435,6 @@ function decorate(R, dyn, teamById) {
   const n = Math.min(desks.length, t.agents ?? desks.length);
   const staff = t.private ? [] : (t.staff || []);
   for (let i = 0; i < desks.length; i++) {
-    if (i < n) nameTag(seat(desks[i], id === 'design' ? t.color : shirts[i % 3]), staff[i], id);
+    if (i < n) nameTag(seat(desks[i], id === 'design' ? t.color : shirts[i % 3]), staff[i], id, i);
   }
 }

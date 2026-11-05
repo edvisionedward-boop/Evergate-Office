@@ -337,28 +337,50 @@
     },
     {
       "id": "proposal",
-      "name": "策划部",
-      "short": "策划",
+      "name": "规划部",
+      "short": "规划",
       "color": "#D0B993",
-      "status": "confirm",
-      "statusNote": "等你确认",
-      "agents": 2,
-      "currentTask": "等你确认：是否把法律发现更新进计划书 V2.4",
+      "status": "busy",
+      "statusNote": "忙碌",
+      "agents": 5,
+      "currentTask": "市场判断 v0.6 修订（待 ED 审核）",
       "private": false,
-      "duty": "计划书整理与版本更新",
+      "note": "战略规划 · 新增人员",
+      "duty": "公司发展战略规划、新项目评估与计划书",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "proposal-1",
-          "name": "策划 1",
+          "name": "战略规划师 1",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "proposal-2",
-          "name": "策划 2",
+          "name": "战略规划师 2",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "proposal-3",
+          "name": "分析师 1",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "proposal-4",
+          "name": "分析师 2",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "proposal-5",
+          "name": "文稿主笔",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null

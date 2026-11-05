@@ -5,7 +5,7 @@
   - team.status: `busy` 忙碌 | `confirm` 等你确认 | `idle` 空闲; `statusNote` overrides the label (e.g. 待命)
   - task.status: `doing` 进行中 | `confirm` 等你确认 | `done` 已完成
   - feed: `{ team, time (ISO with +08:00), text }`
-  - Team ids map to rooms: ed, market(市场部), legal(法务部), proposal(策划部), invest(投资部), info(信息部), corpfin(会计部), logistics(物流部), privfin(私人助理, private)
+  - Team ids map to rooms: ed, market(市场部), legal(法务部), proposal(规划部), invest(投资部), info(信息部), corpfin(会计部), logistics(物流部), privfin(私人助理, private)
   - `directory.groups` / `directory.statusGroups` drive the 部门总览 tab (按类别 / 按状态). Tasks shown there come from `tasks`.
 - Build: `npm ci && npm run build` → `dist/index.html` (single file, all JS/CSS inlined, data.json embedded as fallback) + standalone `dist/data.json`, `dist/manifest.webmanifest`, `dist/icons/`
 - Host: GitHub Actions deploys `dist/` to GitHub Pages at https://edvisionedward-boop.github.io/Evergate-Office/ (Vite `base` is `/Evergate-Office/`). On iPhone Safari → Share → 添加到主屏幕.
