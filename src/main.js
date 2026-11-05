@@ -50,7 +50,7 @@ const hemi = new THREE.HemisphereLight('#fff4e4', '#3d3428', 0.72); scene.add(he
 const sun = new THREE.DirectionalLight('#fff6ea', 1.55);
 sun.position.set(-18, 34, 16); sun.castShadow = true;
 sun.shadow.mapSize.set(isMobile ? 512 : 1024, isMobile ? 512 : 1024);
-Object.assign(sun.shadow.camera, { left: -28, right: 32, top: 26, bottom: -26, near: 8, far: 90 });
+Object.assign(sun.shadow.camera, { left: -40, right: 34, top: 28, bottom: -28, near: 8, far: 96 });
 sun.shadow.bias = -0.00045; sun.shadow.normalBias = 0.035; sun.shadow.radius = isMobile ? 2 : 3.2;
 scene.add(sun);
 const fill = new THREE.DirectionalLight('#ffd8b0', 0.28); fill.position.set(22, 10, 14); scene.add(fill);
@@ -69,7 +69,7 @@ controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
 const HOME_DIR = new THREE.Vector3(0.82, 1.05, 1).normalize();
 
 function homeDistance() {
-  const R = 36, vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+  const R = 40, vf = THREE.MathUtils.degToRad(camera.fov) / 2;
   const hf = Math.atan(Math.tan(vf) * camera.aspect);
   const d = Math.max(R * 0.78 / Math.tan(vf), R * 1.05 / Math.tan(hf));
   return camera.aspect < 0.8 ? d * 0.72 : d;
@@ -835,7 +835,7 @@ function frame() {
   }
   controls.update();
   // keep target inside the office
-  controls.target.x = THREE.MathUtils.clamp(controls.target.x, -30, 30);
+  controls.target.x = THREE.MathUtils.clamp(controls.target.x, -38, 30);
   controls.target.z = THREE.MathUtils.clamp(controls.target.z, -22, 24);
   controls.target.y = 0;
   office.update(t, dt, state);

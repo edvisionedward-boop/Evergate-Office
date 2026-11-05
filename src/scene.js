@@ -526,6 +526,57 @@ function wallScreen(parent, x, y, z, ry, w, h) {
   screen.position.z = 0.02; g.add(screen);
   return g;
 }
+function archiveRackHall(parent) {
+  const bodyGeo = boxG(0.66, 1.82, 0.44);
+  const faceGeo = boxG(0.58, 1.66, 0.018);
+  const ledGeo = boxG(0.055, 0.04, 0.012);
+  const ledMat = new THREE.MeshBasicMaterial({ color: '#7eb6d6', toneMapped: false });
+  // three face-to-face aisles, backs almost touching, so the hall reads as full
+  const rows = [
+    { z: -3.25, face: 1 }, { z: -1.59, face: -1 },
+    { z: -0.9, face: 1 }, { z: 0.76, face: -1 },
+    { z: 1.45, face: 1 }, { z: 3.11, face: -1 },
+  ];
+  const xs = [];
+  for (let x = -3.4; x <= 2.62; x += 0.75) xs.push(+x.toFixed(3));
+  const n = rows.length * xs.length;
+  const ledN = n * 6;
+  const bodyMesh = new THREE.InstancedMesh(bodyGeo, M('#101218', { r: .55, m: .4 }), n);
+  const faceMesh = new THREE.InstancedMesh(faceGeo, M('#1a2030', { r: .4, m: .25 }), n);
+  const ledMesh = new THREE.InstancedMesh(ledGeo, ledMat, ledN);
+  bodyMesh.castShadow = faceMesh.castShadow = ledMesh.castShadow = false;
+  bodyMesh.receiveShadow = true;
+  bodyMesh.frustumCulled = faceMesh.frustumCulled = ledMesh.frustumCulled = false;
+  bodyMesh.userData.keep = faceMesh.userData.keep = ledMesh.userData.keep = true;
+  const dummy = new THREE.Object3D();
+  const on = new THREE.Color('#7eb6d6');
+  const dim = new THREE.Color('#163044');
+  const phases = new Float32Array(ledN);
+  let i = 0, li = 0;
+  for (const row of rows) {
+    for (const x of xs) {
+      dummy.position.set(x, 0.91, row.z); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix();
+      bodyMesh.setMatrixAt(i, dummy.matrix);
+      dummy.position.set(x, 0.91, row.z + row.face * 0.23); dummy.updateMatrix();
+      faceMesh.setMatrixAt(i, dummy.matrix);
+      for (let k = 0; k < 6; k++) {
+        dummy.position.set(x + (k % 2 ? 0.14 : -0.14), 0.38 + Math.floor(k / 2) * 0.46, row.z + row.face * 0.25);
+        dummy.updateMatrix();
+        ledMesh.setMatrixAt(li, dummy.matrix);
+        ledMesh.setColorAt(li, (i + k) % 4 === 0 ? on : dim);
+        phases[li] = (i * 0.41 + k * 0.7) % (Math.PI * 2);
+        li++;
+      }
+      i++;
+    }
+  }
+  bodyMesh.instanceMatrix.needsUpdate = faceMesh.instanceMatrix.needsUpdate = ledMesh.instanceMatrix.needsUpdate = true;
+  if (ledMesh.instanceColor) ledMesh.instanceColor.needsUpdate = true;
+  parent.add(bodyMesh, faceMesh, ledMesh);
+  const glowA = new THREE.PointLight('#7eb6d6', 0.7, 9, 1.6); glowA.position.set(0.2, 1.7, -0.2); parent.add(glowA);
+  const glowB = new THREE.PointLight('#7eb6d6', 0.45, 8, 1.6); glowB.position.set(-2.2, 1.8, 1.4); parent.add(glowB);
+  return { leds: ledMesh, phases, on, dim };
+}
 function serverRack(parent, x, z, ry, leds) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; parent.add(g);
   box(g, 0.7, 1.7, 0.46, 0, 0, 0, M('#121212', { r: .5, m: .35 }), { round: 0.02, cast: false });
@@ -708,7 +759,7 @@ export const LAYOUT = {
   privfin:  { x: 13.5,  z: 12,  w: 10, d: 8.5, icon: '私', walls: 'glass', private: true, sign: '私人助理', signSub: 'PRIVATE · 仅 EDWARD' },
   lounge:   { x: 25.6, z: 0,   w: 9.4, d: 11, icon: '休', color: '#E87708', door: 'west', sign: '休息室', signSub: 'LOUNGE', label: '休息室' },
   archive:  { x: -25.8, z: -8, w: 8.4, d: 8.2, icon: '档', color: '#D0B993', sign: '档案室', signSub: 'ARCHIVE', label: '档案室' },
-  meeting:  { x: -25.8, z: 8,   w: 9.2, d: 8.4, icon: '议', color: '#D0B993', sign: '会议室', signSub: 'MEETING', label: '会议室' },
+  meeting:  { x: -28, z: 8, w: 13.2, d: 11.8, icon: '议', color: '#D0B993', sign: '会议室', signSub: 'MEETING', label: '会议室' },
   design:   { x: 25.6, z: 12,  w: 9.4, d: 8.2, icon: '设', color: '#E87708', door: 'west', sign: '设计部', signSub: 'DESIGN', label: '设计部' },
   showroom: { x: 25.6, z: -12, w: 9.4, d: 8.2, icon: '展', color: '#D0B993', door: 'west', gallery: true, sign: '品牌展厅', signSub: 'BRAND HALL', label: '品牌展厅' },
 };
@@ -869,8 +920,8 @@ export function buildOffice(scene, teams) {
   annex.position.set(lounge.def.x, -0.04, 0); annex.receiveShadow = true; staticG.add(annex);
   const bridge = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 2.3), M('#12182a', { r: .6 }));
   bridge.position.set(20.2, 0.02, 0.15); bridge.receiveShadow = true; staticG.add(bridge);
-  const westPad = new THREE.Mesh(rboxG(10.5, 0.1, 26, 0.05), M('#161d30', { r: .7 }));
-  westPad.position.set(-25.8, -0.04, 0); westPad.receiveShadow = true; staticG.add(westPad);
+  const westPad = new THREE.Mesh(rboxG(15.2, 0.1, 28.8, 0.05), M('#161d30', { r: .7 }));
+  westPad.position.set(-28, -0.04, 0.7); westPad.receiveShadow = true; staticG.add(westPad);
   const westLinkA = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 2.1), M('#12182a', { r: .6 }));
   westLinkA.position.set(-20.6, 0.02, -8); westLinkA.receiveShadow = true; staticG.add(westLinkA);
   const westLinkB = westLinkA.clone(); westLinkB.position.set(-20.6, 0.02, 8); staticG.add(westLinkB);
@@ -912,7 +963,7 @@ export function buildOffice(scene, teams) {
     visitors.push({ agent: a, team: null, pts: [], i: 0, dir: 1, phase: 'idle', wait: 1.5 + i * 2.4, speed: 1.15, spot: i });
   }
   const meetRoom = rooms.meeting;
-  const meetSeats = [[-1.3, -1.2], [1.3, -1.2], [-1.3, 1.2], [1.3, 1.2]].map(([x, z]) => new THREE.Vector3(meetRoom.def.x + x, FLOOR_H, meetRoom.def.z + z));
+  const meetSeats = [[-2.4, -1.72], [0.4, -1.72], [-1.0, 1.72], [1.8, 1.72]].map(([x, z]) => new THREE.Vector3(meetRoom.def.x + x, FLOOR_H, meetRoom.def.z + z));
   const meeters = [];
   const meetFrom = ['market', 'invest', 'logistics', 'design'];
   for (let i = 0; i < meetSeats.length; i++) {
@@ -963,7 +1014,7 @@ export function buildOffice(scene, teams) {
   const buckets = new Map();
   const toRemove = [];
   staticG.traverse(o => {
-    if (!o.isMesh || o.material.transparent || o.userData.keep) return;
+    if (!o.isMesh || o.isInstancedMesh || o.material.transparent || o.userData.keep) return;
     if (o.material.map && o.material.map.isCanvasTexture && o.geometry.type === 'PlaneGeometry' && o.material.isMeshBasicMaterial) { /* screens ok */ }
     const k = o.material.uuid + (o.castShadow ? 'c' : 'n');
     if (!buckets.has(k)) buckets.set(k, { mat: o.material, cast: o.castShadow, geos: [] });
@@ -1156,6 +1207,12 @@ export function buildOffice(scene, teams) {
     if (chartScreens.length && Math.floor(t * 8) !== Math.floor((t - dt) * 8)) paintCharts(t);
     // server LEDs
     if (rooms.info?.leds) rooms.info.leds.forEach((o, i) => { o.m.color.copy(o.base).multiplyScalar((Math.sin(t * (3 + i * 1.7) + i) > 0.2) ? 1.4 : 0.35); });
+    const hall = rooms.archive?.rackLeds;
+    if (hall && Math.floor(t * 5) !== Math.floor((t - dt) * 5)) {
+      const { leds, phases, on, dim } = hall;
+      for (let i = 0; i < phases.length; i++) leds.setColorAt(i, Math.sin(t * 2.4 + phases[i]) > 0.2 ? on : dim);
+      if (leds.instanceColor) leds.instanceColor.needsUpdate = true;
+    }
     // screens subtle scroll
     for (const m of screenMats.values()) { if (m.map) m.map.offset.y = (Math.floor(t * 2) % 8) * 0.004; }
   }
@@ -1192,6 +1249,62 @@ export function buildOffice(scene, teams) {
   return { rooms, update, walkers, root, applyAmbience, setNews };
 }
 
+function furnishMeeting(g, def) {
+  const { w: W, d: D } = def;
+  const wood = M('#c4a574', { r: .45 });
+  const metal = M('#1f2937', { m: .45, r: .4 });
+  box(g, 7.4, 0.08, 2.15, 0.55, 0.72, 0, wood, { round: 0.04 });
+  for (const [x, z] of [[-2.55, -0.72], [3.55, -0.72], [-2.55, 0.72], [3.55, 0.72], [0.5, -0.72], [0.5, 0.72]]) {
+    cyl(g, 0.07, 0.09, 0.72, x, 0, z, metal, 8, { cast: false });
+  }
+  rug(g, 0.55, 0, 8.8, 4.4);
+  for (const x of [-2.4, -1.0, 0.4, 1.8, 3.2]) {
+    chair(g, x, -1.72, Math.PI, '#334155');
+    chair(g, x, 1.72, 0, '#334155');
+  }
+  // projection screen on the west wall, facing the door and the camera
+  const sW = 5.6, sH = 2.02, sx = -W / 2 + 0.1;
+  box(g, 0.08, sH + 0.18, sW + 0.2, sx, 0.16, 0, M('#0a0a0a', { r: .35, m: .4 }), { cast: false });
+  box(g, 0.03, sH + 0.28, 0.06, sx + 0.02, 0.12, -sW / 2 - 0.02, M(GOLD, { m: .6, r: .3 }), { cast: false });
+  box(g, 0.03, sH + 0.28, 0.06, sx + 0.02, 0.12, sW / 2 + 0.02, M(GOLD, { m: .6, r: .3 }), { cast: false });
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(sW, sH), new THREE.MeshBasicMaterial({ color: '#e7eef6', toneMapped: false }));
+  screen.position.set(sx + 0.07, 0.16 + (sH + 0.18) / 2, 0);
+  screen.rotation.y = Math.PI / 2;
+  screen.userData.keep = true;
+  g.add(screen);
+  // ceiling projector, aimed west at the screen
+  const proj = new THREE.Group();
+  proj.position.set(-1.15, 2.16, 0);
+  g.add(proj);
+  cyl(proj, 0.02, 0.02, 0.28, 0, 0, 0, M('#9aa3b2', { m: .65, r: .3 }), 6, { cast: false });
+  box(proj, 0.28, 0.04, 0.28, 0, 0.22, 0, M('#c5ccd6', { m: .5, r: .35 }), { cast: false });
+  box(proj, 0.78, 0.18, 0.36, 0, -0.2, 0, M('#141414', { r: .35, m: .55 }), { cast: false });
+  const lens = cyl(proj, 0.09, 0.11, 0.16, -0.36, -0.2, 0, M('#0c0c0c', { m: .45, r: .28 }), 12, { cast: false });
+  lens.rotation.z = Math.PI / 2;
+  const glow = new THREE.Mesh(sphG(0.05, 8, 6), B('#f7fbff', { op: .9, add: true }));
+  glow.position.set(-0.52, -0.11, 0);
+  proj.add(glow);
+  const beamLen = (-W / 2 + 0.45) - (-1.7);
+  const beam = new THREE.Mesh(
+    new THREE.ConeGeometry(0.72, Math.abs(beamLen), 18, 1, true),
+    new THREE.MeshBasicMaterial({ color: '#e7f1fb', transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide }),
+  );
+  beam.geometry.translate(0, -Math.abs(beamLen) / 2, 0);
+  beam.rotation.z = -Math.PI / 2 + 0.18;
+  beam.position.set(-0.55, -0.08, 0);
+  beam.userData.keep = true;
+  proj.add(beam);
+  // weekly meeting plaque stays on the south wall
+  box(g, 3.35, 1.22, 0.06, -1.55, 0.82, -D / 2 + 0.12, M('#0b0f19'), { cast: false });
+  const agenda = new THREE.Mesh(
+    new THREE.PlaneGeometry(3.1, 1.02),
+    new THREE.MeshBasicMaterial({ map: agendaTexture(), toneMapped: false, side: THREE.DoubleSide }),
+  );
+  agenda.position.set(-1.55, 1.43, -D / 2 + 0.17);
+  agenda.userData.keep = true;
+  g.add(agenda);
+  return agenda;
+}
 function agendaTexture() {
   const c = document.createElement('canvas'); c.width = 512; c.height = 288;
   const g = c.getContext('2d');
@@ -1454,12 +1567,7 @@ function decorate(R, dyn, teamById) {
   } else if (id === 'lounge') {
     furnishLounge(g, def);
   } else if (id === 'archive') {
-    bookshelf(g, -1.6, -2.4, 0, 1.5, 1.8);
-    bookshelf(g, 0.2, -2.4, 0, 1.5, 1.8);
-    cabinet(g, 2.4, -2.2, 0, 0.7, 1.5, '#cbd5e1');
-    cabinet(g, 3.3, -2.2, 0, 0.7, 1.5, '#94a3b8');
-    boxesStack(g, 2.2, 1.4); boxesStack(g, 3.2, 1.6);
-    box(g, 1.4, 0.9, 0.7, -2.2, 0, 1.6, M('#b08968', { r: .8 }));
+    R.rackLeds = archiveRackHall(g);
   } else if (id === 'design') {
     desks.push(...workstations(g, t, accentChair, W, D, 5));
     const easel = new THREE.Group(); easel.position.set(2.7, 0, 2.35); g.add(easel);
@@ -1481,32 +1589,30 @@ function decorate(R, dyn, teamById) {
     board.position.set(0, 1.78, bz + 0.24); board.userData.keep = true; g.add(board);
     plant(g, -3.5, 2.8, 1.05, 0); plant(g, 3.5, 2.8, 1.05, 1);
   } else if (id === 'meeting') {
-    box(g, 3.2, 0.08, 1.5, 0, 0.72, 0, M('#c4a574', { r: .45 }), { round: 0.04 });
-    cyl(g, 0.12, 0.16, 0.72, -1.2, 0, -0.4, M('#1f2937'), 8);
-    cyl(g, 0.12, 0.16, 0.72, 1.2, 0, -0.4, M('#1f2937'), 8);
-    cyl(g, 0.12, 0.16, 0.72, -1.2, 0, 0.45, M('#1f2937'), 8);
-    cyl(g, 0.12, 0.16, 0.72, 1.2, 0, 0.45, M('#1f2937'), 8);
-    for (const [x, z, ry] of [[-1.5, -1.5, 0.4], [1.5, -1.5, -0.4], [-1.5, 1.5, 2.6], [1.5, 1.5, -2.6], [0, -1.7, 0], [0, 1.7, Math.PI]]) chair(g, x, z, ry, '#334155');
-    box(g, 2.6, 1.35, 0.08, 0, 1.05, -D / 2 + 0.2, M('#0b0f19'), { cast: false });
-    const agenda = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.15), new THREE.MeshBasicMaterial({ map: agendaTexture(), toneMapped: false }));
-    agenda.position.set(0, 1.75, -D / 2 + 0.26); agenda.userData.keep = true; g.add(agenda);
-    R.agenda = agenda;
+    R.agenda = furnishMeeting(g, def);
   }
   // front glass partitions for open team rooms
   if (def.walls !== 'glass' && id !== 'lounge') {
     const doorFrac = id === 'market' ? [[0.74, 0.88]] : id === 'legal' ? [[0.60, 0.73]] : [[0.4, 0.54]];
     const wing = id === 'design' || id === 'showroom';
     const sideDoor = id === 'archive' || id === 'meeting';
-    glassRun(g, -W / 2, D / 2, W / 2, D / 2, 2.2, wing ? [] : doorFrac);
-    glassRun(g, W / 2, -D / 2, W / 2, D / 2, 2.2, sideDoor ? [[0.34, 0.62]] : (!wing && def.z > 0 ? [[0.1, 0.26]] : []));
-    if (!wing) {
-      const [a, b] = doorFrac[0];
+    const meetDoor = 2.3;
+    const eastGap = id === 'meeting'
+      ? [[0.5 - meetDoor / (2 * D), 0.5 + meetDoor / (2 * D)]]
+      : (sideDoor ? [[0.34, 0.62]] : (!wing && def.z > 0 ? [[0.1, 0.26]] : []));
+    // 档案室 is a rack hall; the east link is the only door so the rows can run to the north wall.
+    const northGap = (wing || id === 'archive') ? [] : doorFrac;
+    glassRun(g, -W / 2, D / 2, W / 2, D / 2, 2.2, northGap);
+    glassRun(g, W / 2, -D / 2, W / 2, D / 2, 2.2, eastGap);
+    if (northGap.length) {
+      const [a, b] = northGap[0];
       doorFrame(g, -W / 2 + ((a + b) / 2) * W, D / 2, 0, (b - a) * W, 2.2);
     }
-    if (sideDoor) doorFrame(g, W / 2, 0, Math.PI / 2, 0.28 * D, 2.2);
+    if (sideDoor) doorFrame(g, W / 2, 0, Math.PI / 2, id === 'meeting' ? meetDoor : 0.28 * D, 2.2);
     if (wing) doorFrame(g, -W / 2, 0, Math.PI / 2, 1.8, 2.2);
   }
-  if (id !== 'lounge') pendant(g, id === 'ed' ? -1.4 : 0, 0.2);
+  if (id === 'meeting') pendant(g, 4.7, -3.9);
+  else if (id !== 'lounge') pendant(g, id === 'ed' ? -1.4 : 0, 0.2);
   if (id === 'ed') pendant(g, 1.4, 0.2);
   const shirts = [shirtA, shirtB, '#e2e8f0'];
   const n = Math.min(desks.length, t.agents ?? desks.length);
