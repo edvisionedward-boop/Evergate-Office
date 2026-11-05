@@ -668,8 +668,8 @@ export function buildOffice(scene, teams) {
   lounge.occupancy = 0;
 
   const lingerSpots = [
-    new THREE.Vector3(lounge.def.x - 1.1, FLOOR_H, 1.5),
-    new THREE.Vector3(lounge.def.x + 0.4, FLOOR_H, -1.4),
+    { pos: new THREE.Vector3(lounge.def.x - 1.15, FLOOR_H, lounge.def.z + 1.55), ry: Math.PI },
+    { pos: new THREE.Vector3(lounge.def.x + 1.35, FLOOR_H, lounge.def.z + 1.7), ry: Math.PI },
   ];
   function loungePath(room) {
     const c = room.def, y = FLOOR_H;
@@ -814,7 +814,7 @@ export function buildOffice(scene, teams) {
         const pick = Object.values(rooms).find(R => R.team && !R.team.private && state.status[R.id] === 'idle' && !used.has(R.id));
         if (!pick) { v.wait = 2.5; continue; }
         v.team = pick.id;
-        v.pts = loungePath(pick).concat([lingerSpots[v.spot % lingerSpots.length]]);
+        v.pts = loungePath(pick).concat([lingerSpots[v.spot % lingerSpots.length].pos]);
         v.i = 0; v.dir = 1; v.phase = 'go';
         a.position.copy(v.pts[0]); a.visible = true;
         continue;
@@ -822,8 +822,19 @@ export function buildOffice(scene, teams) {
       if (st && st !== 'idle' && v.phase !== 'back') { v.phase = 'back'; v.dir = -1; }
       if (v.phase === 'linger') {
         occ++;
-        v.wait -= dt; u.mode = 'stand'; animateAgent(a, t, dt);
-        if (v.wait <= 0) { v.phase = 'back'; v.dir = -1; }
+        if (!v.sat) {
+          setSeated(a);
+          a.position.y = FLOOR_H + 0.02;
+          a.rotation.y = lingerSpots[v.spot % lingerSpots.length].ry;
+          v.sat = true;
+        }
+        v.wait -= dt; animateAgent(a, t, dt, 'idle');
+        if (v.wait <= 0) {
+          v.sat = false; v.phase = 'back'; v.dir = -1;
+          a.userData.mode = 'stand';
+          a.userData.legs?.forEach(l => { l.rotation.x = 0; });
+          a.position.y = FLOOR_H;
+        }
         continue;
       }
       const target = v.pts[v.i + v.dir];
@@ -886,10 +897,11 @@ export function buildOffice(scene, teams) {
         for (const person of R.agents || []) person.visible = false;
         for (const person of R.walkers || []) person.visible = false;
       }
-      for (const v of visitors) { v.agent.visible = false; if (v.phase !== 'idle') { v.phase = 'idle'; v.team = null; v.wait = 4; } }
+      for (const v of visitors) { v.agent.visible = false; v.sat = false; if (v.phase !== 'idle') { v.phase = 'idle'; v.team = null; v.wait = 4; } }
     }
     newsTick += dt;
     if (newsTick > 0.08) { newsTick = 0; newsShift += 2; drawNews(newsShift); newsMap.needsUpdate = true; }
+    if (loungeTv) { loungeTv.tick += dt; if (loungeTv.tick > 0.12) { loungeTv.tick = 0; paintLoungeTv(t); } }
     // server LEDs
     if (rooms.info?.leds) rooms.info.leds.forEach((o, i) => { o.m.color.copy(o.base).multiplyScalar((Math.sin(t * (3 + i * 1.7) + i) > 0.2) ? 1.4 : 0.35); });
     // screens subtle scroll
@@ -940,32 +952,82 @@ function furnishLounge(g, def) {
   };
   sofa(-1.15, 2.15, Math.PI);
   sofa(-1.15, -0.35, 0);
-  // round table between the sofas
+  // existing coffee table between the sofas
   cyl(g, 0.55, 0.55, 0.06, -1.15, 0.42, 0.9, M(WOOD, { r: .45 }), 20);
   cyl(g, 0.06, 0.08, 0.42, -1.15, 0, 0.9, M('#1f2937'), 8);
   chair(g, -0.35, 0.9, -Math.PI / 2, '#92400e');
+  // dining table for eating and resting
+  cyl(g, 0.72, 0.72, 0.06, 1.35, 0.72, 2.55, M('#c4a574', { r: .42 }), 22);
+  cyl(g, 0.08, 0.1, 0.72, 1.35, 0, 2.55, M('#1f2937'), 8);
+  chair(g, 1.35, 1.55, Math.PI, '#44403c');
+  chair(g, 1.35, 3.55, 0, '#44403c');
+  chair(g, 0.4, 2.55, Math.PI / 2, '#44403c');
+  chair(g, 2.3, 2.55, -Math.PI / 2, '#44403c');
   // coffee bar along the east wall
   const bar = M('#1f2937', { r: .45, m: .35 });
-  box(g, 0.7, 1.05, 3.4, W / 2 - 0.55, 0, -0.2, bar, { round: 0.03 });
-  box(g, 0.74, 0.06, 3.45, W / 2 - 0.55, 1.05, -0.2, M('#d6d3d1', { r: .35 }), { round: 0.02 });
-  const machine = new THREE.Group(); machine.position.set(W / 2 - 0.55, 1.11, -1.15); g.add(machine);
-  box(machine, 0.42, 0.48, 0.36, 0, 0.24, 0, M('#111827', { m: .6, r: .35 }), { round: 0.03 });
-  box(machine, 0.18, 0.12, 0.04, 0, 0.42, 0.18, M('#f59e0b', { e: '#fbbf24', ei: 0.8 }), { cast: false });
-  cyl(machine, 0.07, 0.06, 0.08, -0.1, 0, 0.16, M('#f8fafc', { r: .4 }), 10);
-  cyl(g, 0.11, 0.09, 0.16, W / 2 - 0.7, 1.11, 0.55, M('#44403c', { r: .4 }), 12);
-  // east + south walls so the room reads as enclosed, door stays on the west
+  box(g, 0.7, 1.05, 2.6, W / 2 - 0.55, 0, -1.35, bar, { round: 0.03 });
+  box(g, 0.74, 0.06, 2.65, W / 2 - 0.55, 1.05, -1.35, M('#d6d3d1', { r: .35 }), { round: 0.02 });
+  const machine = new THREE.Group(); machine.position.set(W / 2 - 0.55, 1.11, -1.85); g.add(machine);
+  box(machine, 0.46, 0.42, 0.38, 0, 0.21, 0, M('#1c1917', { m: .72, r: .28 }), { round: 0.03 });
+  box(machine, 0.16, 0.1, 0.03, 0.02, 0.38, 0.19, M('#f59e0b', { e: '#fbbf24', ei: 0.9 }), { cast: false });
+  cyl(machine, 0.045, 0.05, 0.07, -0.12, 0, 0.18, M('#f8fafc', { r: .35 }), 8);
+  cyl(machine, 0.045, 0.05, 0.07, 0.08, 0, 0.2, M('#e7e5e4', { r: .35 }), 8);
+  cyl(g, 0.055, 0.05, 0.07, W / 2 - 0.78, 1.11, -0.85, M('#f8fafc', { r: .35 }), 8);
+  cyl(g, 0.055, 0.05, 0.07, W / 2 - 0.42, 1.11, -0.7, M('#44403c', { r: .4 }), 8);
+  // tall two-door fridge
+  const steel = M('#d7dde6', { m: .82, r: .22 });
+  box(g, 0.72, 1.85, 0.68, W / 2 - 0.5, 0, 1.15, steel, { round: 0.03 });
+  box(g, 0.02, 1.7, 0.02, W / 2 - 0.5, 0.08, 1.48, M('#94a3b8', { m: .7, r: .3 }), { cast: false });
+  box(g, 0.03, 0.55, 0.03, W / 2 - 0.22, 1.15, 1.48, M('#334155', { m: .6 }), { cast: false });
+  box(g, 0.03, 0.55, 0.03, W / 2 - 0.78, 1.15, 1.48, M('#334155', { m: .6 }), { cast: false });
+  // east + south walls, door stays on the west
   const wallMat = M('#3a2a22', { r: .85 });
   box(g, 0.12, WALL_H, D, W / 2 - 0.06, 0, 0, wallMat);
   box(g, W, 0.12, 0.12, 0, 0, D / 2 - 0.06, wallMat);
-  // TV / board
-  box(g, 2.5, 1.35, 0.08, 0.9, 1.15, -D / 2 + 0.16, M('#0b0f19', { r: .3 }), { cast: false });
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.28, 1.12), new THREE.MeshBasicMaterial({ map: loungeBoardTexture(), toneMapped: false }));
-  screen.position.set(0.9, 1.7, -D / 2 + 0.22); screen.userData.keep = true; g.add(screen);
+  // wall-mounted flat TV, with the weekly meeting plaque beside it
+  box(g, 1.15, 0.42, 0.04, -2.15, 1.55, -D / 2 + 0.16, M('#1e293b'), { cast: false });
+  const plaque = new THREE.Mesh(new THREE.PlaneGeometry(1.05, 0.32), new THREE.MeshBasicMaterial({ map: loungeBoardTexture(), toneMapped: false }));
+  plaque.position.set(-2.15, 1.78, -D / 2 + 0.2); plaque.userData.keep = true; g.add(plaque);
+  box(g, 1.85, 1.05, 0.06, 0.55, 1.35, -D / 2 + 0.12, M('#111827', { r: .35, m: .4 }), { cast: false });
+  const art = loungeTvArt();
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(1.68, 0.9), new THREE.MeshBasicMaterial({ map: art.tex, toneMapped: false }));
+  screen.position.set(0.55, 1.9, -D / 2 + 0.18); screen.userData.keep = true; g.add(screen);
+  loungeTv = art;
+  // console shelf and two controllers
+  box(g, 1.15, 0.08, 0.38, 0.55, 0.72, -D / 2 + 0.55, M('#1f2937', { r: .4 }), { round: 0.02 });
+  box(g, 0.32, 0.08, 0.22, 0.35, 0.8, -D / 2 + 0.52, M('#0f172a', { m: .35, r: .4 }), { round: 0.02 });
+  box(g, 0.05, 0.02, 0.05, 0.46, 0.86, -D / 2 + 0.52, M('#22c55e', { e: '#22c55e', ei: 0.8 }), { cast: false });
+  const pad = M('#1e293b', { r: .55 });
+  box(g, 0.16, 0.025, 0.08, 0.72, 0.82, -D / 2 + 0.5, pad, { round: 0.02, cast: false });
+  box(g, 0.16, 0.025, 0.08, 0.96, 0.82, -D / 2 + 0.5, pad, { round: 0.02, cast: false });
   plant(g, -W / 2 + 0.55, -D / 2 + 0.7, 1.15, 2);
   plant(g, W / 2 - 1.3, D / 2 - 0.7, 1.05, 0);
   plant(g, -W / 2 + 0.6, D / 2 - 0.65, 0.9, 1);
   floorLamp(g, W / 2 - 1.15, -D / 2 + 0.8, '#fdba74');
   rug(g, -1.15, 0.9, 3.1, 3.2, '#e7d3b0');
+  rug(g, 1.35, 2.55, 2.4, 2.4, '#d6c2a4');
+}
+let loungeTv = null;
+function loungeTvArt() {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 144;
+  const ctx = c.getContext('2d');
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  return { c, ctx, tex, tick: 0 };
+}
+function paintLoungeTv(time) {
+  if (!loungeTv) return;
+  const { ctx, tex } = loungeTv;
+  const g = ctx.createLinearGradient(0, 0, 256, 144);
+  const h = (time * 8) % 360;
+  g.addColorStop(0, `hsl(${h}, 42%, 28%)`);
+  g.addColorStop(0.5, `hsl(${(h + 40) % 360}, 35%, 42%)`);
+  g.addColorStop(1, `hsl(${(h + 80) % 360}, 30%, 18%)`);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 256, 144);
+  ctx.fillStyle = 'rgba(255,255,255,.18)';
+  ctx.beginPath(); ctx.arc(70 + Math.sin(time * 0.4) * 18, 78, 26, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,244,214,.35)';
+  ctx.fillRect(150, 40 + Math.sin(time * 0.7) * 6, 46, 28);
+  tex.needsUpdate = true;
 }
 
 /* ---------------- per-room decoration ---------------- */
