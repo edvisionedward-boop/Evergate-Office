@@ -521,11 +521,12 @@ export const LAYOUT = {
   info:     { x: 13.5,  z: 0,   w: 10, d: 8.5, icon: '信', sign: '信息部', signSub: 'AI NEWS & INFO' },
   corpfin:  { x: -13.5, z: 12,  w: 10, d: 8.5, icon: '会', sign: '会计部', signSub: 'ACCOUNTING' },
   logistics:{ x: 0,     z: 12,  w: 11, d: 8.5, icon: '物', sign: '物流部', signSub: 'LOGISTICS' },
-  privfin:  { x: 13.5,  z: 12,  w: 10, d: 8.5, icon: '🔒', walls: 'glass', private: true, floorTone: '#5b3d8f', sign: '私人助理', signSub: 'PRIVATE · 仅 EDWARD' },
-  lounge:   { x: 25.6, z: 0,   w: 9.4, d: 11, icon: '☕', color: '#f59e0b', door: 'west', floorTone: '#c4a574', floorMix: 0.35, sign: '休息室', signSub: 'LOUNGE', label: '休息室' },
-  archive:  { x: -25.8, z: -8, w: 8.4, d: 8.2, icon: '🗂', color: '#64748b', floorTone: '#cfc3ae', sign: '档案室', signSub: 'ARCHIVE', label: '档案室' },
-  meeting:  { x: -25.8, z: 8.2, w: 9.2, d: 8.4, icon: '议', color: '#0ea5e9', sign: '会议室', signSub: 'MEETING', label: '会议室' },
-  design:   { x: 26.2, z: 14.6, w: 9.2, d: 8.2, icon: '设', color: '#d946ef', door: 'north', sign: '设计部', signSub: 'DESIGN', label: '设计部' },
+  privfin:  { x: 13.5,  z: 12,  w: 10, d: 8.5, icon: '私', walls: 'glass', private: true, floorTone: '#5b3d8f', sign: '私人助理', signSub: 'PRIVATE · 仅 EDWARD' },
+  lounge:   { x: 25.6, z: 0,   w: 9.4, d: 11, icon: '休', color: '#f59e0b', door: 'west', floorTone: '#c4a574', floorMix: 0.35, sign: '休息室', signSub: 'LOUNGE', label: '休息室' },
+  archive:  { x: -25.8, z: -8, w: 8.4, d: 8.2, icon: '档', color: '#64748b', floorTone: '#cfc3ae', sign: '档案室', signSub: 'ARCHIVE', label: '档案室' },
+  meeting:  { x: -25.8, z: 8,   w: 9.2, d: 8.4, icon: '议', color: '#0ea5e9', sign: '会议室', signSub: 'MEETING', label: '会议室' },
+  design:   { x: 25.6, z: 12,  w: 9.4, d: 8.2, icon: '设', color: '#d946ef', door: 'west', sign: '设计部', signSub: 'DESIGN', label: '设计部' },
+  showroom: { x: 25.6, z: -12, w: 9.4, d: 8.2, icon: '展', color: '#d6d3d1', door: 'west', floorTone: '#f7f3ea', floorMix: 0.2, wallMix: 0.08, gallery: true, sign: '品牌展厅', signSub: 'BRAND HALL', label: '品牌展厅' },
 };
 
 export function buildOffice(scene, teams) {
@@ -551,22 +552,22 @@ export function buildOffice(scene, teams) {
   const sky = new THREE.Mesh(new THREE.PlaneGeometry(150, 64), new THREE.MeshBasicMaterial({ map: skylineTexture() }));
   sky.position.set(0, 16, -34); root.add(sky);
   const sky2 = sky.clone(); sky2.position.set(-70, 26, 8); sky2.rotation.y = Math.PI / 2; root.add(sky2);
-  // reception lobby on the south approach, facing the daylight
-  const logo = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 2.5), new THREE.MeshBasicMaterial({ map: logoTexture() }));
-  logo.position.set(0, 1.7, 19.35); root.add(logo);
-  box(staticG, 7.4, 2.7, 0.18, 0, 0, 19.15, M('#121a28', { r: .6 }), { cast: false });
-  box(staticG, 2.4, 1.05, 0.7, 0, 0, 17.55, M('#d9c7a6', { r: .55 }), { round: 0.04 });
-  box(staticG, 2.2, 0.06, 0.55, 0, 1.05, 17.55, M('#f4efe6', { r: .4 }), { cast: false });
-  cyl(staticG, 0.12, 0.1, 0.22, -0.7, 1.11, 17.55, M('#111827', { m: .4 }), 10, { cast: false });
-  plant(staticG, -4.2, 18.4, 1.25, 2); plant(staticG, 4.2, 18.4, 1.15, 0);
+  // south gate on the central axis, due south of 物流部: wordmark above the news band
+  const logo = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 1.85), new THREE.MeshBasicMaterial({ map: logoTexture() }));
+  logo.position.set(0, 2.55, 19.4); root.add(logo);
+  box(staticG, 8.4, 3.7, 0.18, 0, 0, 19.15, M('#121a28', { r: .6 }), { cast: false });
+  box(staticG, 2.4, 1.05, 0.7, 0, 0, 16.7, M('#d9c7a6', { r: .55 }), { round: 0.04 });
+  box(staticG, 2.2, 0.06, 0.55, 0, 1.05, 16.7, M('#f4efe6', { r: .4 }), { cast: false });
+  cyl(staticG, 0.12, 0.1, 0.22, -0.7, 1.11, 16.7, M('#111827', { m: .4 }), 10, { cast: false });
+  plant(staticG, -4.6, 18.2, 1.25, 2); plant(staticG, 4.6, 18.2, 1.15, 0);
   const newsCanvas = document.createElement('canvas'); newsCanvas.width = 512; newsCanvas.height = 512;
   const newsCtx = newsCanvas.getContext('2d');
   const newsMap = new THREE.CanvasTexture(newsCanvas); newsMap.colorSpace = THREE.SRGBColorSpace; newsMap.wrapS = newsMap.wrapT = THREE.RepeatWrapping;
-  const newsScreen = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 1.7), new THREE.MeshBasicMaterial({ map: newsMap, toneMapped: false }));
-  newsScreen.position.set(3.6, 1.7, 17.15); root.add(newsScreen);
-  box(staticG, 3.3, 1.9, 0.08, 3.6, 0.7, 17.05, M('#0b0f19'), { cast: false });
-  const newsHit = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.2, 0.4), new THREE.MeshBasicMaterial({ visible: false }));
-  newsHit.position.set(3.6, 1.6, 17.15); newsHit.userData.room = 'news'; root.add(newsHit);
+  const newsScreen = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.15), new THREE.MeshBasicMaterial({ map: newsMap, toneMapped: false }));
+  newsScreen.position.set(0, 1.05, 19.32); root.add(newsScreen);
+  box(staticG, 4.8, 1.35, 0.08, 0, 0.38, 19.22, M('#0b0f19'), { cast: false });
+  const newsHit = new THREE.Mesh(new THREE.BoxGeometry(5.0, 1.6, 0.4), new THREE.MeshBasicMaterial({ visible: false }));
+  newsHit.position.set(0, 1.15, 19.35); newsHit.userData.room = 'news'; root.add(newsHit);
   // corridors: dark aisles with dashed glowing lines
   const aisleMat = new THREE.MeshStandardMaterial({ map: concreteTexture(), roughness: 0.86, metalness: 0.04, color: '#c5ccd4' });
   const aisle = aisleMat;
@@ -596,7 +597,7 @@ export function buildOffice(scene, teams) {
     const el = labelEl(def); R.labelEl = el;
     const lo = new CSS2DObject(el); lo.position.set(def.x, def.minor ? 2.9 : 3.55, def.z - def.d * 0.1); lo.center.set(0.5, 1); root.add(lo); R.label = lo;
     // status lamp
-    if (!def.minor) {
+    if (!def.minor && !def.gallery) {
       const lamp = new THREE.Group(); const lx = def.x - def.w / 2 + 0.45, lz = def.z - def.d / 2 + 0.45; lamp.position.set(lx, 3.05, lz); lamp.userData.base = 3.05; root.add(lamp);
       const core = new THREE.Mesh(sphG(0.2, 16, 12), B('#22c55e').clone()); core.userData.boost = 2.2; lamp.add(core);
       const halo = new THREE.Mesh(sphG(0.42, 16, 12), B('#22c55e', { op: .22, add: true }).clone()); lamp.add(halo);
@@ -668,11 +669,11 @@ export function buildOffice(scene, teams) {
   annex.position.set(lounge.def.x, -0.04, 0); annex.receiveShadow = true; staticG.add(annex);
   const bridge = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 2.3), M('#12182a', { r: .6 }));
   bridge.position.set(20.2, 0.02, 0.15); bridge.receiveShadow = true; staticG.add(bridge);
-  const westPad = new THREE.Mesh(rboxG(10.5, 0.1, 20, 0.05), M('#161d30', { r: .7 }));
-  westPad.position.set(-25.8, -0.04, 0.2); westPad.receiveShadow = true; staticG.add(westPad);
+  const westPad = new THREE.Mesh(rboxG(10.5, 0.1, 26, 0.05), M('#161d30', { r: .7 }));
+  westPad.position.set(-25.8, -0.04, 0); westPad.receiveShadow = true; staticG.add(westPad);
   const westLinkA = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 2.1), M('#12182a', { r: .6 }));
   westLinkA.position.set(-20.6, 0.02, -8); westLinkA.receiveShadow = true; staticG.add(westLinkA);
-  const westLinkB = westLinkA.clone(); westLinkB.position.set(-20.6, 0.02, 8.2); staticG.add(westLinkB);
+  const westLinkB = westLinkA.clone(); westLinkB.position.set(-20.6, 0.02, 8); staticG.add(westLinkB);
   const loungeLight = new THREE.PointLight('#fdba74', 1.1, 9, 1.8);
   loungeLight.position.set(lounge.def.x, 3.1, 0.4); root.add(loungeLight);
   const stSpan = lounge.labelEl?.querySelector('.st span');
@@ -685,13 +686,22 @@ export function buildOffice(scene, teams) {
   ];
   function loungePath(room) {
     const c = room.def, y = FLOOR_H;
+    const door = new THREE.Vector3(lounge.def.x - lounge.def.w / 2 + 0.9, y, 0.15);
+    if (c.x > 18) {
+      return [
+        new THREE.Vector3(c.x - c.w * 0.38, y, c.z),
+        new THREE.Vector3(20.2, y, c.z),
+        new THREE.Vector3(20.2, y, 0.15),
+        door,
+      ];
+    }
     const aisleX = c.x < -2 ? -6.75 : (Math.abs(c.x) < 3 ? 0.5 : 6.75);
     return [
       new THREE.Vector3(c.x + Math.sign(aisleX - c.x) * c.w * 0.38, y, c.z),
       new THREE.Vector3(aisleX, y, c.z),
       new THREE.Vector3(aisleX, y, 0.35),
       new THREE.Vector3(19.4, y, 0.35),
-      new THREE.Vector3(lounge.def.x - lounge.def.w / 2 + 0.9, y, 0.15),
+      door,
     ];
   }
   const visitors = [];
@@ -711,17 +721,24 @@ export function buildOffice(scene, teams) {
     meeters.push({ agent: a, seat: meetSeats[i], phase: 'away', team: tid });
   }
   const designRoom = rooms.design;
-  const designPad = new THREE.Mesh(rboxG(10.8, 0.1, 9.8, 0.05), M('#161d30', { r: .7 }));
-  designPad.position.set(designRoom.def.x, -0.04, designRoom.def.z); designPad.receiveShadow = true; staticG.add(designPad);
-  const designLink = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.08, 5.8), M('#12182a', { r: .6 }));
-  designLink.position.set(designRoom.def.x, 0.02, 9.7); designLink.receiveShadow = true; staticG.add(designLink);
+  const showRoom = rooms.showroom;
+  for (const R of [designRoom, showRoom]) {
+    const pad = new THREE.Mesh(rboxG(R.def.w + 1.6, 0.1, R.def.d + 1.4, 0.05), M('#161d30', { r: .7 }));
+    pad.position.set(R.def.x, -0.04, R.def.z); pad.receiveShadow = true; staticG.add(pad);
+    const link = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 2.2), M('#12182a', { r: .6 }));
+    link.position.set(20.2, 0.02, R.def.z); link.receiveShadow = true; staticG.add(link);
+  }
   const designLight = new THREE.PointLight(designRoom.def.color, 0.85, 9, 1.8);
   designLight.position.set(designRoom.def.x, 3.1, designRoom.def.z); root.add(designLight);
+  const showLight = new THREE.PointLight('#fff7ed', 0.65, 9, 1.8);
+  showLight.position.set(showRoom.def.x, 3.1, showRoom.def.z); root.add(showLight);
+  const showLabel = showRoom.labelEl;
+  showLabel.innerHTML = `<div class="ic">展</div><div><div class="nm">品牌展厅</div><div class="st"><span>展陈占位</span></div></div>`;
   const newsLabelEl = document.createElement('div');
   newsLabelEl.className = 'rlabel'; newsLabelEl.dataset.room = 'news'; newsLabelEl.style.setProperty('--c', '#38bdf8');
   newsLabelEl.innerHTML = `<div class="ic">讯</div><div><div class="nm">新闻墙</div><div class="st"><i class="dot idle"></i><span>点击查看</span></div></div>`;
-  const newsLabel = new CSS2DObject(newsLabelEl); newsLabel.position.set(3.6, 3.1, 17.15); newsLabel.center.set(0.5, 1); root.add(newsLabel);
-  rooms.news = { id: 'news', hit: newsHit, labelEl: newsLabelEl, label: newsLabel, center: new THREE.Vector3(3.6, 0, 17.15), def: { icon: '讯', color: '#38bdf8' } };
+  const newsLabel = new CSS2DObject(newsLabelEl); newsLabel.position.set(0, 3.7, 19.2); newsLabel.center.set(0.5, 1); root.add(newsLabel);
+  rooms.news = { id: 'news', hit: newsHit, labelEl: newsLabelEl, label: newsLabel, center: new THREE.Vector3(0, 0, 18.2), def: { icon: '讯', color: '#38bdf8' } };
   let newsLines = ['信息部简报将在此滚动显示'];
   function drawNews(shift) {
     const ctx = newsCtx; ctx.clearRect(0, 0, 512, 512); ctx.fillStyle = '#07111f'; ctx.fillRect(0, 0, 512, 512);
@@ -1248,6 +1265,16 @@ function decorate(R, dyn, teamById) {
     cabinet(g, 3.3, -0.6, -Math.PI / 2, 0.5, 1.15);
     plant(g, 3.3, 2.7, 1.15, 1); plant(g, -3.4, 2.5, 1.05, 0);
     rug(g, 1.35, 1.7, 2.6, 2.0, hex(mix(def.color, '#f8fafc', 0.72)));
+  } else if (id === 'showroom') {
+    const stone = M('#f8fafc', { r: .5 });
+    for (const [x, z] of [[-1.7, 0.15], [0, -0.85], [1.7, 0.15]]) {
+      box(g, 0.72, 0.82, 0.72, x, 0, z, stone, { round: 0.04 });
+      box(g, 0.48, 0.04, 0.48, x, 0.82, z, M('#e7e5e4', { r: .35 }), { cast: false });
+    }
+    box(g, 2.6, 1.15, 0.06, 0, 1.2, bz + 0.18, M('#f8fafc'), { cast: false });
+    const board = new THREE.Mesh(new THREE.PlaneGeometry(2.35, 0.95), new THREE.MeshBasicMaterial({ map: signTexture('EVERGATE', 'BRAND HALL', '#94a3b8'), toneMapped: false }));
+    board.position.set(0, 1.78, bz + 0.24); board.userData.keep = true; g.add(board);
+    plant(g, -3.5, 2.8, 1.05, 0); plant(g, 3.5, 2.8, 1.05, 1);
   } else if (id === 'meeting') {
     box(g, 3.2, 0.08, 1.5, 0, 0.72, 0, M('#c4a574', { r: .45 }), { round: 0.04 });
     cyl(g, 0.12, 0.16, 0.72, -1.2, 0, -0.4, M('#1f2937'), 8);
@@ -1263,15 +1290,16 @@ function decorate(R, dyn, teamById) {
   // front glass partitions for open team rooms
   if (def.walls !== 'glass' && id !== 'lounge') {
     const doorFrac = id === 'market' ? [[0.74, 0.88]] : id === 'legal' ? [[0.60, 0.73]] : id === 'proposal' ? [[0.05, 0.19]] : [[0.4, 0.54]];
-    const doorSide = (def.z < 0);
-    glassRun(g, -W / 2, D / 2, W / 2, D / 2, 2.2, id === 'design' ? [] : doorFrac, '#d5e4f2', 0.34);
-    glassRun(g, W / 2, -D / 2, W / 2, D / 2, 2.2, (id === 'archive' || id === 'meeting') ? [[0.34, 0.62]] : (def.z > 0 && id !== 'design' ? [[0.1, 0.26]] : []), '#d5e4f2', 0.34);
-    if (id !== 'design') {
+    const wing = id === 'design' || id === 'showroom';
+    const sideDoor = id === 'archive' || id === 'meeting';
+    glassRun(g, -W / 2, D / 2, W / 2, D / 2, 2.2, wing ? [] : doorFrac, '#d5e4f2', 0.34);
+    glassRun(g, W / 2, -D / 2, W / 2, D / 2, 2.2, sideDoor ? [[0.34, 0.62]] : (!wing && def.z > 0 ? [[0.1, 0.26]] : []), '#d5e4f2', 0.34);
+    if (!wing) {
       const [a, b] = doorFrac[0];
       doorFrame(g, -W / 2 + ((a + b) / 2) * W, D / 2, 0, (b - a) * W, 2.2);
     }
-    if (id === 'archive' || id === 'meeting') doorFrame(g, W / 2, 0, Math.PI / 2, 0.28 * D, 2.2);
-    if (id === 'design') doorFrame(g, 0, -D / 2, 0, 1.8, 2.2);
+    if (sideDoor) doorFrame(g, W / 2, 0, Math.PI / 2, 0.28 * D, 2.2);
+    if (wing) doorFrame(g, -W / 2, 0, Math.PI / 2, 1.8, 2.2);
   }
   if (id !== 'lounge') pendant(g, id === 'ed' ? -1.4 : 0, 0.2);
   if (id === 'ed') pendant(g, 1.4, 0.2);
