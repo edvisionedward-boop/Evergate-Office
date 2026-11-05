@@ -146,18 +146,18 @@
       "currentTask": "修复标签跑位 + 部门总览",
       "private": false,
       "duty": "统筹各部门进度、例会与待确认事项",
-      "grade": "pending",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "ed-1",
           "name": "ED 1",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         }
-      ]
+      ],
+      "score": null
     },
     {
       "id": "market",
@@ -170,32 +170,32 @@
       "currentTask": null,
       "private": false,
       "duty": "市场研究与对外资料整理",
-      "grade": "pending",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "market-1",
           "name": "市场 1",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         },
         {
           "id": "market-2",
           "name": "市场 2",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         },
         {
           "id": "market-3",
           "name": "市场 3",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         }
-      ]
+      ],
+      "score": null
     },
     {
       "id": "corpfin",
@@ -208,25 +208,25 @@
       "currentTask": null,
       "private": false,
       "duty": "会计报表与费用核对",
-      "grade": "pending",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "corpfin-1",
           "name": "会计 1",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         },
         {
           "id": "corpfin-2",
           "name": "会计 2",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         }
-      ]
+      ],
+      "score": null
     },
     {
       "id": "privfin",
@@ -253,18 +253,18 @@
       "private": false,
       "note": "设计创意 · 新设立",
       "duty": "品牌视觉规范与双语网站视觉",
-      "grade": "pending",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "design-1",
           "name": "设计 1",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         }
-      ]
+      ],
+      "score": null
     },
     {
       "id": "logistics",
@@ -277,25 +277,25 @@
       "currentTask": null,
       "private": false,
       "duty": "物流协调与仓储安排",
-      "grade": "pending",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "logistics-1",
           "name": "物流 1",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         },
         {
           "id": "logistics-2",
           "name": "物流 2",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         }
-      ]
+      ],
+      "score": null
     },
     {
       "id": "legal",
@@ -308,32 +308,32 @@
       "currentTask": "卖方确认清单与法律漏洞分析",
       "private": false,
       "duty": "法律文件审阅与清单核对",
-      "grade": "pending",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "legal-1",
           "name": "法务 1",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         },
         {
           "id": "legal-2",
           "name": "法务 2",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         },
         {
           "id": "legal-3",
           "name": "法务 3",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         }
-      ]
+      ],
+      "score": null
     },
     {
       "id": "proposal",
@@ -346,25 +346,25 @@
       "currentTask": "等你确认：是否把法律发现更新进计划书 V2.4",
       "private": false,
       "duty": "计划书整理与版本更新",
-      "grade": "pending",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "proposal-1",
           "name": "策划 1",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         },
         {
           "id": "proposal-2",
           "name": "策划 2",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         }
-      ]
+      ],
+      "score": null
     },
     {
       "id": "invest",
@@ -378,25 +378,25 @@
       "private": false,
       "note": "投资研究 · 新设立",
       "duty": "投资研究与项目比较",
-      "grade": "pending",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "invest-1",
           "name": "投资 1",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         },
         {
           "id": "invest-2",
           "name": "投资 2",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         }
-      ]
+      ],
+      "score": null
     },
     {
       "id": "info",
@@ -410,25 +410,25 @@
       "private": false,
       "note": "每日 AI 新闻简报",
       "duty": "每日 AI 简报与动态扫描",
-      "grade": "pending",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "info-1",
           "name": "信息 1",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         },
         {
           "id": "info-2",
           "name": "信息 2",
-          "grade": "pending",
           "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null
+          "gradedAt": null,
+          "score": null
         }
-      ]
+      ],
+      "score": null
     }
   ],
   "tasks": [
@@ -674,27 +674,5 @@
       "time": "2026-11-05T09:50:00+08:00",
       "text": "已完成：2026 财报审阅及给会计的 12 项核对清单"
     }
-  ],
-  "grades": {
-    "S": {
-      "label": "S",
-      "tone": "gold"
-    },
-    "A": {
-      "label": "A",
-      "tone": "orange"
-    },
-    "B": {
-      "label": "B",
-      "tone": "silver"
-    },
-    "C": {
-      "label": "C",
-      "tone": "gray"
-    },
-    "pending": {
-      "label": "待评",
-      "tone": "pending"
-    }
-  }
+  ]
 }

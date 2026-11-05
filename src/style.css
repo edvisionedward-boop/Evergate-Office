@@ -212,15 +212,28 @@ button{font:inherit;color:inherit}
 }
 
 .nmrow{display:flex;align-items:center;gap:6px}
-.gbadge{width:18px;height:18px;border-radius:50%;display:inline-grid;place-items:center;font-size:10px;font-weight:800;font-style:normal;line-height:1;flex:none;box-sizing:border-box}
-.g-gold{background:#D0B993;color:#1a140c}
-.g-orange{background:#E87708;color:#1a140c}
-.g-silver{background:#d5dbe3;color:#1a140c}
-.g-gray{background:#6b7280;color:#f8fafc}
-.g-pending{background:transparent;color:transparent;border:1.5px dashed #D0B993}
-.glab{font-size:12px;color:#e6d3b0}
+.scorebit{display:inline-flex;align-items:center;gap:4px;flex:none}
+.scorebit b,.rpct{font-size:11px;font-weight:800;color:#f8f4ec;font-style:normal}
+.ring{--p:0;--rc:#D0B993;width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;flex:none;box-sizing:border-box;background:conic-gradient(var(--rc) calc(var(--p) * 1%), rgba(255,255,255,.16) 0)}
+.ring.r-gold{--rc:#D0B993}
+.ring.r-orange{--rc:#E87708}
+.ring.r-silver{--rc:#d5dbe3}
+.ring.r-gray{--rc:#6b7280}
+.ring.r-pending{background:none;border:1.5px dashed #D0B993}
+.pbar{flex:1;height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;min-width:72px}
+.pbar i{display:block;height:100%;width:0;border-radius:99px;background:var(--rc,#D0B993)}
+.pbar.r-gold{--rc:#D0B993}
+.pbar.r-orange{--rc:#E87708}
+.pbar.r-silver{--rc:#d5dbe3}
+.pbar.r-gray{--rc:#6b7280}
+.pbar.r-pending{background:transparent;border:1px dashed rgba(208,185,147,.7)}
+.pbar.r-pending i{display:none}
 .gradebox{display:flex;gap:10px;align-items:flex-start}
-.gradebox .gbadge{width:28px;height:28px;font-size:13px}
+.gradebox .grow,.srow .grow{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.gcard .top{display:flex;gap:10px;align-items:center}
+.gcard .top .pbar{flex:1}
+.smini{display:flex;align-items:center;gap:8px;width:100%}
+.smini .pbar{flex:1}
 .gdate{margin-top:4px;font-size:11.5px;color:var(--mut)}
 .staff{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
 .srow{display:flex;gap:8px;align-items:center;font-size:12.5px;padding:6px 8px;border-radius:10px;background:rgba(255,255,255,.03)}
@@ -234,9 +247,7 @@ button{font:inherit;color:inherit}
 .gcard .top{display:flex;gap:10px;align-items:center}
 .gcard .bn{font-weight:700}
 .gcard .snote{margin-top:6px;color:var(--mut);font-size:12.5px}
-.sminis{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.smini{display:inline-flex;align-items:center;gap:4px;font-size:12px}
-.smini .gbadge{width:16px;height:16px;font-size:9px}
+.sminis{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 #quickbar{position:fixed;left:0;right:0;bottom:calc(48px + env(safe-area-inset-bottom,0px));z-index:35;display:flex;align-items:stretch;gap:8px;
   padding:0 calc(72px + env(safe-area-inset-right,0px)) 0 calc(12px + env(safe-area-inset-left,0px));pointer-events:none}
 #homeBtn,#quickscroll .qchip{pointer-events:auto;min-height:44px;min-width:44px;border:1px solid rgba(208,185,147,.45);background:rgba(8,8,8,.86);color:#f8f4ec;border-radius:12px;cursor:pointer;font:inherit}

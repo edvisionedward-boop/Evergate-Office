@@ -178,15 +178,15 @@ function applyData() {
     el.querySelector('.nm').textContent = t.name;
     const gb = el.querySelector('.nmrow .gbadge');
     if (gb) {
-      if (t.private || !t.grade) gb.hidden = true;
-      else { gb.hidden = false; paintGradeEl(gb, t.grade); }
+      if (t.private) gb.hidden = true;
+      else { gb.hidden = false; paintScoreEl(gb, t.score); }
     }
     for (const a of [R.boss, ...(R.agents || [])].filter(Boolean)) {
       const s = (t.staff || []).find(x => x.id === a.userData.staffId);
       const b = a.userData.badgeEl?.querySelector('.gbadge');
       const nm = a.userData.badgeEl?.querySelector('.pn');
       if (nm && s) nm.textContent = s.name;
-      if (b && s && !t.private) paintGradeEl(b, s.grade);
+      if (b && s && !t.private) paintScoreEl(b, s.score);
     }
     const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
     const st = el.querySelector('.st');
@@ -209,18 +209,35 @@ function applyData() {
 
 function chip(s) { return `<span class="chip ${s === 'doing' ? 'busy' : esc(s)}">${esc(ST_LABEL[s] ?? s)}</span>`; }
 
-function gradeMeta(grade) {
-  return DATA.grades?.[grade] || { label: grade || '', tone: 'pending' };
+function scoreTone(score) {
+  if (score == null || score === '') return 'pending';
+  const n = Number(score);
+  if (!Number.isFinite(n)) return 'pending';
+  if (n >= 90) return 'gold';
+  if (n >= 75) return 'orange';
+  if (n >= 60) return 'silver';
+  return 'gray';
 }
-function paintGradeEl(el, grade) {
-  const meta = gradeMeta(grade);
-  el.className = `gbadge g-${meta.tone || 'pending'}`;
-  el.textContent = meta.tone === 'pending' ? '' : (meta.label || '');
+function scorePct(score) {
+  if (scoreTone(score) === 'pending') return 0;
+  return Math.max(0, Math.min(100, Math.round(Number(score))));
 }
-function badgeHtml(grade) {
-  const meta = gradeMeta(grade);
-  const letter = meta.tone === 'pending' ? '' : (meta.label || '');
-  return `<i class="gbadge g-${esc(meta.tone || 'pending')}">${esc(letter)}</i>`;
+function paintScoreEl(el, score) {
+  const tone = scoreTone(score);
+  const pct = scorePct(score);
+  el.className = 'scorebit';
+  el.innerHTML = `<i class="ring r-${tone}" style="--p:${pct}"></i>${tone === 'pending' ? '' : `<b>${pct}%</b>`}`;
+}
+function ringHtml(score) {
+  const tone = scoreTone(score);
+  const pct = scorePct(score);
+  return `<i class="ring r-${tone}" style="--p:${pct}"></i>${tone === 'pending' ? '' : `<b class="rpct">${pct}%</b>`}`;
+}
+function barHtml(score) {
+  const tone = scoreTone(score);
+  const pct = scorePct(score);
+  const label = tone === 'pending' ? '待评' : `${pct}%`;
+  return `<span class="pbar r-${tone}"><i style="width:${pct}%"></i></span><b class="rpct">${esc(label)}</b>`;
 }
 function teamUpdatedAt(t) {
   const times = (DATA.tasks || []).filter(x => x.team === t.id).map(x => x.updatedAt).filter(Boolean);
@@ -274,15 +291,14 @@ function renderPanel(id) {
   const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
   const doing = DATA.tasks.filter(x => x.team === id && x.status === 'doing');
   const done = DATA.tasks.filter(x => x.team === id && x.status === 'done').sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 3);
-  const meta = gradeMeta(t.grade);
-  const staff = (t.staff || []).map(s => `<li class="srow${state.staffId === s.id ? ' on' : ''}"><span class="sn">${esc(s.name)}</span>${badgeHtml(s.grade)}<span class="snote">${esc(s.gradeNote || '')}</span></li>`).join('');
+  const staff = (t.staff || []).map(s => `<li class="srow${state.staffId === s.id ? ' on' : ''}"><span class="sn">${esc(s.name)}</span><span class="scorebit">${ringHtml(s.score)}</span><span class="grow">${barHtml(s.score)}<span class="snote">${esc(s.gradeNote || '')}</span></span></li>`).join('');
   const head = `<div class="ph" style="--c:${esc(t.color)}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '')}</div><div><h3>${esc(t.name)}</h3>
-    <div class="sub"><span class="chip ${esc(t.status)}"><i class="dot ${esc(t.status)}"></i>${esc(lbl)}</span>${badgeHtml(t.grade)}<span class="glab">${esc(meta.label || '')}</span></div></div></div>`;
+    <div class="sub"><span class="chip ${esc(t.status)}"><i class="dot ${esc(t.status)}"></i>${esc(lbl)}</span><span class="scorebit">${ringHtml(t.score)}</span></div></div></div>`;
   body.innerHTML = head +
     `<div class="sec"><h4>职责</h4><div class="card"><div class="cur">${esc(t.duty || '—')}</div></div></div>` +
     `<div class="sec"><h4>本周在做</h4>${doing.length ? `<div class="card tlist">${doing.map(x => `<div class="titem">${chip(x.status)}<div>${esc(x.title)}</div></div>`).join('')}</div>` : '<div class="card empty">—</div>'}</div>` +
     `<div class="sec"><h4>最近完成</h4>${done.length ? `<div class="card tlist">${done.map(x => `<div class="titem">${chip(x.status)}<div>${esc(x.title)}</div></div>`).join('')}</div>` : '<div class="card empty">—</div>'}</div>` +
-    `<div class="sec"><h4>考核</h4><div class="card gradebox">${badgeHtml(t.grade)}<div><div class="cur">${esc(t.gradeNote || '')}</div>${t.gradedAt ? `<div class="gdate">${esc(fmtTime(t.gradedAt))}</div>` : ''}</div></div>${staff ? `<ul class="staff">${staff}</ul>` : ''}</div>` +
+    `<div class="sec"><h4>考核</h4><div class="card gradebox"><span class="scorebit">${ringHtml(t.score)}</span><div class="grow">${barHtml(t.score)}<div class="cur">${esc(t.gradeNote || '')}</div>${t.gradedAt ? `<div class="gdate">${esc(fmtTime(t.gradedAt))}</div>` : ''}</div></div>${staff ? `<ul class="staff">${staff}</ul>` : ''}</div>` +
     `<div class="sec"><h4>最后更新</h4><div class="card"><div class="cur">${esc(fmtTime(teamUpdatedAt(t)))} (UTC+8)</div></div></div>`;
 }
 function selectRoom(id, source, staffId) {
@@ -330,15 +346,18 @@ function renderBoard() {
   const mode = state.boardMode || 'tasks';
   document.querySelectorAll('#boardMode button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
   if (mode === 'grades') {
-    const teams = DATA.teams.filter(t => !t.private);
-    const counts = {};
-    for (const t of teams) counts[t.grade || 'pending'] = (counts[t.grade || 'pending'] || 0) + 1;
-    const summary = Object.entries(DATA.grades || {}).map(([k, meta]) => `${meta.label} ${counts[k] || 0}`).join(' · ');
-    $('#boardStats').innerHTML = `<div class="bstotal">考核 <b>${esc(summary)}</b></div>`;
+    const teams = DATA.teams.filter(t => !t.private).slice().sort((a, b) => {
+      const as = a.score, bs = b.score;
+      if (as == null && bs == null) return a.name.localeCompare(b.name, 'zh');
+      if (as == null) return 1;
+      if (bs == null) return -1;
+      return bs - as;
+    });
+    const scored = teams.filter(t => t.score != null).length;
+    $('#boardStats').innerHTML = `<div class="bstotal">考核 <b>已评 ${scored}</b> · <b>待评 ${teams.length - scored}</b></div>`;
     $('#boardCols').innerHTML = `<div class="col grade-col">${teams.map(t => {
-      const meta = gradeMeta(t.grade);
-      const people = (t.staff || []).map(s => `<span class="smini">${badgeHtml(s.grade)}<b>${esc(s.name)}</b></span>`).join('');
-      return `<button type="button" class="gcard" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="top">${badgeHtml(t.grade)}<div><div class="bn">${esc(t.name)}</div><div class="glab">${esc(meta.label || '')}</div></div></div><div class="snote">${esc(t.gradeNote || '')}</div>${t.gradedAt ? `<div class="gdate">${esc(fmtTime(t.gradedAt))}</div>` : ''}<div class="sminis">${people}</div></button>`;
+      const people = (t.staff || []).map(s => `<span class="smini"><b>${esc(s.name)}</b>${barHtml(s.score)}</span>`).join('');
+      return `<button type="button" class="gcard" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="top"><div class="bn">${esc(t.name)}</div>${barHtml(t.score)}</div><div class="snote">${esc(t.gradeNote || '')}</div>${t.gradedAt ? `<div class="gdate">${esc(fmtTime(t.gradedAt))}</div>` : ''}<div class="sminis">${people}</div></button>`;
     }).join('')}</div>`;
     return;
   }
