@@ -105,8 +105,7 @@
         "teams": [
           "market",
           "invest",
-          "info",
-          "proposal"
+          "info"
         ]
       },
       {
@@ -166,7 +165,7 @@
       "color": "#D0B993",
       "status": "idle",
       "statusNote": "空闲",
-      "agents": 3,
+      "agents": 6,
       "currentTask": null,
       "private": false,
       "duty": "市场研究与对外资料整理",
@@ -175,27 +174,61 @@
       "staff": [
         {
           "id": "market-1",
-          "name": "市场 1",
+          "name": "市场总监 CMO",
+          "chip": "市场总监",
+          "role": "市场战略与年度预算",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "market-2",
-          "name": "市场 2",
+          "name": "品牌经理",
+          "chip": "品牌经理",
+          "role": "品牌形象、定位与声誉",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "market-3",
-          "name": "市场 3",
+          "name": "市场分析师·科技",
+          "chip": "市场·科技",
+          "role": "科技行业市场研究",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "market-4",
+          "name": "市场分析师·零售",
+          "chip": "市场·零售",
+          "role": "零售行业市场研究",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "market-5",
+          "name": "市场分析师·能源",
+          "chip": "市场·能源",
+          "role": "能源行业市场研究",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "market-6",
+          "name": "市场分析师·国别与关税",
+          "chip": "市场·关税",
+          "role": "国别与关税研究",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         }
       ],
-      "score": null
+      "score": null,
+      "note": "编制调整 · 11-05"
     },
     {
       "id": "corpfin",
@@ -204,7 +237,7 @@
       "color": "#D0B993",
       "status": "idle",
       "statusNote": "空闲",
-      "agents": 2,
+      "agents": 4,
       "currentTask": null,
       "private": false,
       "duty": "会计报表与费用核对",
@@ -213,20 +246,43 @@
       "staff": [
         {
           "id": "corpfin-1",
-          "name": "会计 1",
+          "name": "财务总监 CFO",
+          "chip": "财务总监",
+          "role": "财务战略与资金筹措",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "corpfin-2",
-          "name": "会计 2",
+          "name": "会计主管",
+          "chip": "会计主管",
+          "role": "报表审核与审计协调",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "corpfin-3",
+          "name": "财务分析师",
+          "chip": "财务分析",
+          "role": "盈亏图表分析",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "corpfin-4",
+          "name": "财务监管师",
+          "chip": "财务监管",
+          "role": "AI 用量与项目预算对比",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         }
       ],
-      "score": null
+      "score": null,
+      "note": "编制调整 · 11-05"
     },
     {
       "id": "privfin",
@@ -247,18 +303,56 @@
       "short": "设计",
       "color": "#E87708",
       "status": "idle",
-      "statusNote": "新成立，待命",
-      "agents": 1,
+      "statusNote": "待命",
+      "agents": 5,
       "currentTask": "品牌视觉规范",
       "private": false,
-      "note": "设计创意 · 新设立",
+      "note": "编制调整 · 11-05",
       "duty": "品牌视觉规范与双语网站视觉",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "design-1",
-          "name": "设计 1",
+          "name": "设计总监",
+          "chip": "设计总监",
+          "role": "视觉风格与品牌规范",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "design-2",
+          "name": "设计项目经理",
+          "chip": "设计经理",
+          "role": "需求对接与排期",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "design-3",
+          "name": "文稿设计师",
+          "chip": "文稿设计",
+          "role": "演示文稿",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "design-4",
+          "name": "平面设计师",
+          "chip": "平面设计",
+          "role": "画册、白皮书与印刷物",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "design-5",
+          "name": "数据设计师",
+          "chip": "数据设计",
+          "role": "商业信息图表",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
@@ -273,7 +367,7 @@
       "color": "#D0B993",
       "status": "idle",
       "statusNote": "待命",
-      "agents": 2,
+      "agents": 3,
       "currentTask": null,
       "private": false,
       "duty": "物流协调与仓储安排",
@@ -282,20 +376,34 @@
       "staff": [
         {
           "id": "logistics-1",
-          "name": "物流 1",
+          "name": "空运组组长",
+          "chip": "空运组长",
+          "role": "空运组",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "logistics-2",
-          "name": "物流 2",
+          "name": "海运组组长",
+          "chip": "海运组长",
+          "role": "海运组",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "logistics-3",
+          "name": "仓库管理员",
+          "chip": "仓库管理",
+          "role": "仓库与库存",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         }
       ],
-      "score": null
+      "score": null,
+      "note": "编制调整 · 11-05"
     },
     {
       "id": "legal",
@@ -304,7 +412,7 @@
       "color": "#D0B993",
       "status": "busy",
       "statusNote": "忙碌",
-      "agents": 3,
+      "agents": 7,
       "currentTask": "卖方确认清单与法律漏洞分析",
       "private": false,
       "duty": "法律文件审阅与清单核对",
@@ -313,85 +421,70 @@
       "staff": [
         {
           "id": "legal-1",
-          "name": "法务 1",
+          "name": "法务总监 CLO",
+          "chip": "法务总监",
+          "role": "法律风险战略，直接向 Edward 汇报",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "legal-2",
-          "name": "法务 2",
+          "name": "商业合同法务",
+          "chip": "合同法务",
+          "role": "MSA、SOW 等咨询合同",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "legal-3",
-          "name": "法务 3",
+          "name": "知识产权法务",
+          "chip": "知产法务",
+          "role": "核心资产与数据安全",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "legal-4",
+          "name": "法务助理·马来西亚法规",
+          "chip": "法务·马法规",
+          "role": "马来西亚法规",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "legal-5",
+          "name": "法务助理·马来西亚 AI 法规",
+          "chip": "法务·马AI",
+          "role": "马来西亚 AI 法规",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "legal-6",
+          "name": "法务助理·海外 AI 法规",
+          "chip": "法务·海外AI",
+          "role": "海外 AI 法规",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "legal-7",
+          "name": "法务助理·海事与物流法",
+          "chip": "法务·海事",
+          "role": "海事与物流法",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         }
       ],
-      "score": null
-    },
-    {
-      "id": "proposal",
-      "name": "规划部",
-      "short": "规划",
-      "color": "#D0B993",
-      "status": "busy",
-      "statusNote": "忙碌",
-      "agents": 5,
-      "currentTask": "三年发展战略大纲·框架 v0.3（ED 已审，内部工作稿）",
-      "private": false,
-      "note": "编制调整为 5 人 · 11-05",
-      "duty": "公司发展战略规划、新项目评估与计划书",
-      "gradeNote": "待周一例会后首次评定",
-      "gradedAt": null,
-      "staff": [
-        {
-          "id": "proposal-1",
-          "name": "首席分析官",
-          "role": "团队负责人，向 ED 汇报",
-          "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null,
-          "score": null
-        },
-        {
-          "id": "proposal-2",
-          "name": "投资分析师",
-          "role": "寻找具备战略价值的项目",
-          "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null,
-          "score": null
-        },
-        {
-          "id": "proposal-3",
-          "name": "数据分析师",
-          "role": "搭建内部数据分析模型",
-          "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null,
-          "score": null
-        },
-        {
-          "id": "proposal-4",
-          "name": "策划分析师 1",
-          "role": "策划与撰写文案",
-          "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null,
-          "score": null
-        },
-        {
-          "id": "proposal-5",
-          "name": "策划分析师 2",
-          "role": "策划与撰写文案",
-          "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null,
-          "score": null
-        }
-      ],
-      "score": null
+      "score": null,
+      "note": "编制调整 · 11-05"
     },
     {
       "id": "invest",
@@ -400,24 +493,73 @@
       "color": "#D0B993",
       "status": "idle",
       "statusNote": "待命",
-      "agents": 2,
-      "currentTask": null,
+      "agents": 7,
+      "currentTask": "三年发展战略大纲·框架 v0.3（ED 已审，内部工作稿）",
       "private": false,
-      "note": "投资研究 · 新设立",
-      "duty": "投资研究与项目比较",
+      "note": "编制调整 · 11-05",
+      "duty": "投资与交易分析、公司发展战略与上市路径、跨部门协调",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "invest-1",
-          "name": "投资 1",
+          "name": "投资总监 CIO",
+          "chip": "投资总监",
+          "role": "团队负责人，向 Edward 或 ED 汇报",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "invest-2",
-          "name": "投资 2",
+          "name": "项目分析师",
+          "chip": "项目分析",
+          "role": "寻找具备战略价值的项目",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "invest-3",
+          "name": "数据分析师",
+          "chip": "数据分析",
+          "role": "搭建内部数据分析模型",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "invest-4",
+          "name": "风险分析师",
+          "chip": "风险分析",
+          "role": "预测评估项目风险等级",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "invest-5",
+          "name": "量化分析师",
+          "chip": "量化分析",
+          "role": "搭建试用模型测试项目反应",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "invest-6",
+          "name": "策划分析师 1",
+          "chip": "策划 1",
+          "role": "策划撰写文案草稿",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "invest-7",
+          "name": "策划分析师 2",
+          "chip": "策划 2",
+          "role": "策划撰写文案草稿",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
@@ -432,24 +574,91 @@
       "color": "#E87708",
       "status": "busy",
       "statusNote": "忙碌",
-      "agents": 2,
+      "agents": 9,
       "currentTask": "全球 AI 动态快讯（每小时扫描）",
       "private": false,
-      "note": "每日 AI 新闻简报",
+      "note": "编制调整 · 11-05",
       "duty": "每日 AI 简报与动态扫描",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "info-1",
-          "name": "信息 1",
+          "name": "资讯总监",
+          "chip": "资讯总监",
+          "role": "研究方向与公司数据库，直接向 Edward 汇报",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "info-2",
-          "name": "信息 2",
+          "name": "行业分析师·数据中心",
+          "chip": "行业·数据中心",
+          "role": "数据中心行业研究",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "info-3",
+          "name": "行业分析师·AI 服务器",
+          "chip": "行业·AI服务器",
+          "role": "AI 服务器行业研究",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "info-4",
+          "name": "行业分析师·芯片大厂",
+          "chip": "行业·芯片",
+          "role": "芯片大厂行业研究",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "info-5",
+          "name": "行业分析师·能源与原材料",
+          "chip": "行业·能源",
+          "role": "能源与原材料行业研究",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "info-6",
+          "name": "行业分析师·医疗与医美",
+          "chip": "行业·医疗",
+          "role": "医疗与医美行业研究",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "info-7",
+          "name": "行业分析师·科技产品",
+          "chip": "行业·科技",
+          "role": "科技产品行业研究",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "info-8",
+          "name": "数据分析师",
+          "chip": "数据分析",
+          "role": "咨询项目市场测试与量化模型",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "info-9",
+          "name": "数据管理员",
+          "chip": "数据管理",
+          "role": "案例脱敏归档与方法论工具包",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
@@ -460,25 +669,18 @@
   ],
   "tasks": [
     {
-      "id": "t1",
-      "team": "proposal",
-      "status": "done",
-      "title": "土地收购项目买方权益保障计划书 V2.3 已上传 Drive",
-      "updatedAt": "2026-11-05T09:50:00+08:00"
-    },
-    {
       "id": "t2",
       "team": "market",
       "status": "done",
       "title": "DCTF 27 个项目 / 57 个运营数据中心核查",
-      "updatedAt": "2026-11-05T09:50:00+08:00"
+      "updatedAt": "2026-11-05T23:50:00+08:00"
     },
     {
       "id": "t3",
       "team": "corpfin",
       "status": "done",
       "title": "2026 财报审阅及给会计的 12 项核对清单",
-      "updatedAt": "2026-11-05T09:50:00+08:00"
+      "updatedAt": "2026-11-05T23:50:00+08:00"
     },
     {
       "id": "t4",
@@ -499,27 +701,13 @@
       "team": "legal",
       "status": "doing",
       "title": "卖方确认清单与法律漏洞分析",
-      "updatedAt": "2026-11-05T09:50:00+08:00"
+      "updatedAt": "2026-11-05T23:50:00+08:00"
     },
     {
       "id": "t7",
       "team": "ed",
       "status": "doing",
       "title": "制作 3D 办公室 App",
-      "updatedAt": "2026-11-05T09:50:00+08:00"
-    },
-    {
-      "id": "t8",
-      "team": "proposal",
-      "status": "confirm",
-      "title": "是否把法律发现更新进计划书 V2.4",
-      "updatedAt": "2026-11-05T09:50:00+08:00"
-    },
-    {
-      "id": "t9",
-      "team": "proposal",
-      "status": "confirm",
-      "title": "是否删除 Drive 里旧的 V2.2",
       "updatedAt": "2026-11-05T09:50:00+08:00"
     },
     {
@@ -569,7 +757,7 @@
       "team": "info",
       "status": "done",
       "title": "全球 AI 动态快讯（每小时扫描）",
-      "updatedAt": "2026-11-05T11:36:00+08:00"
+      "updatedAt": "2026-11-05T23:50:00+08:00"
     },
     {
       "id": "t17",
@@ -594,14 +782,14 @@
     },
     {
       "id": "t21",
-      "team": "proposal",
+      "team": "invest",
       "status": "doing",
       "title": "三年发展战略大纲·框架 v0.3（ED 已审，内部工作稿）",
-      "updatedAt": "2026-11-05T22:25:00+08:00"
+      "updatedAt": "2026-11-05T23:50:00+08:00"
     },
     {
       "id": "t22",
-      "team": "proposal",
+      "team": "invest",
       "status": "done",
       "title": "市场判断 v0.6 定稿（内部）",
       "updatedAt": "2026-11-05T22:10:00+08:00"
@@ -611,10 +799,15 @@
       "team": "design",
       "status": "doing",
       "title": "双语公司网站视觉设计",
-      "updatedAt": "2026-11-05T14:00:00+08:00"
+      "updatedAt": "2026-11-05T23:50:00+08:00"
     }
   ],
   "feed": [
+    {
+      "team": "invest",
+      "time": "2026-11-05T23:50:00+08:00",
+      "text": "进行中：三年发展战略大纲·框架 v0.3（ED 已审，内部工作稿）"
+    },
     {
       "team": "ed",
       "time": "2026-11-05T12:40:00+08:00",
@@ -689,21 +882,6 @@
       "team": "legal",
       "time": "2026-11-05T09:50:00+08:00",
       "text": "备忘录含 DCTF 有条件批准须离网供电补充"
-    },
-    {
-      "team": "proposal",
-      "time": "2026-11-05T09:50:00+08:00",
-      "text": "等你确认：是否把法律发现更新进计划书 V2.4"
-    },
-    {
-      "team": "proposal",
-      "time": "2026-11-05T09:50:00+08:00",
-      "text": "等你确认：是否删除 Drive 里旧的 V2.2"
-    },
-    {
-      "team": "proposal",
-      "time": "2026-11-05T09:50:00+08:00",
-      "text": "已完成：土地收购项目买方权益保障计划书 V2.3 已上传 Drive"
     },
     {
       "team": "market",

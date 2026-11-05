@@ -271,11 +271,11 @@ function nameTag(agent, staff, roomId, slot = 0) {
   agent.userData.room = roomId;
   agent.userData.staffId = staff.id;
   const el = document.createElement('div');
-  el.className = 'ptag' + (roomId === 'proposal' ? ' s' + (slot % 3) : '');
+  el.className = 'ptag s' + (slot % 3);
   el.dataset.room = roomId;
   el.dataset.staff = staff.id;
   el.textContent = '';
-  const pn = document.createElement('span'); pn.className = 'pn'; pn.textContent = staff.name; el.appendChild(pn);
+  const pn = document.createElement('span'); pn.className = 'pn'; pn.textContent = staff.chip || staff.name; el.appendChild(pn);
   const badge = document.createElement('i'); badge.className = 'gbadge'; el.appendChild(badge);
   const o = new CSS2DObject(el);
   // Five name plates in one room stack on screen; stagger this room only.
@@ -594,10 +594,9 @@ function labelEl(def) {
 export const LAYOUT = {
   market:   { x: -13.5, z: -12, w: 10, d: 8.5, icon: '市', sign: '市场部', signSub: 'MARKETING & RESEARCH' },
   legal:    { x: 0,     z: -12, w: 11, d: 8.5, icon: '法', sign: '法务部', signSub: 'LEGAL' },
-  proposal: { x: 13.5,  z: -12, w: 10, d: 8.5, icon: '规', sign: '规划部', signSub: 'STRATEGY & PLANNING' },
   invest:   { x: -13.5, z: 0,   w: 10, d: 8.5, icon: '投', sign: '投资部', signSub: 'INVESTMENT' },
   ed:       { x: 0,     z: 0,   w: 11, d: 9,   icon: 'ED', walls: 'glass', sign: 'ED 中央指挥室', signSub: 'COMMAND CENTER' },
-  info:     { x: 13.5,  z: 0,   w: 10, d: 8.5, icon: '信', sign: '信息部', signSub: 'AI NEWS & INFO' },
+  info:     { x: 13.5,  z: -6,  w: 10, d: 20.4, icon: '信', sign: '信息部', signSub: 'AI NEWS & INFO' },
   corpfin:  { x: -13.5, z: 12,  w: 10, d: 8.5, icon: '会', sign: '会计部', signSub: 'ACCOUNTING' },
   logistics:{ x: 0,     z: 12,  w: 11, d: 8.5, icon: '物', sign: '物流部', signSub: 'LOGISTICS' },
   privfin:  { x: 13.5,  z: 12,  w: 10, d: 8.5, icon: '私', walls: 'glass', private: true, sign: '私人助理', signSub: 'PRIVATE · 仅 EDWARD' },
@@ -653,8 +652,12 @@ export function buildOffice(scene, teams) {
   const dashM = B(GOLD, { op: .55, boost: 1.15 });
   const dashG = boxG(0.5, 0.012, 0.06);
   for (const z of [-6, 6]) {
-    const a = new THREE.Mesh(boxG(42, 0.02, 2.6), aisle); a.position.set(0, 0.012, z); a.receiveShadow = true; staticG.add(a);
-    for (let x = -20; x <= 20; x += 1.2) { const dm = new THREE.Mesh(dashG, dashM); dm.position.set(x, 0.03, z); root.add(dm); }
+    // the north aisle stops before 信息部, which now fills the old 规划部 bay
+    const span = z === -6 ? 28 : 42;
+    const cx = z === -6 ? -7 : 0;
+    const a = new THREE.Mesh(boxG(span, 0.02, 2.6), aisle); a.position.set(cx, 0.012, z); a.receiveShadow = true; staticG.add(a);
+    const x1 = z === -6 ? 6.5 : 20;
+    for (let x = -20; x <= x1; x += 1.2) { const dm = new THREE.Mesh(dashG, dashM); dm.position.set(x, 0.03, z); root.add(dm); }
   }
   for (const x of [-6.75, 6.75]) {
     const a = new THREE.Mesh(boxG(2.4, 0.021, 38), aisle); a.position.set(x, 0.012, 0); a.receiveShadow = true; staticG.add(a);
@@ -716,7 +719,7 @@ export function buildOffice(scene, teams) {
   const holoLight = new THREE.PointLight(HOLO, 0.45, 8, 1.6); holoLight.position.set(0, 3.2, 0); holo.add(holoLight);
 
   const arcs = [];
-  for (const id of ['market', 'legal', 'proposal', 'invest', 'info', 'corpfin', 'logistics', 'privfin']) {
+  for (const id of ['market', 'legal', 'invest', 'info', 'corpfin', 'logistics', 'privfin', 'design']) {
     const R = rooms[id]; const c = R.def;
     const a = new THREE.Vector3(c.x, 2.9, c.z - c.d * 0.1), b = new THREE.Vector3(0, 2.2 + FLOOR_H, 0);
     const m = a.clone().lerp(b, 0.5); m.y = 6.2;
@@ -731,7 +734,7 @@ export function buildOffice(scene, teams) {
 
   /* per-room soft colored lights */
   const roomLights = [];
-  for (const id of ['market', 'legal', 'proposal', 'corpfin', 'logistics', 'privfin', 'invest', 'info']) {
+  for (const id of ['market', 'legal', 'corpfin', 'logistics', 'privfin', 'invest', 'info', 'design']) {
     const R = rooms[id];
     const warm = R.def.color === ORANGE ? ORANGE : GOLD;
     const pl = new THREE.PointLight(warm, 0.16, 11, 1.6); pl.position.set(R.def.x + 1, 3.4, R.def.z + 1); root.add(pl);
@@ -742,7 +745,6 @@ export function buildOffice(scene, teams) {
   const walkers = [];
   const walkerDefs = [
     { from: 'legal', path: [[1.4, -9.4], [1.8, -7.7], [1.8, -6], [-0.4, -6], [-0.4, -4.7], [-2.3, -4.4], [-2.6, -1.9]] },
-    { from: 'proposal', path: [[9.9, -9.2], [9.7, -7.7], [9.7, -6], [0.4, -6], [0.4, -4.7], [2.3, -4.4], [2.3, -2.1]] },
     { from: 'info', path: [[12.2, 2.4], [13.2, 4.2], [13.2, 6], [6.75, 6], [6.75, -0.3], [5.2, -0.3], [3.6, -0.3]] },
     { from: 'market', path: [[-10.6, -9.2], [-10.4, -7.7], [-10.4, -6], [-6.75, -6], [-6.75, 0.3], [-5.2, 0.3], [-4.2, 0.3]] },
   ];
@@ -806,7 +808,7 @@ export function buildOffice(scene, teams) {
   const meetRoom = rooms.meeting;
   const meetSeats = [[-1.3, -1.2], [1.3, -1.2], [-1.3, 1.2], [1.3, 1.2]].map(([x, z]) => new THREE.Vector3(meetRoom.def.x + x, FLOOR_H, meetRoom.def.z + z));
   const meeters = [];
-  const meetFrom = ['market', 'proposal', 'logistics', 'design'];
+  const meetFrom = ['market', 'invest', 'logistics', 'design'];
   for (let i = 0; i < meetSeats.length; i++) {
     const tid = meetFrom[i];
     const a = makeAgent({ shirt: rooms[tid]?.def.color || '#bfdbfe', pants: '#1e293b' });
@@ -1204,6 +1206,28 @@ function paintLoungeTv(time) {
   tex.needsUpdate = true;
 }
 
+/* desks in rows, inset from the glass. The first seat is the head of the back row. */
+function workstations(g, t, accent, W, D, n) {
+  const desks = [];
+  const kinds = [['dash', 'doc'], ['chart', 'doc'], ['doc', 'dash'], ['code', 'chart'], ['dash', 'chart']];
+  const pattern = n <= 4 ? [n] : n === 5 ? [3, 2] : n === 6 ? [3, 3] : n === 7 ? [4, 3] : n === 9 ? [3, 3, 3] : [Math.ceil(n / 2), Math.floor(n / 2)];
+  const usable = Math.max(1.6, W - 2.1);
+  const backZ = -D / 2 + 1.25;
+  const frontLimit = D / 2 - 1.65;
+  const rowGap = pattern.length === 1 ? 0 : Math.min(4.2, Math.max(2.2, (frontLimit - backZ) / (pattern.length - 1)));
+  let i = 0;
+  pattern.forEach((count, r) => {
+    const z = backZ + r * rowGap;
+    const gap = count <= 1 ? 0 : Math.min(2.05, (usable - 1.5) / (count - 1));
+    const start = -((count - 1) * gap) / 2;
+    for (let c = 0; c < count; c++) {
+      desks.push(deskSet(g, start + c * gap, z, 0, t, { kinds: kinds[i % kinds.length], chair: accent, papers: i % 2 === 0 }));
+      i++;
+    }
+  });
+  return desks;
+}
+
 /* ---------------- per-room decoration ---------------- */
 function decorate(R, dyn, teamById) {
   const { def, group: g } = R; const id = def.id;
@@ -1257,106 +1281,25 @@ function decorate(R, dyn, teamById) {
   if (def.walls !== 'glass') windows(g, def);
   const desks = [];
   if (id === 'market') {
-    desks.push(deskSet(g, -2.6, bz + 1.0, 0, t, { kinds: ['chart', 'dash'], chair: accentChair }));
-    desks.push(deskSet(g, -0.7, bz + 1.0, 0, t, { kinds: ['code', 'chart'], chair: accentChair }));
-    desks.push(deskSet(g, bx + 1.0, 0.6, Math.PI / 2, t, { kinds: ['dash', 'chart'], chair: accentChair, papers: true }));
-    whiteboard(g, 2.3, 0.9, bz + 0.17, 0, 2.0, t);
-    bookshelf(g, bx + 0.35, -1.9, Math.PI / 2, 1.4, 1.9); plant(g, 3.9, -1.2, 1.1, 0); plant(g, 1.0, bz + 0.6, 0.9, 1);
-    rug(g, 1.8, 1.2, 3.2, 2.2, hex(mix(def.color, '#e2e8f0', 0.6)));
-    box(g, 1.2, 0.06, 0.7, 1.8, 0.42, 1.2, M('#cbd5e1', { r: .4 }), { round: 0.03 }); cyl(g, 0.05, 0.05, 0.42, 1.8, 0, 1.2, M('#1f2937'));
-    chair(g, 1.8, 2.0, 0, '#475569'); chair(g, 1.8, 0.4, Math.PI, '#475569'); floorLamp(g, 3.9, 2.8);
+    desks.push(...workstations(g, t, accentChair, W, D, 6));
+    plant(g, bx + 0.7, D / 2 - 0.8, 1.05, 1); plant(g, W / 2 - 0.7, D / 2 - 0.8, 1.0, 0); floorLamp(g, W / 2 - 0.8, 0.4);
   } else if (id === 'legal') {
-    desks.push(deskSet(g, -3.0, bz + 1.0, 0, t, { kinds: ['doc', 'code'], chair: accentChair, papers: true }));
-    desks.push(deskSet(g, -1.1, bz + 1.0, 0, t, { kinds: ['doc', 'doc'], chair: accentChair }));
-    desks.push(deskSet(g, bx + 1.0, 0.9, Math.PI / 2, t, { kinds: ['doc', 'chart'], chair: accentChair, papers: true }));
-    bookshelf(g, 1.4, bz + 0.35, 0, 1.6, 2.0); bookshelf(g, 3.1, bz + 0.35, 0, 1.6, 2.0);
-    cabinet(g, 4.9, -1.5, -Math.PI / 2, 0.55, 1.2); cabinet(g, 4.9, -0.85, -Math.PI / 2, 0.55, 1.2);
-    // small conference round table
-    cyl(g, 0.65, 0.65, 0.05, 2.2, 0.72, 1.3, M(WOOD_D, { r: .4 }), 20); cyl(g, 0.06, 0.25, 0.72, 2.2, 0, 1.3, M('#1f2937'), 10);
-    chair(g, 2.2, 2.2, 0, '#475569'); chair(g, 3.1, 1.0, Math.PI / 2 + 0.3, '#475569'); chair(g, 1.3, 1.0, -Math.PI / 2 - 0.3, '#475569');
-    box(g, 0.3, 0.06, 0.4, 2.1, 0.77, 1.25, M('#dfe5ee', { r: .9 }), { ry: .3 });
-    plant(g, bx + 0.6, D / 2 - 0.7, 1.2, 2); plant(g, -0.1, bz + 0.6, 0.9, 1); floorLamp(g, 4.8, 2.9);
-    rug(g, 2.2, 1.3, 2.6, 2.4, hex(mix(def.color, '#e2e8f0', 0.65)));
-  } else if (id === 'proposal') {
-    // chief sits forward at the head of the row; the other four stay along the north wall, inside the glass
-    desks.push(deskSet(g, -3.15, -2.15, 0, t, { kinds: ['dash', 'chart'], chair: accentChair, papers: true }));
-    desks.push(deskSet(g, -1.55, -3.2, 0, t, { kinds: ['doc', 'chart'], chair: accentChair }));
-    desks.push(deskSet(g, 0.25, -3.2, 0, t, { kinds: ['dash', 'doc'], chair: accentChair, papers: true }));
-    desks.push(deskSet(g, 2.05, -3.2, 0, t, { kinds: ['doc', 'code'], chair: accentChair }));
-    desks.push(deskSet(g, 3.7, -3.2, 0, t, { kinds: ['doc', 'dash'], chair: accentChair, papers: true }));
-    whiteboard(g, 2.7, 0.95, bz + 0.16, 0, 2.0, t);
-    box(g, 0.9, 0.75, 0.6, 2.3, 0, 3.2, M('#475569', { r: .6 }), { round: 0.02 });
-    box(g, 0.75, 0.35, 0.5, 2.3, 0.75, 3.2, M('#e5e7eb', { r: .4 }), { round: 0.04 });
-    box(g, 0.28, 0.03, 0.36, 2.3, 1.1, 3.25, M('#dfe5ee', { r: .9 }));
-    for (let i = 0; i < 3; i++) box(g, 0.28, 0.1 + i * 0.04, 0.36, 3.35, 0.72, 3.15, M('#dde3ec', { r: .9 }), { ry: i * 0.15 });
-    bookshelf(g, bx + 0.35, -1.4, Math.PI / 2, 1.2, 1.6); plant(g, -4.2, 1.7, 1.05, 1); plant(g, 3.5, 3.25, 0.9, 0); floorLamp(g, -4.2, 3.15);
-    rug(g, -1.5, -2.2, 4.6, 2.2, hex(mix(def.color, '#e2e8f0', 0.65)));
+    desks.push(...workstations(g, t, accentChair, W, D, 7));
+    plant(g, bx + 0.7, D / 2 - 0.8, 1.1, 2); plant(g, W / 2 - 0.7, D / 2 - 0.8, 1.0, 0); floorLamp(g, 0, D / 2 - 1.1);
   } else if (id === 'corpfin') {
-    desks.push(deskSet(g, -2.3, bz + 1.0, 0, t, { kinds: ['chart', 'chart'], chair: accentChair, dim: idle }));
-    desks.push(deskSet(g, -0.3, bz + 1.0, 0, t, { kinds: ['dash', 'chart'], chair: accentChair, papers: true, dim: idle }));
-    cabinet(g, bx + 0.45, -2.4, Math.PI / 2, 0.55, 1.3); cabinet(g, bx + 0.45, -1.75, Math.PI / 2, 0.55, 1.3); cabinet(g, bx + 0.45, -1.1, Math.PI / 2, 0.55, 1.3);
-    box(g, 0.7, 0.9, 0.6, 2.6, 0, bz + 0.5, M('#374151', { m: .6, r: .35 }), { round: 0.04 });
-    cyl(g, 0.12, 0.12, 0.04, 2.6, 0.55, bz + 0.81, M('#cbd5e1', { m: .8 }), 12).rotation.x = Math.PI / 2;
-    poster(g, 1.0, 1.0, bz + 0.16, 0, 1.0, 0.8, def.color);
-    box(g, 2.4, 0.05, 1.1, 1.6, 0.72, 1.4, M('#b9a58f', { r: .45 }), { round: 0.03 }); box(g, 0.06, 0.72, 1.0, 0.45, 0, 1.4, M('#1f2937')); box(g, 0.06, 0.72, 1.0, 2.75, 0, 1.4, M('#1f2937'));
-    for (const cx of [0.9, 2.3]) { chair(g, cx, 2.2, 0, '#475569'); chair(g, cx, 0.6, Math.PI, '#475569'); }
-    plant(g, 4.1, -2.9, 1.2, 2); plant(g, bx + 0.6, 3.1, 1.1, 0); floorLamp(g, 4.2, 3.0);
-    rug(g, 1.6, 1.4, 3.6, 2.6, hex(mix(def.color, '#e2e8f0', 0.6)));
+    desks.push(...workstations(g, t, accentChair, W, D, 4));
+    plant(g, bx + 0.7, D / 2 - 0.8, 1.05, 0); plant(g, W / 2 - 0.7, D / 2 - 0.8, 1.05, 1); floorLamp(g, 0, D / 2 - 1.1);
   } else if (id === 'logistics') {
-    desks.push(deskSet(g, -3.0, bz + 1.0, 0, t, { kinds: ['dash', 'code'], chair: accentChair, dim: idle }));
-    desks.push(deskSet(g, -1.1, bz + 1.0, 0, t, { kinds: ['chart', 'dash'], chair: accentChair, dim: idle }));
-    boxesStack(g, 2.5, -2.6); boxesStack(g, 3.9, -2.4);
-    // pallet
-    box(g, 1.2, 0.14, 1.0, 3.6, 0, 0.2, M('#a16207', { r: .9 })); box(g, 1.0, 0.6, 0.8, 3.6, 0.14, 0.2, M('#d8b48a', { r: .9 }), { ry: 0.05 });
-    // mini shipping container model
-    box(g, 1.8, 0.7, 0.75, 1.2, 0, 1.8, M('#0f766e', { r: .6 }), { round: 0.02 });
-    for (let i = 0; i < 8; i++) box(g, 0.04, 0.62, 0.02, 0.4 + i * 0.22, 0.04, 2.18, M('#115e59'), { cast: false });
-    // world map poster
-    poster(g, 1.4, 0.95, bz + 0.16, 0, 1.8, 1.0, '#134e4a');
-    cabinet(g, bx + 0.45, -0.4, Math.PI / 2, 0.55, 1.2);
-    plant(g, bx + 0.6, 3.1, 1.2, 2); plant(g, 4.8, 3.1, 1.0, 1); floorLamp(g, -0.2, 2.8);
-    rug(g, -2, 1.4, 3, 2.2, hex(mix(def.color, '#e2e8f0', 0.65)));
+    desks.push(...workstations(g, t, accentChair, W, D, 3));
+    boxesStack(g, W / 2 - 1.3, D / 2 - 1.4);
+    plant(g, bx + 0.7, D / 2 - 0.8, 1.05, 2); plant(g, W / 2 - 0.7, bz + 0.8, 1.0, 0); floorLamp(g, 0, D / 2 - 1.2);
   } else if (id === 'invest') {
-    desks.push(deskSet(g, -2.6, bz + 1.0, 0, t, { kinds: ['chart', 'chart'], chair: accentChair, dim: idle }));
-    desks.push(deskSet(g, -0.7, bz + 1.0, 0, t, { kinds: ['dash', 'chart'], chair: accentChair, dim: idle, papers: true }));
-    // market ticker wall screen
-    box(g, 2.3, 1.15, 0.06, 2.4, 1.0, bz + 0.18, M('#0b0f19', { r: .3 }), { cast: false });
-    const tk = new THREE.Mesh(new THREE.PlaneGeometry(2.15, 1.0), screenMat('chart', t.color, idle)); tk.position.set(2.4, 1.575, bz + 0.215); g.add(tk);
-    bookshelf(g, bx + 0.35, -1.6, Math.PI / 2, 1.4, 1.9);
-    // lounge corner: sofa + coffee table
-    const sofaM = M(hex(mix(def.color, '#334155', 0.55)), { r: .9 });
-    const sofa = new THREE.Group(); sofa.position.set(1.6, 0, 2.2); sofa.rotation.y = Math.PI; g.add(sofa);
-    box(sofa, 2.2, 0.42, 0.9, 0, 0, 0, sofaM, { round: 0.08 }); box(sofa, 2.2, 0.55, 0.24, 0, 0.35, -0.34, sofaM, { round: 0.1 });
-    box(sofa, 0.24, 0.3, 0.9, -1.1, 0.35, 0, sofaM, { round: 0.1 }); box(sofa, 0.24, 0.3, 0.9, 1.1, 0.35, 0, sofaM, { round: 0.1 });
-    box(g, 1.2, 0.06, 0.6, 1.6, 0.38, 1.0, M(WOOD, { r: .4 }), { round: 0.03 }); cyl(g, 0.05, 0.05, 0.38, 1.6, 0, 1.0, M('#1f2937'));
-    box(g, 0.24, 0.02, 0.32, 1.4, 0.44, 1.0, M('#dde3ec', { r: .9 }), { ry: .3 });
-    rug(g, 1.6, 1.5, 3.2, 2.4, hex(mix(def.color, '#e2e8f0', 0.6)));
-    cabinet(g, bx + 0.45, 1.0, Math.PI / 2, 0.55, 1.2);
-    plant(g, 4.1, -2.9, 1.2, 2); plant(g, bx + 0.6, 3.0, 1.1, 0); floorLamp(g, 3.9, 0.2);
+    desks.push(...workstations(g, t, accentChair, W, D, 7));
+    plant(g, bx + 0.7, D / 2 - 0.8, 1.1, 1); plant(g, W / 2 - 0.7, D / 2 - 0.8, 1.05, 0); floorLamp(g, 0, D / 2 - 1.15);
   } else if (id === 'info') {
-    desks.push(deskSet(g, -2.8, bz + 1.0, 0, t, { kinds: ['doc', 'code'], chair: accentChair }));
-    desks.push(deskSet(g, -0.9, bz + 1.0, 0, t, { kinds: ['dash', 'doc'], chair: accentChair }));
-    // news video wall 3x2
-    box(g, 3.1, 1.5, 0.06, 2.5, 0.75, bz + 0.18, M('#0b0f19', { r: .3 }), { cast: false });
-    const kinds = ['dash', 'chart', 'doc', 'code', 'dash', 'chart'];
-    for (let i = 0; i < 6; i++) { const sc = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.66), screenMat(kinds[i], t.color, false)); sc.position.set(1.48 + (i % 3) * 1.02, 1.17 + Math.floor(i / 3) * 0.7, bz + 0.215); g.add(sc); }
-    // two compute racks with blinking LEDs (data-centre nod)
-    R.leds = [];
-    const rackM = M('#141a26', { r: .4, m: .5 }), door = M('#1e2636', { r: .3, m: .6 });
-    const ledMats = [0, 1, 2, 3].map(i => { const m = new THREE.MeshBasicMaterial({ color: [GOLD, ORANGE, GOLD, ORANGE][i], toneMapped: false }); R.leds.push({ m, base: m.color.clone() }); return m; });
-    for (let i = 0; i < 2; i++) {
-      const r = new THREE.Group(); r.position.set(bx + 0.65, 0, -0.4 + i * 1.0); r.rotation.y = Math.PI / 2; g.add(r);
-      box(r, 0.85, 2.0, 0.95, 0, 0, 0, rackM, { round: 0.02 }); box(r, 0.75, 1.85, 0.02, 0, 0.08, 0.48, door, { cast: false });
-      for (let k = 0; k < 9; k++) {
-        const led = new THREE.Mesh(boxG(0.5, 0.025, 0.01), ledMats[(i + k) % 4]); led.position.set(-0.05, 0.25 + k * 0.18, 0.5); r.add(led);
-        const led2 = new THREE.Mesh(boxG(0.04, 0.04, 0.01), ledMats[(i * 3 + k) % 4]); led2.position.set(0.28, 0.25 + k * 0.18, 0.5); r.add(led2);
-      }
-    }
-    // standing briefing table
-    box(g, 1.6, 0.05, 0.8, 2.4, 1.0, 1.4, M('#e5e7eb', { r: .4 }), { round: 0.02 }); box(g, 0.1, 1.0, 0.5, 2.4, 0, 1.4, M('#1f2937'));
-    for (let i = 0; i < 3; i++) box(g, 0.26, 0.02, 0.34, 1.9 + i * 0.5, 1.05, 1.35, M('#dde3ec', { r: .9 }), { ry: i * 0.25 - 0.2 });
-    rug(g, 2.4, 1.4, 3, 2.2, hex(mix(def.color, '#e2e8f0', 0.6)));
-    plant(g, 4.1, -2.9, 1.0, 1); plant(g, 4.1, 3.0, 1.2, 2); floorLamp(g, bx + 0.6, 2.9);
+    desks.push(...workstations(g, t, accentChair, W, D, 9));
+    plant(g, bx + 0.7, D / 2 - 0.9, 1.1, 1); plant(g, W / 2 - 0.7, D / 2 - 0.9, 1.05, 0);
+    plant(g, bx + 0.7, bz + 0.8, 0.9, 2); floorLamp(g, 0, D / 2 - 1.3);
   } else if (id === 'privfin') {
     // private glass room: frosted purple glass all round, locked door
     box(g, 0.04, WALL_H, D, bx + 0.02, 0, 0, smokeGlass(), { cast: false });
@@ -1387,12 +1330,8 @@ function decorate(R, dyn, teamById) {
     boxesStack(g, 2.2, 1.4); boxesStack(g, 3.2, 1.6);
     box(g, 1.4, 0.9, 0.7, -2.2, 0, 1.6, M('#b08968', { r: .8 }));
   } else if (id === 'design') {
-    desks.push(deskSet(g, 1.35, 1.05, 0, t, { kinds: ['chart'], monitors: 1, wide: true, tablet: true, chair: accentChair, papers: true }));
-    whiteboard(g, W / 2 - 0.16, 1.4, -0.3, -Math.PI / 2, 1.6, t);
-    poster(g, -2.4, 1.45, bz + 0.22, 0, 1.15, 1.45, t.color);
-    cabinet(g, 3.3, -0.6, -Math.PI / 2, 0.5, 1.15);
-    plant(g, 3.3, 2.7, 1.15, 1); plant(g, -3.4, 2.5, 1.05, 0);
-    rug(g, 1.35, 1.7, 2.6, 2.0, hex(mix(def.color, '#f8fafc', 0.72)));
+    desks.push(...workstations(g, t, accentChair, W, D, 5));
+    plant(g, bx + 0.7, D / 2 - 0.75, 1.0, 1); plant(g, W / 2 - 0.7, D / 2 - 0.75, 1.0, 0); floorLamp(g, 0, D / 2 - 1.05);
   } else if (id === 'showroom') {
     const stone = M('#f8fafc', { r: .5 });
     for (const [x, z] of [[-1.7, 0.15], [0, -0.85], [1.7, 0.15]]) {
@@ -1417,7 +1356,7 @@ function decorate(R, dyn, teamById) {
   }
   // front glass partitions for open team rooms
   if (def.walls !== 'glass' && id !== 'lounge') {
-    const doorFrac = id === 'market' ? [[0.74, 0.88]] : id === 'legal' ? [[0.60, 0.73]] : id === 'proposal' ? [[0.05, 0.19]] : [[0.4, 0.54]];
+    const doorFrac = id === 'market' ? [[0.74, 0.88]] : id === 'legal' ? [[0.60, 0.73]] : [[0.4, 0.54]];
     const wing = id === 'design' || id === 'showroom';
     const sideDoor = id === 'archive' || id === 'meeting';
     glassRun(g, -W / 2, D / 2, W / 2, D / 2, 2.2, wing ? [] : doorFrac);

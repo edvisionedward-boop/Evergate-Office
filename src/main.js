@@ -185,7 +185,7 @@ function applyData() {
       const s = (t.staff || []).find(x => x.id === a.userData.staffId);
       const b = a.userData.badgeEl?.querySelector('.gbadge');
       const nm = a.userData.badgeEl?.querySelector('.pn');
-      if (nm && s) nm.textContent = s.name;
+      if (nm && s) nm.textContent = s.chip || s.name;
       if (b && s && !t.private) paintScoreEl(b, s.score);
     }
     const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
@@ -612,10 +612,10 @@ function separateLabels() {
     R.labelEl.style.marginTop = y ? `${y}px` : '';
   }
 }
-function settleProposalTags() {
-  const tags = [...document.querySelectorAll('.ptag[data-room="proposal"]')];
+function settleStaffTags() {
+  const tags = [...document.querySelectorAll('.ptag')];
   if (!tags.length) return;
-  const plates = [...document.querySelectorAll('.rlabel')].filter(el => el.dataset.room !== 'proposal');
+  const plates = [...document.querySelectorAll('.rlabel')];
   const hit = (a, b) => a.left < b.right - 2 && b.left < a.right - 2 && a.top < b.bottom - 2 && b.top < a.bottom - 2;
   for (const el of tags) {
     if (!el.dataset.baseTop) {
@@ -623,21 +623,25 @@ function settleProposalTags() {
       el.dataset.baseTop = String(parseFloat(cs.marginTop) || 0);
       el.dataset.baseLeft = String(parseFloat(cs.marginLeft) || 0);
     }
+  }
+  for (const el of tags) {
     const baseT = Number(el.dataset.baseTop);
     const baseL = Number(el.dataset.baseLeft);
-    let y = 0;
     let x = 0;
-    el.style.marginTop = `${baseT}px`;
-    el.style.marginLeft = `${baseL}px`;
-    for (let i = 0; i < 12; i++) {
+    let y = 0;
+    const room = el.dataset.room;
+    for (let i = 0; i < 14; i++) {
+      el.style.marginLeft = `${baseL + x}px`;
+      el.style.marginTop = `${baseT + y}px`;
       const r = el.getBoundingClientRect();
       if (r.width < 2) break;
-      const blocked = plates.some(p => hit(r, p.getBoundingClientRect()));
-      if (!blocked && r.top > 64) break;
-      if (r.top <= 64) x += 10;
-      y -= 12;
-      el.style.marginTop = `${baseT + y}px`;
-      el.style.marginLeft = `${baseL + x}px`;
+      const plate = plates.find(p => p.dataset.room !== room && hit(r, p.getBoundingClientRect()));
+      if (!plate) break;
+      const pr = plate.getBoundingClientRect();
+      const dx = (r.left + r.right) / 2 - (pr.left + pr.right) / 2;
+      const dy = (r.top + r.bottom) / 2 - (pr.top + pr.bottom) / 2;
+      if (Math.abs(dx) >= Math.abs(dy)) x += Math.sign(dx || 1) * 14;
+      else y += Math.sign(dy || 1) * 14;
     }
   }
 }
@@ -822,7 +826,7 @@ function frame() {
   if (composer) composer.render(); else renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
   separateLabels();
-  settleProposalTags();
+  settleStaffTags();
   for (const b of activeBubbles) if (b.ed) layoutEdBubble(b.el);
   if ((T % 0.5) < dt) applyClock();
   if (first) { first = false; setTimeout(() => $('#loading').classList.add('gone'), 150); window.__ready = true; }
