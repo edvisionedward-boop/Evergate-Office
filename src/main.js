@@ -615,9 +615,17 @@ function separateLabels() {
 function settleStaffTags() {
   const tags = [...document.querySelectorAll('.ptag')];
   if (!tags.length) return;
+  const dist = camera.position.distanceTo(controls.target);
+  // Home view sits near distance 98. Closer than that, names belong next to people.
+  const overview = dist > 80;
+  if (overview) {
+    for (const el of tags) el.style.visibility = 'hidden';
+    return;
+  }
   const plates = [...document.querySelectorAll('.rlabel')];
   const hit = (a, b) => a.left < b.right - 2 && b.left < a.right - 2 && a.top < b.bottom - 2 && b.top < a.bottom - 2;
   for (const el of tags) {
+    el.style.visibility = '';
     if (!el.dataset.baseTop) {
       const cs = getComputedStyle(el);
       el.dataset.baseTop = String(parseFloat(cs.marginTop) || 0);
@@ -629,13 +637,12 @@ function settleStaffTags() {
     const baseL = Number(el.dataset.baseLeft);
     let x = 0;
     let y = 0;
-    const room = el.dataset.room;
     for (let i = 0; i < 14; i++) {
       el.style.marginLeft = `${baseL + x}px`;
       el.style.marginTop = `${baseT + y}px`;
       const r = el.getBoundingClientRect();
       if (r.width < 2) break;
-      const plate = plates.find(p => p.dataset.room !== room && hit(r, p.getBoundingClientRect()));
+      const plate = plates.find(p => hit(r, p.getBoundingClientRect()));
       if (!plate) break;
       const pr = plate.getBoundingClientRect();
       const dx = (r.left + r.right) / 2 - (pr.left + pr.right) / 2;
@@ -761,6 +768,16 @@ function lerpColor(out, a, b, t) {
 }
 const dayBg = new THREE.Color('#d5e2ee'), nightBg = new THREE.Color('#070b12');
 const dayFog = new THREE.Color('#c9d5e2'), nightFog = new THREE.Color('#0c1420');
+function officeUpdatedAt() {
+  let latest = DATA.updatedAt || '';
+  let latestMs = latest ? new Date(latest).getTime() : 0;
+  for (const task of DATA.tasks || []) {
+    if (!task.updatedAt) continue;
+    const ms = new Date(task.updatedAt).getTime();
+    if (ms > latestMs) { latestMs = ms; latest = task.updatedAt; }
+  }
+  return latest;
+}
 function paintFooter() {
   const upd = $('#updated');
   if (!upd) return;
@@ -770,7 +787,7 @@ function paintFooter() {
     const mm = String(kl.minute).padStart(2, '0');
     upd.textContent = `夜间模式 ${hh}:${mm}`;
   } else {
-    upd.textContent = `更新 ${fmtTime(DATA.updatedAt)} (UTC+8)`;
+    upd.textContent = `更新 ${fmtTime(officeUpdatedAt())} (UTC+8)`;
   }
 }
 function applyClock() {
