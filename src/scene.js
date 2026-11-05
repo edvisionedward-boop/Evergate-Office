@@ -261,7 +261,7 @@ export function makeAgent(o = {}) {
   // document in hand
   const doc = new THREE.Mesh(boxG(0.22, 0.3, 0.015), M('#f8fafc', { r: .5 }));
   doc.position.set(0, -0.42, 0.1); doc.rotation.x = -1.2; doc.visible = false; arms[1].add(doc);
-  const bubbleAnchor = new THREE.Object3D(); bubbleAnchor.position.y = 1.95; root.add(bubbleAnchor);
+  const bubbleAnchor = new THREE.Object3D(); bubbleAnchor.position.set(0.42, 1.35, 0.05); root.add(bubbleAnchor);
 
   root.userData = { legs, arms, headG, dot, doc, hips, bubbleAnchor, phase: rnd() * 10, mode: 'stand' };
   return root;
@@ -311,7 +311,7 @@ function chair(parent, x, z, ry, accent) {
 function plant(parent, x, z, s = 1, kind = 0, y = 0) {
   const g = new THREE.Group(); g.position.set(x, y, z); g.scale.setScalar(s); parent.add(g);
   const gold = kind % 2 === 1;
-  cyl(g, 0.2, 0.15, 0.36, 0, 0, 0, M(gold ? GOLD : '#141414', { r: gold ? .28 : .42, m: gold ? .72 : .4 }), 8);
+  cyl(g, 0.2, 0.15, 0.36, 0, 0, 0, M(gold ? '#7a5c32' : '#0a0a0a', { r: gold ? .32 : .72, m: gold ? .62 : .08 }), 8);
   const leaf = M(['#1f7a3a', '#3d8c4a', '#166534'][kind % 3], { r: .75, flat: true });
   const lg = G('leafico', () => new THREE.IcosahedronGeometry(0.28, 0));
   const pts = kind === 2 ? [[0, .62, 0, 1], [0, .95, 0, .8], [0, 1.22, 0, .55]] : [[0, .6, 0, 1], [.12, .82, .05, .75], [-.1, .86, -.06, .7], [.02, 1.05, 0, .55]];
@@ -337,8 +337,8 @@ function buildGreenery(parent) {
   const soilGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 8);
   const leafGeo = new THREE.IcosahedronGeometry(0.26, 0);
   const mats = {
-    black: M('#141414', { r: .4, m: .42 }),
-    gold: M(GOLD, { m: .74, r: .26 }),
+    black: M('#0a0a0a', { r: .72, m: .08 }),
+    gold: M('#7a5c32', { m: .62, r: .32 }),
     soil: M('#1c1410', { r: .95 }),
     g0: M('#1f7a3a', { r: .72, flat: true }),
     g1: M('#3d8c4a', { r: .7, flat: true }),
@@ -416,7 +416,7 @@ function bookshelf(parent, x, z, ry, w = 1.4, h = 1.9, accents = []) {
   box(g, w, h, 0.36, 0, 0, 0, frame);
   const inner = M('#3b2b20', { r: .9 });
   const shelves = Math.floor(h / 0.45);
-  const bookCols = ['#ef4444', '#3b82f6', '#f59e0b', '#10b981', '#e5e7eb', '#8b5cf6', '#0ea5e9', ...accents];
+  const bookCols = ['#141414', '#22201e', '#3a3632', '#6b5a40', '#8a7349', '#c4b496', '#1c1c1c', '#4a453f'];
   for (let s = 0; s < shelves; s++) {
     const y = 0.08 + s * (h - 0.1) / shelves;
     box(g, w - 0.08, (h - 0.1) / shelves - 0.04, 0.02, 0, y, 0.16, inner, { cast: false });
@@ -651,7 +651,8 @@ export function buildOffice(scene, teams) {
     hit.position.set(def.x, 1.5, def.z); hit.userData.room = id; root.add(hit); R.hit = hit;
     // label
     const el = labelEl(def); R.labelEl = el;
-    const lo = new CSS2DObject(el); lo.position.set(def.x, def.minor ? 2.9 : 3.55, def.z - def.d * 0.1); lo.center.set(0.5, 1); root.add(lo); R.label = lo;
+    const lo = new CSS2DObject(el); lo.position.set(def.x, def.minor ? 3.15 : 4.15, def.z - def.d * 0.1);
+    lo.center.set(def.x > 18 ? 0.92 : def.x < -18 ? 0.08 : 0.5, 1); root.add(lo); R.label = lo;
     // status lamp
     if (!def.minor && !def.gallery) {
       const lamp = new THREE.Group(); const lx = def.x - def.w / 2 + 0.45, lz = def.z - def.d / 2 + 0.45; lamp.position.set(lx, 3.05, lz); lamp.userData.base = 3.05; root.add(lamp);
@@ -1201,7 +1202,7 @@ function decorate(R, dyn, teamById) {
     desks.push(deskSet(g, -3.0, bz + 1.0, 0, t, { kinds: ['doc', 'code'], chair: accentChair, papers: true }));
     desks.push(deskSet(g, -1.1, bz + 1.0, 0, t, { kinds: ['doc', 'doc'], chair: accentChair }));
     desks.push(deskSet(g, bx + 1.0, 0.9, Math.PI / 2, t, { kinds: ['doc', 'chart'], chair: accentChair, papers: true }));
-    bookshelf(g, 1.4, bz + 0.35, 0, 1.6, 2.0, ['#7f1d1d', '#1e3a8a']); bookshelf(g, 3.1, bz + 0.35, 0, 1.6, 2.0, ['#7f1d1d']);
+    bookshelf(g, 1.4, bz + 0.35, 0, 1.6, 2.0); bookshelf(g, 3.1, bz + 0.35, 0, 1.6, 2.0);
     cabinet(g, 4.9, -1.5, -Math.PI / 2, 0.55, 1.2); cabinet(g, 4.9, -0.85, -Math.PI / 2, 0.55, 1.2);
     // small conference round table
     cyl(g, 0.65, 0.65, 0.05, 2.2, 0.72, 1.3, M(WOOD_D, { r: .4 }), 20); cyl(g, 0.06, 0.25, 0.72, 2.2, 0, 1.3, M('#1f2937'), 10);

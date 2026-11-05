@@ -59,11 +59,11 @@ button{font:inherit;color:inherit}
 /* speech bubbles */
 .bubble-host{pointer-events:none;display:block;width:max-content;max-width:210px}
 .bubble{pointer-events:none;max-width:210px;background:#f8fafc;color:#0f172a;font-size:11.5px;line-height:1.35;padding:7px 10px;border-radius:12px;
-  box-shadow:0 8px 20px rgba(0,0,0,.4);position:relative;transform-origin:50% 100%;animation:pop .35s cubic-bezier(.2,1.4,.4,1);white-space:normal;width:max-content}
-.bubble:after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#f8fafc}
+  box-shadow:0 8px 20px rgba(0,0,0,.4);position:relative;left:110px;top:-36px;transform-origin:0 100%;animation:pop .35s ease-out forwards;white-space:normal;width:max-content}
+.bubble:after{content:"";position:absolute;left:18px;bottom:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#f8fafc}
 .bubble b{display:block;font-size:10px;color:var(--c);margin-bottom:2px}
 .bubble.out{animation:fade .4s forwards}
-@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes pop{from{opacity:0}to{opacity:1}}
 @keyframes fade{to{opacity:0;transform:translateY(-6px)}}
 
 /* panel */

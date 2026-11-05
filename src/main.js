@@ -69,10 +69,10 @@ controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
 const HOME_DIR = new THREE.Vector3(0.82, 1.05, 1).normalize();
 
 function homeDistance() {
-  const R = 25, vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+  const R = 36, vf = THREE.MathUtils.degToRad(camera.fov) / 2;
   const hf = Math.atan(Math.tan(vf) * camera.aspect);
-  const d = Math.max(R * 0.74 / Math.tan(vf), R * 0.92 / Math.tan(hf));
-  return camera.aspect < 0.8 ? d * 0.58 : d;
+  const d = Math.max(R * 0.78 / Math.tan(vf), R * 1.05 / Math.tan(hf));
+  return camera.aspect < 0.8 ? d * 0.72 : d;
 }
 let tween = null;
 function flyTo(target, dist, dir, dur = 0.9) {
