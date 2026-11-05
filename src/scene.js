@@ -467,7 +467,10 @@ function floorLamp(parent, x, z, glowCol = '#fde68a') {
   const g = new THREE.Group(); g.position.set(x, 0, z); parent.add(g);
   cyl(g, 0.18, 0.2, 0.04, 0, 0, 0, M('#1f2937', { m: .5, r: .4 }), 12);
   cyl(g, 0.02, 0.02, 1.55, 0, 0.04, 0, M('#1f2937', { m: .5, r: .4 }), 6);
-  const shade = cyl(g, 0.16, 0.24, 0.26, 0, 1.55, 0, M('#fef3c7', { e: glowCol, ei: 0.55, r: .8 }), 14, { cast: false });
+  cyl(g, 0.16, 0.24, 0.26, 0, 1.55, 0, M('#fef3c7', { e: glowCol, ei: 0.55, r: .8 }), 14, { cast: false });
+  const pool = new THREE.PointLight('#fff4e0', 0.16, 5.4, 1.7);
+  pool.position.set(0, 1.15, 0); g.add(pool);
+  floorPools.push(pool);
   return g;
 }
 function cabinet(parent, x, z, ry, w = 0.5, h = 1.2, c = '#cbd5e1') {
@@ -489,7 +492,8 @@ function boxesStack(parent, x, z) {
 
 /* ---------------- room shell ---------------- */
 const WALL_H = 2.4, FLOOR_H = 0.14;
-const GOLD = '#D0B993', ORANGE = '#E87708', FLOOR_BLACK = '#060606';
+const GOLD = '#D0B993', ORANGE = '#E87708', FLOOR_BLACK = '#060606', HOLO = '#7eb6d6';
+const floorPools = [];
 const windowPane = new THREE.MeshBasicMaterial({ color: 0x9ec3e0, toneMapped: false });
 const smokeGlass = () => M('#9aa3ad', { r: .06, m: .28, op: 0.3, side: THREE.DoubleSide });
 const goldFrame = () => M(GOLD, { m: .86, r: .24 });
@@ -685,21 +689,21 @@ export function buildOffice(scene, teams) {
 
   /* ED hologram + connection arcs */
   const holo = new THREE.Group(); holo.position.set(0, FLOOR_H, 0); dyn.add(holo);
-  const ico = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 1), new THREE.MeshBasicMaterial({ color: GOLD, wireframe: true, transparent: true, opacity: .8, toneMapped: false }));
+  const ico = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 1), new THREE.MeshBasicMaterial({ color: HOLO, wireframe: true, transparent: true, opacity: .72, toneMapped: false }));
   ico.position.y = 2.05; holo.add(ico);
-  const coreS = new THREE.Mesh(sphG(0.28, 16, 12), B(GOLD, { op: .7, add: true, boost: 1.4 })); coreS.position.y = 2.05; holo.add(coreS);
+  const coreS = new THREE.Mesh(sphG(0.28, 16, 12), B(HOLO, { op: .55, add: true, boost: 1.15 })); coreS.position.y = 2.05; holo.add(coreS);
   const rings = [];
   for (let i = 0; i < 3; i++) {
-    const r = new THREE.Mesh(new THREE.TorusGeometry(0.85 + i * 0.22, 0.012, 6, 64), B(GOLD, { op: .7, add: true, boost: 1.6 }));
+    const r = new THREE.Mesh(new THREE.TorusGeometry(0.85 + i * 0.22, 0.012, 6, 64), B(HOLO, { op: .55, add: true, boost: 1.2 }));
     r.position.y = 2.05; r.rotation.x = Math.PI / 2 + (i - 1) * 0.5; holo.add(r); rings.push(r);
   }
-  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.55, 1.25, 24, 1, true), B(GOLD, { op: .12, add: true }));
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.55, 1.25, 24, 1, true), B(HOLO, { op: .1, add: true }));
   beam.position.y = 1.4; holo.add(beam);
-  const floorRing = new THREE.Mesh(new THREE.RingGeometry(3.3, 3.42, 64), B(GOLD, { op: .55, add: true, boost: 1.5 }));
+  const floorRing = new THREE.Mesh(new THREE.RingGeometry(3.3, 3.42, 64), B(HOLO, { op: .4, add: true, boost: 1.15 }));
   floorRing.rotation.x = -Math.PI / 2; floorRing.position.y = 0.015; holo.add(floorRing);
-  const floorRing2 = new THREE.Mesh(new THREE.RingGeometry(3.7, 3.74, 64), B(ORANGE, { op: .28, add: true }));
+  const floorRing2 = new THREE.Mesh(new THREE.RingGeometry(3.7, 3.74, 64), B(HOLO, { op: .22, add: true }));
   floorRing2.rotation.x = -Math.PI / 2; floorRing2.position.y = 0.015; holo.add(floorRing2);
-  const holoLight = new THREE.PointLight(GOLD, 0.85, 8, 1.6); holoLight.position.set(0, 3.2, 0); holo.add(holoLight);
+  const holoLight = new THREE.PointLight(HOLO, 0.45, 8, 1.6); holoLight.position.set(0, 3.2, 0); holo.add(holoLight);
 
   const arcs = [];
   for (const id of ['market', 'legal', 'proposal', 'invest', 'info', 'corpfin', 'logistics', 'privfin']) {
@@ -716,9 +720,12 @@ export function buildOffice(scene, teams) {
   }
 
   /* per-room soft colored lights */
+  const roomLights = [];
   for (const id of ['market', 'legal', 'proposal', 'corpfin', 'logistics', 'privfin', 'invest', 'info']) {
     const R = rooms[id];
-    const pl = new THREE.PointLight(R.def.color, 0.4, 11, 1.6); pl.position.set(R.def.x + 1, 3.4, R.def.z + 1); root.add(pl);
+    const warm = R.def.color === ORANGE ? ORANGE : GOLD;
+    const pl = new THREE.PointLight(warm, 0.16, 11, 1.6); pl.position.set(R.def.x + 1, 3.4, R.def.z + 1); root.add(pl);
+    roomLights.push(pl);
   }
 
   /* walkers carrying documents to ED */
@@ -749,8 +756,9 @@ export function buildOffice(scene, teams) {
   const westLinkA = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 2.1), M('#12182a', { r: .6 }));
   westLinkA.position.set(-20.6, 0.02, -8); westLinkA.receiveShadow = true; staticG.add(westLinkA);
   const westLinkB = westLinkA.clone(); westLinkB.position.set(-20.6, 0.02, 8); staticG.add(westLinkB);
-  const loungeLight = new THREE.PointLight('#fdba74', 1.1, 9, 1.8);
+  const loungeLight = new THREE.PointLight(ORANGE, 0.35, 9, 1.8);
   loungeLight.position.set(lounge.def.x, 3.1, 0.4); root.add(loungeLight);
+  roomLights.push(loungeLight);
   const stSpan = lounge.labelEl?.querySelector('.st span');
   if (stSpan) stSpan.textContent = '暂无成员';
   lounge.occupancy = 0;
@@ -803,10 +811,12 @@ export function buildOffice(scene, teams) {
     const link = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 2.2), M('#12182a', { r: .6 }));
     link.position.set(20.2, 0.02, R.def.z); link.receiveShadow = true; staticG.add(link);
   }
-  const designLight = new THREE.PointLight(designRoom.def.color, 0.35, 9, 1.8);
+  const designLight = new THREE.PointLight(ORANGE, 0.2, 9, 1.8);
   designLight.position.set(designRoom.def.x, 3.1, designRoom.def.z); root.add(designLight);
-  const showLight = new THREE.PointLight('#fff7ed', 0.65, 9, 1.8);
+  roomLights.push(designLight);
+  const showLight = new THREE.PointLight('#fff4e0', 0.18, 9, 1.8);
   showLight.position.set(showRoom.def.x, 3.1, showRoom.def.z); root.add(showLight);
+  floorPools.push(showLight);
   const showLabel = showRoom.labelEl;
   showLabel.style.setProperty('--c', GOLD);
   showLabel.innerHTML = `<div class="ic">展</div><div><div class="nm">品牌展厅</div><div class="st"><span>展陈占位</span></div></div>`;
@@ -859,7 +869,7 @@ export function buildOffice(scene, teams) {
     ico.rotation.y += dt * 0.5; ico.rotation.x += dt * 0.2;
     rings.forEach((r, i) => { r.rotation.z += dt * (0.4 + i * 0.25) * (i % 2 ? -1 : 1); });
     coreS.scale.setScalar(1 + Math.sin(t * 2.2) * 0.08);
-    floorRing.material.opacity = 0.4 + Math.sin(t * 1.5) * 0.15;
+    floorRing.material.opacity = (0.32 + Math.sin(t * 1.5) * 0.1) * (1 + ((state.clock?.day ?? 1) < 0.45 ? 0.55 : 0));
     // arcs pulses
     for (const a of arcs) {
       const st = state.status[a.id];
@@ -872,8 +882,10 @@ export function buildOffice(scene, teams) {
     for (const R of Object.values(rooms)) {
       if (!R.lamp) continue;
       const st = state.status[R.id] ?? 'idle';
+      const night = (state.clock?.day ?? 1) < 0.45;
       const c = st === 'busy' ? ORANGE : st === 'confirm' ? GOLD : '#efe4cf';
-      R.lamp.core.material.color.set(c).multiplyScalar(2.4); R.lamp.ring.material.color.set(c).multiplyScalar(2); R.lamp.halo.material.color.set(c);
+      const lift = night ? 1.22 : 1;
+      R.lamp.core.material.color.set(c).multiplyScalar(2.4 * lift); R.lamp.ring.material.color.set(c).multiplyScalar(2 * lift); R.lamp.halo.material.color.set(c);
       const k = st === 'confirm' ? 0.5 + 0.5 * Math.abs(Math.sin(t * 3)) : st === 'busy' ? 0.85 + 0.15 * Math.sin(t * 5) : 0.8;
       R.lamp.halo.material.opacity = 0.12 + 0.25 * k; R.lamp.halo.scale.setScalar(0.9 + 0.3 * k);
       R.lamp.ring.rotation.z += dt * (st === 'idle' ? 0.3 : 1.5);
@@ -1014,6 +1026,11 @@ export function buildOffice(scene, teams) {
         for (const person of R.walkers || []) person.visible = false;
       }
       for (const v of visitors) { v.agent.visible = false; v.sat = false; if (v.phase !== 'idle') { v.phase = 'idle'; v.team = null; v.wait = 4; } }
+    } else {
+      for (const R of Object.values(rooms)) {
+        for (const person of R.agents || []) person.visible = true;
+        for (const person of R.walkers || []) person.visible = true;
+      }
     }
     newsTick += dt;
     if (newsTick > 0.08) { newsTick = 0; newsShift += 2; drawNews(newsShift); newsMap.needsUpdate = true; }
@@ -1023,11 +1040,31 @@ export function buildOffice(scene, teams) {
     // screens subtle scroll
     for (const m of screenMats.values()) { if (m.map) m.map.offset.y = (Math.floor(t * 2) % 8) * 0.004; }
   }
+  const cityLights = [];
+  for (const [x, y, z] of [[-28, 10, -32], [-8, 12, -33], [12, 9, -32], [30, 11, -30], [-48, 8, 4]]) {
+    const pl = new THREE.PointLight('#ffbf80', 0, 16, 2);
+    pl.position.set(x, y, z); root.add(pl); cityLights.push(pl);
+  }
   function applyAmbience(day) {
     const d = THREE.MathUtils.clamp(day, 0, 1);
-    sky.material.color.setRGB(0.22 + d * 0.78, 0.28 + d * 0.66, 0.38 + d * 0.58);
-    windowPane.color.setHex(d > 0.45 ? 0x9ec3e0 : 0xffd89a);
-    if (pendantGlow) pendantGlow.emissiveIntensity = 0.22 + (1 - d) * 1.4;
+    const night = 1 - d;
+    sky.material.color.setRGB(0.07 + d * 0.9, 0.1 + d * 0.82, 0.16 + d * 0.78);
+    windowPane.color.setHex(d > 0.45 ? 0xb7c9d6 : 0xffc98a);
+    if (pendantGlow) pendantGlow.emissiveIntensity = 0.22 + night * 1.55;
+    const glass = smokeGlass();
+    glass.roughness = 0.08 - night * 0.035;
+    const trim = goldFrame();
+    trim.emissive.set(GOLD);
+    trim.emissiveIntensity = night * 0.26;
+    dashM.color.set(d > 0.55 ? '#e7d7b8' : '#d5dbe3');
+    dashM.opacity = 0.26 + night * 0.55;
+    holoLight.intensity = 0.4 + night * 0.9;
+    ico.material.opacity = 0.62 + night * 0.28;
+    coreS.material.opacity = 0.42 + night * 0.28;
+    beam.material.opacity = 0.08 + night * 0.1;
+    for (const pl of roomLights) pl.intensity = 0.14 + night * 0.95;
+    for (const pl of floorPools) pl.intensity = 0.1 + night * 1.15;
+    for (const pl of cityLights) pl.intensity = night * 0.7;
   }
   function setNews(items) {
     const lines = (items || []).map(n => n && n.title).filter(Boolean);

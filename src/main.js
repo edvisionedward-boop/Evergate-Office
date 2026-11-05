@@ -197,7 +197,8 @@ function applyData() {
   const pend = DATA.tasks.filter(x => x.status === 'confirm').length;
   $('#confirmBadge').textContent = pend; $('#confirmBadge').style.display = pend ? '' : 'none';
   $('#summary').innerHTML = `<span class="pill"><i class="dot busy"></i>${cnt.busy} 忙碌</span><span class="pill"><i class="dot confirm"></i>${pend} 项等你确认</span><span class="pill">${DATA.teams.length} 个团队</span>`;
-  $('#updated').textContent = `更新 ${fmtTime(DATA.updatedAt)} (UTC+8)`;
+  $('#updated').textContent = '';
+  paintFooter();
   $('#company').textContent = DATA.office?.company ?? 'EVERGATE HOLDING SDN BHD';
   if (office.setNews) office.setNews(DATA.news);
   renderQuick();
@@ -588,11 +589,11 @@ function meetingActive(m, kl) {
   return t >= hm(m.start) && t < hm(m.end);
 }
 function dayFactor(minutes) {
-  const dawn = 7 * 60, dusk = 19 * 60 + 30;
-  if (minutes < dawn - 40) return 0;
-  if (minutes < dawn + 40) return (minutes - (dawn - 40)) / 80;
-  if (minutes < dusk - 30) return 1;
-  if (minutes < dusk + 30) return 1 - (minutes - (dusk - 30)) / 60;
+  const dawn = 7 * 60, dusk = 19 * 60, fade = 20;
+  if (minutes < dawn - fade) return 0;
+  if (minutes < dawn + fade) return (minutes - (dawn - fade)) / (fade * 2);
+  if (minutes < dusk - fade) return 1;
+  if (minutes < dusk + fade) return 1 - (minutes - (dusk - fade)) / (fade * 2);
   return 0;
 }
 function nextMeetingText(kl) {
@@ -618,7 +619,8 @@ function paintShiftLabels() {
     const t = teamOf(R.id);
     const span = R.labelEl?.querySelector('.st span');
     if (!t || !span) continue;
-    if (off && t.id !== 'ed') span.textContent = '已下班';
+    if (off && t.id === 'ed') span.textContent = '值班';
+    else if (off) span.textContent = '已下班';
     else {
       const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
       span.textContent = `${lbl}${t.private ? ' · 私密' : ` · ${t.agents ?? 0} 位成员`}`;
@@ -631,24 +633,44 @@ function lerpColor(out, a, b, t) {
   const ca = new THREE.Color(a), cb = new THREE.Color(b);
   out.copy(ca).lerp(cb, t);
 }
-const dayBg = new THREE.Color('#d5e2ee'), nightBg = new THREE.Color('#0c1424');
-const dayFog = new THREE.Color('#c9d5e2'), nightFog = new THREE.Color('#101826');
+const dayBg = new THREE.Color('#d5e2ee'), nightBg = new THREE.Color('#070b12');
+const dayFog = new THREE.Color('#c9d5e2'), nightFog = new THREE.Color('#0c1420');
+function paintFooter() {
+  const upd = $('#updated');
+  if (!upd) return;
+  if (state.clock.offDuty) {
+    const kl = klNow();
+    const hh = String(kl.hour).padStart(2, '0');
+    const mm = String(kl.minute).padStart(2, '0');
+    upd.textContent = `夜间模式 ${hh}:${mm}`;
+  } else {
+    upd.textContent = `更新 ${fmtTime(DATA.updatedAt)} (UTC+8)`;
+  }
+}
 function applyClock() {
   const kl = klNow();
   const mode = state.clock.mode;
   const day = mode === 'day' ? 1 : mode === 'night' ? 0 : dayFactor(kl.minutes);
   state.clock.day = day;
-  state.clock.offDuty = mode === 'night' ? true : mode === 'day' ? false : (kl.minutes >= 19 * 60 || kl.dow === 0 || kl.dow === 6);
+  const night = mode === 'night' || (mode === 'auto' && day < 0.5);
+  state.clock.offDuty = night;
   state.clock.meeting = (DATA.meetings || []).some(m => meetingActive(m, kl));
-  hemi.intensity = 0.12 + day * 0.62;
-  sun.intensity = 0.04 + day * 1.52;
-  sun.color.set(day > 0.5 ? '#fff6ea' : '#9eb6d8');
+  const n = 1 - day;
+  hemi.color.set('#f3efe6').lerp(new THREE.Color('#0C1824'), n);
+  hemi.groundColor.set('#c9c2b2').lerp(new THREE.Color('#07080c'), n);
+  hemi.intensity = 0.16 + day * 0.62;
+  sun.intensity = 0.05 + day * 1.5;
+  sun.color.set(day > 0.5 ? '#fff6ea' : '#243044');
+  fill.intensity = 0.04 + day * 0.26;
+  fill.color.set(day > 0.5 ? '#f0e2c8' : '#1a2433');
+  scene.environmentIntensity = 0.16 + day * 0.4;
   scene.background.copy(nightBg).lerp(dayBg, day);
   scene.fog.color.copy(nightFog).lerp(dayFog, day);
   if (office.applyAmbience) office.applyAmbience(day);
   paintShiftLabels();
+  paintFooter();
   const btn = $('#dayToggle');
-  if (btn) btn.textContent = mode === 'day' ? '☀️' : mode === 'night' ? '🌙' : '自动';
+  if (btn) btn.textContent = mode === 'day' ? '日间' : mode === 'night' ? '夜间' : '自动';
 }
 $('#dayToggle')?.addEventListener('click', () => {
   state.clock.mode = state.clock.mode === 'auto' ? 'day' : state.clock.mode === 'day' ? 'night' : 'auto';
