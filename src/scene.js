@@ -308,14 +308,72 @@ function chair(parent, x, z, ry, accent) {
   box(g, 0.46, 0.55, 0.08, 0, 0.6, 0.24, seat, { round: 0.04 }).rotation.x = -0.12;
   return g;
 }
-function plant(parent, x, z, s = 1, kind = 0) {
-  const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s); parent.add(g);
-  cyl(g, 0.2, 0.15, 0.36, 0, 0, 0, M(kind ? '#e5e7eb' : '#3f3f46', { r: .5 }), 10);
-  const leaf = M(['#22c55e', '#16a34a', '#15803d'][kind % 3], { r: .8, flat: true });
+function plant(parent, x, z, s = 1, kind = 0, y = 0) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.scale.setScalar(s); parent.add(g);
+  const gold = kind % 2 === 1;
+  cyl(g, 0.2, 0.15, 0.36, 0, 0, 0, M(gold ? GOLD : '#141414', { r: gold ? .28 : .42, m: gold ? .72 : .4 }), 8);
+  const leaf = M(['#1f7a3a', '#3d8c4a', '#166534'][kind % 3], { r: .75, flat: true });
   const lg = G('leafico', () => new THREE.IcosahedronGeometry(0.28, 0));
   const pts = kind === 2 ? [[0, .62, 0, 1], [0, .95, 0, .8], [0, 1.22, 0, .55]] : [[0, .6, 0, 1], [.12, .82, .05, .75], [-.1, .86, -.06, .7], [.02, 1.05, 0, .55]];
-  for (const [px, py, pz, sc] of pts) { const m = new THREE.Mesh(lg, leaf); m.position.set(px, py, pz); m.scale.setScalar(sc); m.rotation.set(px * 9, py * 5, pz); m.castShadow = true; g.add(m); }
+  for (const [px, py, pz, sc] of pts) { const m = new THREE.Mesh(lg, leaf); m.position.set(px, py, pz); m.scale.setScalar(sc); m.rotation.set(px * 9, py * 5, pz); m.castShadow = false; g.add(m); }
   return g;
+}
+function buildGreenery(parent) {
+  const spots = [];
+  const add = (x, z, s, pot, h, y = 0) => spots.push({ x, z, s, pot, h, y });
+  for (const def of Object.values(LAYOUT)) {
+    const ix = def.w / 2 - 0.62, iz = def.d / 2 - 0.62, along = Math.min(1.45, def.w * 0.18);
+    const corners = [[-ix + along, -iz, 1.15, 1, 2], [ix, -iz + along * 0.45, 0.82, 0, 1], [-ix, iz - along * 0.4, 0.78, 0, 1], [ix - along, iz, 1.05, 1, 2]];
+    if (def.door === 'west') corners.splice(2, 1);
+    corners.forEach(([lx, lz, s, pot, h], i) => add(def.x + lx, def.z + lz, s, (pot + i) % 2, h, FLOOR_H));
+  }
+  add(-6.6, 17.5, 1.45, 1, 2);
+  add(6.6, 17.5, 1.3, 0, 2);
+  add(-2.35, 17.9, 0.48, 1, 0);
+  add(2.35, 17.9, 0.48, 0, 0);
+  add(-3.5, 15.4, 0.9, 0, 1);
+  add(3.5, 15.4, 0.9, 1, 1);
+  const potGeo = new THREE.CylinderGeometry(0.2, 0.15, 0.34, 8);
+  const soilGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 8);
+  const leafGeo = new THREE.IcosahedronGeometry(0.26, 0);
+  const mats = {
+    black: M('#141414', { r: .4, m: .42 }),
+    gold: M(GOLD, { m: .74, r: .26 }),
+    soil: M('#1c1410', { r: .95 }),
+    g0: M('#1f7a3a', { r: .72, flat: true }),
+    g1: M('#3d8c4a', { r: .7, flat: true }),
+    g2: M('#166534', { r: .74, flat: true }),
+  };
+  const buckets = { black: [], gold: [], soil: [], g0: [], g1: [], g2: [] };
+  const dummy = new THREE.Object3D();
+  const put = (key, x, y, z, sx, sy, sz, ry = 0) => {
+    dummy.position.set(x, y, z); dummy.scale.set(sx, sy, sz); dummy.rotation.set(0, ry, 0); dummy.updateMatrix();
+    buckets[key].push(dummy.matrix.clone());
+  };
+  for (const s of spots) {
+    const sc = s.s, y = s.y;
+    put(s.pot ? 'gold' : 'black', s.x, y + 0.17 * sc, s.z, sc, sc, sc, s.x * 0.2);
+    put('soil', s.x, y + 0.34 * sc, s.z, sc * 0.85, 1, sc * 0.85);
+    if (s.h === 0) put('g1', s.x, y + 0.5 * sc, s.z, sc * 0.65, sc * 0.5, sc * 0.65, 0.4);
+    else if (s.h === 2) {
+      put('g2', s.x, y + 0.72 * sc, s.z, sc, sc * 1.2, sc, 0.3);
+      put('g0', s.x + 0.04 * sc, y + 1.15 * sc, s.z, sc * 0.72, sc * 0.75, sc * 0.72, 1.1);
+      put('g1', s.x - 0.03 * sc, y + 1.48 * sc, s.z, sc * 0.48, sc * 0.48, sc * 0.48, 0.7);
+    } else {
+      put('g0', s.x, y + 0.62 * sc, s.z, sc * 0.95, sc * 0.8, sc * 0.95, 0.5);
+      put('g1', s.x + 0.06 * sc, y + 0.92 * sc, s.z, sc * 0.6, sc * 0.55, sc * 0.6, 1.3);
+    }
+  }
+  const geos = { black: potGeo, gold: potGeo, soil: soilGeo, g0: leafGeo, g1: leafGeo, g2: leafGeo };
+  for (const key of Object.keys(buckets)) {
+    const list = buckets[key];
+    if (!list.length) continue;
+    const mesh = new THREE.InstancedMesh(geos[key], mats[key], list.length);
+    mesh.castShadow = false; mesh.receiveShadow = true;
+    list.forEach((m, i) => mesh.setMatrixAt(i, m));
+    mesh.instanceMatrix.needsUpdate = true;
+    parent.add(mesh);
+  }
 }
 function deskSet(parent, x, z, ry, team, opt = {}) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; parent.add(g);
@@ -348,6 +406,7 @@ function deskSet(parent, x, z, ry, team, opt = {}) {
   box(g, 0.07, 0.02, 0.1, 0.36, 0.77, 0.14, M('#1a1f2b'), { cast: false });
   if (opt.mug !== false) cyl(g, 0.04, 0.035, 0.1, -0.55, 0.77, 0.1, M(team.color, { r: .4 }), 8);
   if (opt.papers) { box(g, 0.24, 0.04, 0.32, 0.55, 0.77, 0.05, M('#dde3ec', { r: .9 }), { ry: 0.2 }); }
+  if (opt.plant !== false) plant(g, opt.papers ? -0.42 : 0.55, 0.18, 0.32, 1, 0.775);
   const ch = chair(g, 0, 0.62, 0, opt.chair ?? '#2b3142');
   return { group: g, seat: new THREE.Vector3(0, 0, 0.58) };
 }
@@ -579,6 +638,7 @@ export function buildOffice(scene, teams) {
   }
   // corridor plants & benches
   for (const [x, z] of [[-20.5, -6], [20.5, -6], [-20.5, 6], [20.5, 6], [-6.75, -19], [6.75, -19], [-6.75, 19], [6.75, 19]]) plant(staticG, x, z, 1.1, 2);
+  buildGreenery(staticG);
 
   /* rooms */
   for (const [id, L] of Object.entries(LAYOUT)) {
@@ -1050,6 +1110,7 @@ function furnishLounge(g, def) {
   plant(g, -W / 2 + 0.55, -D / 2 + 0.7, 1.15, 2);
   plant(g, W / 2 - 1.3, D / 2 - 0.7, 1.05, 0);
   plant(g, -W / 2 + 0.6, D / 2 - 0.65, 0.9, 1);
+  plant(g, W / 2 - 0.72, -0.35, 0.34, 1, 1.12);
   floorLamp(g, W / 2 - 1.15, -D / 2 + 0.8, '#fdba74');
   rug(g, -1.15, 0.9, 3.1, 3.2, '#e7d3b0');
   rug(g, 1.15, 4.15, 2.6, 2.6, '#d6c2a4');
