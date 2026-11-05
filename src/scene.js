@@ -591,38 +591,95 @@ function serverRack(parent, x, z, ry, leds) {
   return g;
 }
 function routeMapTexture() {
-  const c = document.createElement('canvas'); c.width = 512; c.height = 320;
+  const c = document.createElement('canvas'); c.width = 1280; c.height = 360;
   const g = c.getContext('2d');
-  g.fillStyle = '#12161c'; g.fillRect(0, 0, 512, 320);
-  g.fillStyle = '#1c2430';
-  g.beginPath(); g.ellipse(150, 150, 90, 60, 0.2, 0, Math.PI * 2); g.fill();
-  g.beginPath(); g.ellipse(340, 120, 70, 48, -0.3, 0, Math.PI * 2); g.fill();
-  g.beginPath(); g.ellipse(300, 230, 80, 36, 0.4, 0, Math.PI * 2); g.fill();
-  g.strokeStyle = '#D0B993'; g.lineWidth = 3; g.setLineDash([10, 8]);
-  g.beginPath(); g.moveTo(120, 160); g.quadraticCurveTo(230, 40, 360, 110); g.stroke();
-  g.strokeStyle = '#E87708'; g.setLineDash([]);
-  g.beginPath(); g.moveTo(160, 190); g.quadraticCurveTo(240, 250, 330, 210); g.stroke();
-  g.fillStyle = '#D0B993';
-  for (const [x, y] of [[120, 160], [360, 110], [160, 190], [330, 210]]) { g.beginPath(); g.arc(x, y, 5, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = '#d5ebf8'; g.fillRect(0, 0, 1280, 360);
+  g.strokeStyle = 'rgba(255,255,255,.45)'; g.lineWidth = 1;
+  for (let x = 80; x < 1280; x += 160) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 360); g.stroke(); }
+  for (let y = 40; y < 360; y += 80) { g.beginPath(); g.moveTo(0, y); g.lineTo(1280, y); g.stroke(); }
+  const land = (pts, fill) => {
+    g.beginPath();
+    pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+    g.closePath();
+    g.fillStyle = fill; g.fill();
+    g.strokeStyle = '#8d7348'; g.lineWidth = 2; g.stroke();
+  };
+  const sand = '#f4e2b8', green = '#c5d69a';
+  land([[118, 52], [168, 36], [240, 44], [292, 78], [314, 112], [286, 142], [246, 154], [208, 148], [176, 128], [142, 108], [112, 78]], sand);
+  land([[198, 166], [238, 160], [262, 198], [250, 252], [228, 312], [198, 332], [176, 286], [168, 220], [178, 186]], green);
+  land([[300, 34], [348, 30], [362, 58], [328, 74], [298, 54]], sand);
+  land([[468, 62], [508, 40], [552, 46], [578, 74], [556, 104], [514, 114], [476, 98], [454, 76]], sand);
+  land([[508, 28], [538, 22], [558, 40], [528, 52], [500, 42]], sand);
+  land([[486, 120], [548, 112], [592, 142], [604, 190], [578, 246], [542, 302], [498, 286], [466, 228], [462, 172], [476, 138]], green);
+  land([[592, 236], [612, 230], [618, 266], [596, 272]], green);
+  land([[568, 78], [660, 46], [800, 34], [940, 44], [1060, 68], [1104, 108], [1048, 140], [960, 150], [900, 142], [858, 176], [812, 208], [768, 192], [724, 158], [676, 146], [620, 122], [582, 98]], sand);
+  land([[930, 214], [1004, 204], [1076, 232], [1090, 274], [1024, 310], [948, 298], [912, 256]], green);
+  const my = [804, 198];
+  const glowRoute = (color, pts, dash) => {
+    g.save();
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    g.strokeStyle = 'rgba(255,244,214,.85)'; g.lineWidth = 10; g.setLineDash([]);
+    g.beginPath();
+    pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+    g.stroke();
+    g.strokeStyle = color; g.lineWidth = 4; g.setLineDash(dash);
+    g.stroke();
+    g.restore();
+  };
+  glowRoute('#E87708', [my, [720, 220], [600, 210], [520, 168]], []);
+  glowRoute('#E87708', [my, [900, 230], [990, 248]], [14, 8]);
+  glowRoute('#b8893d', [my, [760, 140], [660, 90], [540, 72]], [16, 10]);
+  glowRoute('#b8893d', [my, [920, 150], [1040, 96]], [16, 10]);
+  g.fillStyle = '#E87708';
+  g.beginPath(); g.arc(my[0], my[1], 8, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke();
+  g.fillStyle = '#1c2430'; g.font = '700 22px sans-serif'; g.textAlign = 'left';
+  g.fillText('MY', my[0] + 14, my[1] + 6);
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; return tex;
 }
-function shippingContainer(parent, x, z, ry, color) {
-  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; parent.add(g);
-  box(g, 1.7, 1.05, 0.72, 0, 0.15, 0, M(color, { r: .55, m: .25 }), { round: 0.02, cast: false });
-  box(g, 0.02, 0.9, 0.02, 0.55, 0.2, 0.36, M('#0a0a0a'), { cast: false });
-  box(g, 0.02, 0.9, 0.02, 0.2, 0.2, 0.36, M('#0a0a0a'), { cast: false });
+function shippingContainer(parent, x, y, z, ry, color) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; parent.add(g);
+  box(g, 1.9, 1.02, 0.78, 0, 0, 0, M(color, { r: .48, m: .28 }), { round: 0.02, cast: false });
+  for (const lx of [-0.62, -0.22, 0.18, 0.58]) box(g, 0.025, 0.9, 0.02, lx, 0.06, 0.4, M('#141414'), { cast: false });
+  box(g, 0.05, 0.9, 0.68, 0.92, 0.06, 0, M('#1a1a1a'), { cast: false });
+  box(g, 0.02, 0.7, 0.02, 0.96, 0.16, -0.16, M('#d5dbe3', { m: .4 }), { cast: false });
+  box(g, 0.02, 0.7, 0.02, 0.96, 0.16, 0.16, M('#d5dbe3', { m: .4 }), { cast: false });
   return g;
 }
 function forklift(parent, x, z, ry) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; parent.add(g);
-  const body = M('#1a1a1a', { r: .55 }), metal = M(GOLD, { m: .55, r: .35 });
+  const body = M('#E87708', { r: .5 }), metal = M('#d9d3c7', { m: .55, r: .35 });
   box(g, 0.62, 0.38, 1.05, 0, 0.32, -0.05, body, { cast: false });
-  box(g, 0.5, 0.42, 0.42, 0, 0.68, -0.22, M('#242424', { r: .5 }), { cast: false });
+  box(g, 0.5, 0.42, 0.42, 0, 0.68, -0.22, M('#1c1c1c', { r: .45 }), { cast: false });
   box(g, 0.06, 1.05, 0.06, -0.16, 0.72, 0.48, metal, { cast: false });
   box(g, 0.06, 1.05, 0.06, 0.16, 0.72, 0.48, metal, { cast: false });
-  box(g, 0.07, 0.035, 0.62, -0.14, 0.16, 0.82, M('#c4b496', { m: .4, r: .4 }), { cast: false });
-  box(g, 0.07, 0.035, 0.62, 0.14, 0.16, 0.82, M('#c4b496', { m: .4, r: .4 }), { cast: false });
+  box(g, 0.07, 0.035, 0.62, -0.14, 0.16, 0.82, metal, { cast: false });
+  box(g, 0.07, 0.035, 0.62, 0.14, 0.16, 0.82, metal, { cast: false });
   for (const [wx, wz] of [[-0.28, -0.28], [0.28, -0.28], [-0.28, 0.28], [0.28, 0.28]]) cyl(g, 0.12, 0.12, 0.08, wx, 0.12, wz, M('#111'), 8, { cast: false });
+  return g;
+}
+function palletBoxes(parent, x, z) {
+  const wood = M('#8a5a32', { r: .72 });
+  box(parent, 1.2, 0.1, 0.85, x, 0, z, wood, { cast: false });
+  box(parent, 1.05, 0.08, 0.08, x, 0.1, z - 0.28, M('#6b4324', { r: .75 }), { cast: false });
+  box(parent, 1.05, 0.08, 0.08, x, 0.1, z + 0.28, M('#6b4324', { r: .75 }), { cast: false });
+  box(parent, 0.46, 0.36, 0.4, x - 0.26, 0.18, z - 0.1, M('#d7a56a', { r: .82 }), { cast: false });
+  box(parent, 0.4, 0.3, 0.36, x + 0.24, 0.18, z + 0.1, M('#c4894a', { r: .82 }), { cast: false });
+  box(parent, 0.34, 0.26, 0.3, x - 0.02, 0.54, z, M('#edd0a4', { r: .82 }), { cast: false });
+}
+function shipModel(parent, x, z, ry) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; parent.add(g);
+  const hull = M('#163e73', { r: .4, m: .2 });
+  box(g, 0.58, 0.3, 1.75, 0, 0.02, -0.08, hull, { cast: false });
+  box(g, 0.34, 0.22, 0.42, 0, 0.06, 0.88, hull, { cast: false });
+  box(g, 0.18, 0.14, 0.24, 0, 0.08, 1.16, hull, { cast: false });
+  box(g, 0.62, 0.045, 1.4, 0, 0.3, -0.12, M('#E87708', { r: .4 }), { cast: false });
+  box(g, 0.48, 0.07, 1.2, 0, 0.34, -0.16, M('#c5d0dc', { r: .5 }), { cast: false });
+  box(g, 0.38, 0.36, 0.42, 0, 0.41, -0.42, M('#d5dee8', { r: .45 }), { cast: false });
+  box(g, 0.24, 0.2, 0.26, 0, 0.77, -0.42, M('#e7eef6', { r: .45 }), { cast: false });
+  box(g, 0.4, 0.07, 0.02, 0, 0.55, -0.2, M('#163e73'), { cast: false });
+  box(g, 0.14, 0.32, 0.16, 0, 0.77, 0.08, M('#b93812', { r: .45 }), { cast: false });
+  cyl(g, 0.02, 0.02, 0.55, 0.14, 0.4, 0.4, M('#d9d3c7', { m: .45 }), 6, { cast: false });
   return g;
 }
 function deskGlobe(parent, x, z) {
@@ -633,13 +690,16 @@ function deskGlobe(parent, x, z) {
   sphere.position.y = 0.72; g.add(sphere);
   return g;
 }
-function planeModel(parent, x, z) {
-  const g = new THREE.Group(); g.position.set(x, 0.55, z); g.rotation.y = 0.6; parent.add(g);
-  const metal = M('#d5dbe3', { m: .45, r: .35 });
-  box(g, 0.18, 0.1, 0.85, 0, 0, 0, metal, { cast: false });
-  box(g, 0.9, 0.025, 0.16, 0, 0.02, 0.05, metal, { cast: false });
-  box(g, 0.28, 0.02, 0.1, 0, 0.04, -0.32, metal, { cast: false });
-  cyl(g, 0.1, 0.12, 0.35, 0, -0.4, 0, M('#1a1a1a'), 8, { cast: false });
+function planeModel(parent, x, z, ry = 0.4) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; parent.add(g);
+  cyl(g, 0.045, 0.07, 0.28, 0, 0, 0, M('#2a3142'), 8, { cast: false });
+  const p = new THREE.Group(); p.position.y = 0.42; g.add(p);
+  const blue = M('#1d4f91', { r: .4, m: .18 }), wing = M('#8eacd0', { r: .42 });
+  box(p, 0.22, 0.16, 1.3, 0, 0, 0, blue, { cast: false });
+  box(p, 1.5, 0.05, 0.3, 0, 0.03, 0.08, wing, { cast: false });
+  box(p, 0.48, 0.04, 0.14, 0, 0.08, -0.46, wing, { cast: false });
+  box(p, 0.045, 0.28, 0.2, 0, 0.16, -0.48, blue, { cast: false });
+  box(p, 0.12, 0.1, 0.18, 0, 0.02, 0.7, wing, { cast: false });
   return g;
 }
 function safeBox(parent, x, z, ry) {
@@ -1521,16 +1581,20 @@ function decorate(R, dyn, teamById) {
     plant(g, W / 2 - 0.7, D / 2 - 0.8, 1.05, 1); floorLamp(g, 0, D / 2 - 1.1);
   } else if (id === 'logistics') {
     desks.push(...workstations(g, t, accentChair, W, D, 3));
-    const map = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.45), new THREE.MeshBasicMaterial({ map: routeMapTexture(), toneMapped: false, side: THREE.DoubleSide }));
-    map.position.set(bx + 0.16, 1.45, 0.4); map.rotation.y = Math.PI / 2; g.add(map);
-    box(g, 0.04, 1.6, 2.55, bx + 0.08, 1.45, 0.4, M('#0a0a0a'), { cast: false });
-    shippingContainer(g, 3.35, 1.35, 0.15, '#1a1a1a');
-    shippingContainer(g, 3.15, 2.55, -0.1, '#3a3228');
-    boxesStack(g, -3.4, 1.5);
-    box(g, 1.15, 0.08, 0.85, -3.15, 0, 1.5, M('#6b5a40', { r: .7 }), { cast: false });
-    forklift(g, 3.15, 0.15, Math.PI);
-    deskGlobe(g, -3.3, 2.85); planeModel(g, -2.15, 2.75);
-    plant(g, bx + 0.7, D / 2 - 0.8, 1.05, 2); floorLamp(g, -0.2, D / 2 - 1.35);
+    const mapW = 7.15, mapH = 1.92, mapY = 1.18, mapZ = 0.25;
+    box(g, 0.05, mapH + 0.14, mapW + 0.16, bx + 0.08, mapY - (mapH + 0.14) / 2, mapZ, M('#102033'), { cast: false });
+    const map = new THREE.Mesh(new THREE.PlaneGeometry(mapW, mapH), new THREE.MeshBasicMaterial({ map: routeMapTexture(), toneMapped: false }));
+    map.position.set(bx + 0.16, mapY, mapZ); map.rotation.y = Math.PI / 2; map.userData.keep = true; g.add(map);
+    box(g, 0.03, 0.06, mapW + 0.12, bx + 0.18, mapY + mapH / 2, mapZ, M(GOLD, { m: .55, r: .32 }), { cast: false });
+    box(g, 0.03, 0.06, mapW + 0.12, bx + 0.18, mapY - mapH / 2 - 0.06, mapZ, M(GOLD, { m: .55, r: .32 }), { cast: false });
+    shippingContainer(g, 4.05, 0, 0.85, 0.08, '#c2410c');
+    shippingContainer(g, 4.05, 1.02, 0.85, 0.04, '#1d4ed8');
+    shippingContainer(g, 4.1, 0, 2.15, -0.06, '#15803d');
+    palletBoxes(g, -2.55, 2.15);
+    forklift(g, 1.55, 1.2, Math.PI / 2);
+    shipModel(g, -1.15, 2.7, 0.45);
+    planeModel(g, 0.95, 3.15, -0.55);
+    plant(g, bx + 0.7, D / 2 - 0.8, 1.05, 2);
   } else if (id === 'invest') {
     desks.push(...workstations(g, t, accentChair, W, D, 7));
     for (let i = 0; i < 3; i++) wallScreen(g, bx + 0.16, 1.55, -2.15 + i * 1.7, Math.PI / 2, 1.35, 0.78);
