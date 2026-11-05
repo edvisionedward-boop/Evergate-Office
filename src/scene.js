@@ -278,8 +278,9 @@ function nameTag(agent, staff, roomId) {
   const pn = document.createElement('span'); pn.className = 'pn'; pn.textContent = staff.name; el.appendChild(pn);
   const badge = document.createElement('i'); badge.className = 'gbadge'; el.appendChild(badge);
   const o = new CSS2DObject(el);
-  o.position.set(0, 1.78, 0);
+  o.position.set(0.85, 0.42, 0.2);
   o.center.set(0, 1);
+  o.renderOrder = 1;
   agent.add(o);
   agent.userData.badgeEl = el;
   return agent;
@@ -673,8 +674,12 @@ export function buildOffice(scene, teams) {
     hit.position.set(def.x, 1.5, def.z); hit.userData.room = id; root.add(hit); R.hit = hit;
     // label
     const el = labelEl(def); R.labelEl = el;
-    const lo = new CSS2DObject(el); lo.position.set(def.x, def.minor ? 3.15 : 4.15, def.z - def.d * 0.1);
-    lo.center.set(def.x > 18 ? 0.92 : def.x < -18 ? 0.08 : 0.5, 1); root.add(lo); R.label = lo;
+    const lo = new CSS2DObject(el);
+    if (def.id === 'ed') lo.position.set(def.x - 0.2, 5.6, def.z - def.d * 0.34);
+    else lo.position.set(def.x, def.minor ? 3.15 : 4.15, def.z - def.d * 0.1);
+    lo.center.set(def.x > 18 ? 0.92 : def.x < -18 ? 0.08 : 0.5, 1);
+    lo.renderOrder = 3;
+    root.add(lo); R.label = lo;
     // status lamp
     if (!def.minor && !def.gallery) {
       const lamp = new THREE.Group(); const lx = def.x - def.w / 2 + 0.45, lz = def.z - def.d / 2 + 0.45; lamp.position.set(lx, 3.05, lz); lamp.userData.base = 3.05; root.add(lamp);
@@ -1227,6 +1232,7 @@ function decorate(R, dyn, teamById) {
     chair(g, -3.1, 0, -Math.PI / 2, '#0e7490');
     const boss = makeAgent({ shirt: '#1e3a5f', pants: '#111827', tie: '#dc2626', hair: '#111827', skin: '#e9bf9c' });
     boss.position.set(def.x - 3.15, FLOOR_H, def.z + 0.9); boss.rotation.y = Math.PI / 2 + 0.3; dyn.add(boss); R.boss = boss;
+    boss.userData.bubbleAnchor.position.set(-0.35, 2.9, -0.45);
     if (!t.private) nameTag(boss, (t.staff || [])[0], id);
     // big display stand at back
     const scr = new THREE.Group(); scr.position.set(0, 0, bz + 0.6); g.add(scr);

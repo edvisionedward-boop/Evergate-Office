@@ -50,7 +50,7 @@ button{font:inherit;color:inherit}
 .rlabel:active{filter:brightness(1.12)}
 .rlabel .ic{width:28px;height:28px;border-radius:8px;background:var(--c);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--ink);box-shadow:0 0 12px color-mix(in srgb,var(--c) 45%,transparent)}
 .rlabel .nm{font-size:14px;font-weight:700;line-height:1.2;color:#f8f4ec}
-.rlabel .st{font-size:12px;color:#e6d3b0;display:flex;align-items:center;gap:5px;margin-top:2px}
+.rlabel .st{font-size:12px;color:#e6d3b0;display:flex;align-items:center;gap:5px;margin-top:7px}
 .rlabel .st .dot{width:7px;height:7px}
 .rlabel.minor{opacity:.75;padding:4px 9px}
 .rlabel.minor .nm{font-size:11px;font-weight:600;color:#cbd5e1}
@@ -59,7 +59,8 @@ button{font:inherit;color:inherit}
 /* speech bubbles */
 .bubble-host{pointer-events:none;display:block;width:max-content;max-width:210px}
 .bubble{pointer-events:none;max-width:210px;background:#f8fafc;color:#0f172a;font-size:11.5px;line-height:1.35;padding:7px 10px;border-radius:12px;
-  box-shadow:0 8px 20px rgba(0,0,0,.4);position:relative;left:110px;top:-36px;transform-origin:0 100%;animation:pop .35s ease-out forwards;white-space:normal;width:max-content}
+  box-shadow:0 8px 20px rgba(0,0,0,.4);position:relative;left:84px;top:-52px;transform-origin:0 100%;animation:pop .35s ease-out forwards;white-space:normal;width:max-content}
+.bubble-host.ed .bubble{left:18px;top:-108px}
 .bubble:after{content:"";position:absolute;left:18px;bottom:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#f8fafc}
 .bubble b{display:block;font-size:10px;color:var(--c);margin-bottom:2px}
 .bubble.out{animation:fade .4s forwards}
@@ -174,7 +175,8 @@ button{font:inherit;color:inherit}
 
 /* desktop panel */
 @media (min-width:761px){
-  #panel{right:calc(16px + var(--sar));top:72px;bottom:16px;width:380px;border-radius:20px;padding:20px}
+  #app.panel-open #topbar{padding-right:calc(408px + env(safe-area-inset-right,0px))}
+  #panel{right:calc(16px + var(--sar));top:calc(112px + env(safe-area-inset-top,0px));bottom:16px;width:380px;border-radius:20px;padding:20px}
   #directory{left:calc(16px + var(--sal));right:auto;top:72px;bottom:58px;width:min(400px,38vw);padding:16px 14px 12px;border-radius:20px;
     background:var(--panel);border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.45)}
   #directory .dir-head,#dirBody{max-width:none}
@@ -190,13 +192,13 @@ button{font:inherit;color:inherit}
 }
 /* mobile */
 @media (max-width:760px){
-  #topbar{flex-wrap:wrap;gap:8px 10px;padding-bottom:8px}
+  #topbar{flex-wrap:wrap;gap:8px 10px;padding-bottom:8px;z-index:48}
   .summary{display:none}
   .tabs{margin-left:0;width:100%}
   .tab{flex:1;justify-content:center;padding:6px 4px;font-size:12px}
   .t1{font-size:14px}
   #legend{font-size:10.5px;gap:9px;padding:6px 10px;left:50%;transform:translateX(-50%);white-space:nowrap}
-  #panel{left:0;right:0;bottom:0;max-height:56vh;border-radius:22px 22px 0 0;padding:14px 16px calc(18px + var(--sab));border-bottom:0}
+  #panel{top:auto;left:0;right:0;bottom:0;max-height:56vh;border-radius:22px 22px 0 0;padding:14px 16px calc(18px + var(--sab));border-bottom:0}
   #panel.hidden{transform:translateY(40px)}
   #panel .grab{display:block;width:40px;height:4px;border-radius:3px;background:rgba(255,255,255,.2);margin:0 auto 10px}
   .cols{grid-template-columns:1fr}
@@ -240,7 +242,7 @@ button{font:inherit;color:inherit}
 .srow.on{outline:1px solid rgba(208,185,147,.7)}
 .srow .sn{font-weight:700;min-width:52px}
 .srow .snote{color:var(--mut);font-size:12px}
-.ptag{pointer-events:auto;cursor:pointer;display:flex;align-items:center;gap:4px;padding:2px 6px 2px 7px;border-radius:999px;background:rgba(6,6,6,.88);border:1px solid rgba(208,185,147,.55);white-space:nowrap}
+.ptag{pointer-events:auto;cursor:pointer;display:flex;align-items:center;gap:4px;margin-left:14px;margin-top:22px;padding:2px 6px 2px 7px;border-radius:999px;background:rgba(6,6,6,.88);border:1px solid rgba(208,185,147,.55);white-space:nowrap}
 .ptag .pn{font-size:11px;font-weight:700;color:#f8f4ec}
 .grade-col{max-width:720px}
 .gcard{display:block;width:100%;text-align:left;color:inherit;cursor:pointer;border:1px solid var(--line);border-left:3px solid var(--c);background:rgba(255,255,255,.04);border-radius:12px;padding:12px;margin:0 0 10px}

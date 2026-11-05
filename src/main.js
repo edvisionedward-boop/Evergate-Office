@@ -311,8 +311,10 @@ function selectRoom(id, source, staffId) {
     $('#directory').classList.add('hidden');
     setTab('office');
     renderPanel(id); $('#panel').classList.remove('hidden'); $('#panel').scrollTop = 0;
+    syncPanelChrome();
   } else {
     $('#panel').classList.add('hidden');
+    syncPanelChrome();
     document.querySelectorAll('.dcard').forEach(el => el.classList.toggle('sel', el.dataset.team === id));
   }
   Object.values(office.rooms).forEach(R => R.labelEl.classList.toggle('sel', R.id === id));
@@ -329,9 +331,14 @@ function selectRoom(id, source, staffId) {
   flyTo(tgt, portrait ? 31 : 22, HOME_DIR);
   renderQuick();
 }
+function syncPanelChrome() {
+  const open = !$('#panel').classList.contains('hidden');
+  document.getElementById('app').classList.toggle('panel-open', open);
+}
 function closePanel() {
   if (!state.selected && $('#panel').classList.contains('hidden')) return;
   state.selected = null; state.staffId = null; $('#panel').classList.add('hidden');
+  syncPanelChrome();
   Object.values(office.rooms).forEach(R => R.labelEl.classList.remove('sel'));
   renderQuick();
   goHome(true);
@@ -394,11 +401,13 @@ function openView(v) {
   $('#navfabBtn').setAttribute('aria-expanded', 'false');
   if (v === 'board') {
     $('#panel').classList.add('hidden'); state.selected = null;
+    syncPanelChrome();
     $('#directory').classList.add('hidden');
     $('#board').classList.remove('hidden');
     Object.values(office.rooms).forEach(R => R.labelEl.classList.remove('sel'));
   } else if (v === 'directory') {
     $('#panel').classList.add('hidden');
+    syncPanelChrome();
     $('#board').classList.add('hidden');
     $('#directory').classList.remove('hidden');
     renderDirectory();
@@ -437,6 +446,7 @@ function renderQuick() {
 $('#homeBtn')?.addEventListener('click', () => {
   state.selected = null; state.staffId = null;
   $('#panel').classList.add('hidden');
+  syncPanelChrome();
   $('#board').classList.add('hidden');
   $('#directory').classList.add('hidden');
   setTab('office');
@@ -540,11 +550,11 @@ function popBubble() {
   const latest = DATA.feed.filter(f => f.team === t.id).sort((a, b) => new Date(b.time) - new Date(a.time))[0];
   if (activeBubbles.some(b => b.agent === agent)) return;
   if (activeBubbles.length >= (viewW <= 760 ? 1 : 3)) return;
-  const host = document.createElement('div'); host.className = 'bubble-host';
+  const host = document.createElement('div'); host.className = 'bubble-host' + (t.id === 'ed' ? ' ed' : '');
   const el = document.createElement('div'); el.className = 'bubble'; el.style.setProperty('--c', t.color);
   el.innerHTML = `<b>${esc(t.name)}</b>${esc(latest.text)}`;
   host.appendChild(el);
-  const o = new CSS2DObject(host); agent.userData.bubbleAnchor.add(o);
+  const o = new CSS2DObject(host); o.renderOrder = t.id === 'ed' ? 40 : 8; agent.userData.bubbleAnchor.add(o);
   const b = { o, el, agent, life: 5.2 }; activeBubbles.push(b);
 }
 function tickBubbles(dt) {
