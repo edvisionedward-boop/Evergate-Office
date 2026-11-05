@@ -181,7 +181,7 @@ function logoTexture() {
   const c = document.createElement('canvas'); c.width = 1024; c.height = 360;
   const g = c.getContext('2d');
   g.fillStyle = '#172033'; g.fillRect(0, 0, 1024, 360);
-  g.fillStyle = '#67e8f9'; g.fillRect(80, 48, 14, 264);
+  g.fillStyle = '#D0B993'; g.fillRect(80, 48, 14, 264);
   g.fillStyle = '#f8fafc'; g.font = '700 118px sans-serif'; g.textBaseline = 'middle';
   g.fillText('EVERGATE', 120, 150);
   g.fillStyle = '#94a3b8'; g.font = '500 36px sans-serif'; g.fillText('HOLDING  ·  KUALA LUMPUR', 124, 240);
@@ -401,7 +401,7 @@ function cabinet(parent, x, z, ry, w = 0.5, h = 1.2, c = '#cbd5e1') {
   return g;
 }
 function rug(parent, x, z, w, d, c) {
-  const m = new THREE.Mesh(rboxG(w, 0.02, d, 0.01), M(c, { r: 1 })); m.position.set(x, 0.01, z); m.receiveShadow = true; parent.add(m); return m;
+  const m = new THREE.Mesh(rboxG(w, 0.02, d, 0.01), M('#101010', { r: .95 })); m.position.set(x, 0.01, z); m.receiveShadow = true; parent.add(m); return m;
 }
 function boxesStack(parent, x, z) {
   const k = M('#c08b5c', { r: .9 }), t = M('#d8b48a', { r: .9 });
@@ -412,41 +412,37 @@ function boxesStack(parent, x, z) {
 
 /* ---------------- room shell ---------------- */
 const WALL_H = 2.4, FLOOR_H = 0.14;
+const GOLD = '#D0B993', ORANGE = '#E87708', FLOOR_BLACK = '#060606';
 const windowPane = new THREE.MeshBasicMaterial({ color: 0x9ec3e0, toneMapped: false });
+const smokeGlass = () => M('#9aa3ad', { r: .06, m: .28, op: 0.3, side: THREE.DoubleSide });
+const goldFrame = () => M(GOLD, { m: .86, r: .24 });
 let pendantGlow = null;
 function roomShell(root, def, ctx) {
   const g = new THREE.Group(); g.position.set(def.x, FLOOR_H, def.z); root.add(g);
   const { w, d } = def;
-  const c = col(def.color);
-  // floor slab (colored) + inner plank/carpet
-  const slab = new THREE.Mesh(rboxG(w, FLOOR_H, d, 0.05), M(hex(mix(def.color, '#1c1814', 0.78)), { r: .72 }));
+  const slab = new THREE.Mesh(rboxG(w, FLOOR_H, d, 0.05), M(FLOOR_BLACK, { r: .9, m: .04 }));
   slab.position.y = -FLOOR_H / 2; slab.receiveShadow = true; g.add(slab);
-  const wood = hex(mix(def.color, '#cbb79a', def.floorMix ?? 0.72));
-  const floorMap = (def.floorTone || def.id === 'ed' || def.id === 'privfin' || def.id === 'lounge') ? carpetTexture(def.floorTone || wood) : plankTexture(wood);
-  const floorMat = new THREE.MeshStandardMaterial({ map: floorMap, roughness: def.floorTone ? 0.9 : 0.68, metalness: 0.02 });
-  floorMat.map.repeat.set(w / 3, d / 3);
-  const fl = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.1, d - 0.1), floorMat);
-  fl.rotation.x = -Math.PI / 2; fl.position.y = 0.002; fl.receiveShadow = true; g.add(fl);
-  // glowing edge strip on the two front edges
-  const glow = B(def.color, { boost: 2.2 });
-  const s1 = new THREE.Mesh(boxG(w, 0.035, 0.035), glow); s1.position.set(0, -0.02, d / 2 + 0.01); g.add(s1);
-  const s2 = new THREE.Mesh(boxG(0.035, 0.035, d), glow); s2.position.set(w / 2 + 0.01, -0.02, 0); g.add(s2);
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.12, d - 0.12), M(FLOOR_BLACK, { r: .88, m: .06 }));
+  fl.rotation.x = -Math.PI / 2; fl.position.y = 0.004; fl.receiveShadow = true; g.add(fl);
+  const rail = goldFrame();
+  box(g, w, 0.025, 0.035, 0, 0, d / 2 + 0.01, rail, { cast: false });
+  box(g, 0.035, 0.025, d, w / 2 + 0.01, 0, 0, rail, { cast: false });
 
-  const wallMat = M(hex(mix(def.color, '#1a2030', def.wallMix ?? 0.38)), { r: .85 });
-  const trim = M(hex(mix(def.color, '#0b1020', 0.6)), { r: .6 });
+  const wallMat = smokeGlass();
+  const trim = goldFrame();
   const hx = -w / 2, hz = -d / 2;
   if (def.walls !== 'glass') {
     // back (-z) wall with windows
     if (def.door === 'north') {
       const gap = 1.8, seg = (w - gap) / 2;
-      box(g, seg, WALL_H, 0.14, -(gap + seg) / 2, 0, hz + 0.07, wallMat);
-      box(g, seg, WALL_H, 0.14, (gap + seg) / 2, 0, hz + 0.07, wallMat);
-    } else box(g, w, WALL_H, 0.14, 0, 0, hz + 0.07, wallMat);
+      box(g, seg, WALL_H, 0.04, -(gap + seg) / 2, 0, hz + 0.02, wallMat, { cast: false });
+      box(g, seg, WALL_H, 0.04, (gap + seg) / 2, 0, hz + 0.02, wallMat, { cast: false });
+    } else box(g, w, WALL_H, 0.04, 0, 0, hz + 0.02, wallMat, { cast: false });
     if (def.door === 'west') {
       const gap = 1.8, seg = (d - gap) / 2;
-      box(g, 0.14, WALL_H, seg, hx + 0.07, 0, -(gap + seg) / 2, wallMat);
-      box(g, 0.14, WALL_H, seg, hx + 0.07, 0, (gap + seg) / 2, wallMat);
-    } else box(g, 0.14, WALL_H, d, hx + 0.07, 0, 0, wallMat);
+      box(g, 0.04, WALL_H, seg, hx + 0.02, 0, -(gap + seg) / 2, wallMat, { cast: false });
+      box(g, 0.04, WALL_H, seg, hx + 0.02, 0, (gap + seg) / 2, wallMat, { cast: false });
+    } else box(g, 0.04, WALL_H, d, hx + 0.02, 0, 0, wallMat, { cast: false });
     box(g, w, 0.1, 0.02, 0, 0, hz + 0.15, trim, { cast: false });
     box(g, 0.02, 0.1, d, hx + 0.15, 0, 0, trim, { cast: false });
     // top cap
@@ -465,10 +461,10 @@ function roomShell(root, def, ctx) {
   }
   return g;
 }
-function glassRun(g, x0, z0, x1, z1, h, gaps = [], tint = '#bfe9ff', op = 0.16) {
+function glassRun(g, x0, z0, x1, z1, h, gaps = [], tint = '#9aa3ad', op = 0.28) {
   // glass panels from (x0,z0) to (x1,z1) with door gaps given as [t0,t1] fractions
-  const glass = M(tint, { r: .05, m: .1, op });
-  const frame = M('#9aa6b8', { m: .7, r: .35 });
+  const glass = M(tint, { r: .06, m: .28, op, side: THREE.DoubleSide });
+  const frame = M(GOLD, { m: .86, r: .24 });
   const len = Math.hypot(x1 - x0, z1 - z0), ang = Math.atan2(z1 - z0, x1 - x0);
   const segs = []; let t = 0;
   for (const [a, b] of gaps) { segs.push([t, a]); t = b; } segs.push([t, 1]);
@@ -517,16 +513,16 @@ export const LAYOUT = {
   legal:    { x: 0,     z: -12, w: 11, d: 8.5, icon: '法', sign: '法务部', signSub: 'LEGAL' },
   proposal: { x: 13.5,  z: -12, w: 10, d: 8.5, icon: '策', sign: '策划部', signSub: 'PLANNING & PROPOSALS' },
   invest:   { x: -13.5, z: 0,   w: 10, d: 8.5, icon: '投', sign: '投资部', signSub: 'INVESTMENT' },
-  ed:       { x: 0,     z: 0,   w: 11, d: 9,   icon: 'ED', walls: 'glass', floorTone: '#1b3a4a', sign: 'ED 中央指挥室', signSub: 'COMMAND CENTER' },
+  ed:       { x: 0,     z: 0,   w: 11, d: 9,   icon: 'ED', walls: 'glass', sign: 'ED 中央指挥室', signSub: 'COMMAND CENTER' },
   info:     { x: 13.5,  z: 0,   w: 10, d: 8.5, icon: '信', sign: '信息部', signSub: 'AI NEWS & INFO' },
   corpfin:  { x: -13.5, z: 12,  w: 10, d: 8.5, icon: '会', sign: '会计部', signSub: 'ACCOUNTING' },
   logistics:{ x: 0,     z: 12,  w: 11, d: 8.5, icon: '物', sign: '物流部', signSub: 'LOGISTICS' },
-  privfin:  { x: 13.5,  z: 12,  w: 10, d: 8.5, icon: '私', walls: 'glass', private: true, floorTone: '#5b3d8f', sign: '私人助理', signSub: 'PRIVATE · 仅 EDWARD' },
-  lounge:   { x: 25.6, z: 0,   w: 9.4, d: 11, icon: '休', color: '#f59e0b', door: 'west', floorTone: '#c4a574', floorMix: 0.35, sign: '休息室', signSub: 'LOUNGE', label: '休息室' },
-  archive:  { x: -25.8, z: -8, w: 8.4, d: 8.2, icon: '档', color: '#64748b', floorTone: '#cfc3ae', sign: '档案室', signSub: 'ARCHIVE', label: '档案室' },
-  meeting:  { x: -25.8, z: 8,   w: 9.2, d: 8.4, icon: '议', color: '#0ea5e9', sign: '会议室', signSub: 'MEETING', label: '会议室' },
-  design:   { x: 25.6, z: 12,  w: 9.4, d: 8.2, icon: '设', color: '#d946ef', door: 'west', sign: '设计部', signSub: 'DESIGN', label: '设计部' },
-  showroom: { x: 25.6, z: -12, w: 9.4, d: 8.2, icon: '展', color: '#d6d3d1', door: 'west', floorTone: '#f7f3ea', floorMix: 0.2, wallMix: 0.08, gallery: true, sign: '品牌展厅', signSub: 'BRAND HALL', label: '品牌展厅' },
+  privfin:  { x: 13.5,  z: 12,  w: 10, d: 8.5, icon: '私', walls: 'glass', private: true, sign: '私人助理', signSub: 'PRIVATE · 仅 EDWARD' },
+  lounge:   { x: 25.6, z: 0,   w: 9.4, d: 11, icon: '休', color: '#E87708', door: 'west', sign: '休息室', signSub: 'LOUNGE', label: '休息室' },
+  archive:  { x: -25.8, z: -8, w: 8.4, d: 8.2, icon: '档', color: '#D0B993', sign: '档案室', signSub: 'ARCHIVE', label: '档案室' },
+  meeting:  { x: -25.8, z: 8,   w: 9.2, d: 8.4, icon: '议', color: '#D0B993', sign: '会议室', signSub: 'MEETING', label: '会议室' },
+  design:   { x: 25.6, z: 12,  w: 9.4, d: 8.2, icon: '设', color: '#E87708', door: 'west', sign: '设计部', signSub: 'DESIGN', label: '设计部' },
+  showroom: { x: 25.6, z: -12, w: 9.4, d: 8.2, icon: '展', color: '#D0B993', door: 'west', gallery: true, sign: '品牌展厅', signSub: 'BRAND HALL', label: '品牌展厅' },
 };
 
 export function buildOffice(scene, teams) {
@@ -545,7 +541,7 @@ export function buildOffice(scene, teams) {
   // building base platform
   const base = new THREE.Mesh(rboxG(43.5, 0.1, 40, 0.05), M('#161d30', { r: .7 }));
   base.position.y = -0.04; base.receiveShadow = true; root.add(base);
-  const edge = B('#22d3ee', { op: .8, boost: 2 });
+  const edge = B(GOLD, { op: .55, boost: 1.2 });
   for (const [w, d, x, z] of [[43.5, .05, 0, 20], [43.5, .05, 0, -20], [.05, 40, 21.75, 0], [.05, 40, -21.75, 0]]) {
     const e = new THREE.Mesh(boxG(w, .04, d), edge); e.position.set(x, 0.02, z); root.add(e);
   }
@@ -571,7 +567,7 @@ export function buildOffice(scene, teams) {
   // corridors: dark aisles with dashed glowing lines
   const aisleMat = new THREE.MeshStandardMaterial({ map: concreteTexture(), roughness: 0.86, metalness: 0.04, color: '#c5ccd4' });
   const aisle = aisleMat;
-  const dashM = B('#7dd3fc', { op: .7, boost: 1.4 });
+  const dashM = B(GOLD, { op: .55, boost: 1.15 });
   const dashG = boxG(0.5, 0.012, 0.06);
   for (const z of [-6, 6]) {
     const a = new THREE.Mesh(boxG(42, 0.02, 2.6), aisle); a.position.set(0, 0.012, z); a.receiveShadow = true; staticG.add(a);
@@ -610,21 +606,21 @@ export function buildOffice(scene, teams) {
 
   /* ED hologram + connection arcs */
   const holo = new THREE.Group(); holo.position.set(0, FLOOR_H, 0); dyn.add(holo);
-  const ico = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 1), new THREE.MeshBasicMaterial({ color: '#67e8f9', wireframe: true, transparent: true, opacity: .8, toneMapped: false }));
+  const ico = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 1), new THREE.MeshBasicMaterial({ color: GOLD, wireframe: true, transparent: true, opacity: .8, toneMapped: false }));
   ico.position.y = 2.05; holo.add(ico);
-  const coreS = new THREE.Mesh(sphG(0.28, 16, 12), B('#a5f3fc', { op: .7, add: true, boost: 1.6 })); coreS.position.y = 2.05; holo.add(coreS);
+  const coreS = new THREE.Mesh(sphG(0.28, 16, 12), B(GOLD, { op: .7, add: true, boost: 1.4 })); coreS.position.y = 2.05; holo.add(coreS);
   const rings = [];
   for (let i = 0; i < 3; i++) {
-    const r = new THREE.Mesh(new THREE.TorusGeometry(0.85 + i * 0.22, 0.012, 6, 64), B('#22d3ee', { op: .7, add: true, boost: 2.5 }));
+    const r = new THREE.Mesh(new THREE.TorusGeometry(0.85 + i * 0.22, 0.012, 6, 64), B(GOLD, { op: .7, add: true, boost: 1.6 }));
     r.position.y = 2.05; r.rotation.x = Math.PI / 2 + (i - 1) * 0.5; holo.add(r); rings.push(r);
   }
-  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.55, 1.25, 24, 1, true), B('#22d3ee', { op: .12, add: true }));
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.55, 1.25, 24, 1, true), B(GOLD, { op: .12, add: true }));
   beam.position.y = 1.4; holo.add(beam);
-  const floorRing = new THREE.Mesh(new THREE.RingGeometry(3.3, 3.42, 64), B('#22d3ee', { op: .55, add: true, boost: 2.5 }));
+  const floorRing = new THREE.Mesh(new THREE.RingGeometry(3.3, 3.42, 64), B(GOLD, { op: .55, add: true, boost: 1.5 }));
   floorRing.rotation.x = -Math.PI / 2; floorRing.position.y = 0.015; holo.add(floorRing);
-  const floorRing2 = new THREE.Mesh(new THREE.RingGeometry(3.7, 3.74, 64), B('#22d3ee', { op: .3, add: true }));
+  const floorRing2 = new THREE.Mesh(new THREE.RingGeometry(3.7, 3.74, 64), B(ORANGE, { op: .28, add: true }));
   floorRing2.rotation.x = -Math.PI / 2; floorRing2.position.y = 0.015; holo.add(floorRing2);
-  const holoLight = new THREE.PointLight('#22d3ee', 2.5, 8, 1.6); holoLight.position.set(0, 3.2, 0); holo.add(holoLight);
+  const holoLight = new THREE.PointLight(GOLD, 0.85, 8, 1.6); holoLight.position.set(0, 3.2, 0); holo.add(holoLight);
 
   const arcs = [];
   for (const id of ['market', 'legal', 'proposal', 'invest', 'info', 'corpfin', 'logistics', 'privfin']) {
@@ -643,7 +639,7 @@ export function buildOffice(scene, teams) {
   /* per-room soft colored lights */
   for (const id of ['market', 'legal', 'proposal', 'corpfin', 'logistics', 'privfin', 'invest', 'info']) {
     const R = rooms[id];
-    const pl = new THREE.PointLight(R.def.color, 2.0, 11, 1.6); pl.position.set(R.def.x + 1, 3.4, R.def.z + 1); root.add(pl);
+    const pl = new THREE.PointLight(R.def.color, 0.4, 11, 1.6); pl.position.set(R.def.x + 1, 3.4, R.def.z + 1); root.add(pl);
   }
 
   /* walkers carrying documents to ED */
@@ -728,21 +724,22 @@ export function buildOffice(scene, teams) {
     const link = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 2.2), M('#12182a', { r: .6 }));
     link.position.set(20.2, 0.02, R.def.z); link.receiveShadow = true; staticG.add(link);
   }
-  const designLight = new THREE.PointLight(designRoom.def.color, 0.85, 9, 1.8);
+  const designLight = new THREE.PointLight(designRoom.def.color, 0.35, 9, 1.8);
   designLight.position.set(designRoom.def.x, 3.1, designRoom.def.z); root.add(designLight);
   const showLight = new THREE.PointLight('#fff7ed', 0.65, 9, 1.8);
   showLight.position.set(showRoom.def.x, 3.1, showRoom.def.z); root.add(showLight);
   const showLabel = showRoom.labelEl;
+  showLabel.style.setProperty('--c', GOLD);
   showLabel.innerHTML = `<div class="ic">展</div><div><div class="nm">品牌展厅</div><div class="st"><span>展陈占位</span></div></div>`;
   const newsLabelEl = document.createElement('div');
-  newsLabelEl.className = 'rlabel'; newsLabelEl.dataset.room = 'news'; newsLabelEl.style.setProperty('--c', '#38bdf8');
+  newsLabelEl.className = 'rlabel'; newsLabelEl.dataset.room = 'news'; newsLabelEl.style.setProperty('--c', GOLD);
   newsLabelEl.innerHTML = `<div class="ic">讯</div><div><div class="nm">新闻墙</div><div class="st"><i class="dot idle"></i><span>点击查看</span></div></div>`;
   const newsLabel = new CSS2DObject(newsLabelEl); newsLabel.position.set(0, 3.7, 19.2); newsLabel.center.set(0.5, 1); root.add(newsLabel);
-  rooms.news = { id: 'news', hit: newsHit, labelEl: newsLabelEl, label: newsLabel, center: new THREE.Vector3(0, 0, 18.2), def: { icon: '讯', color: '#38bdf8' } };
+  rooms.news = { id: 'news', hit: newsHit, labelEl: newsLabelEl, label: newsLabel, center: new THREE.Vector3(0, 0, 18.2), def: { icon: '讯', color: GOLD } };
   let newsLines = ['信息部简报将在此滚动显示'];
   function drawNews(shift) {
     const ctx = newsCtx; ctx.clearRect(0, 0, 512, 512); ctx.fillStyle = '#07111f'; ctx.fillRect(0, 0, 512, 512);
-    ctx.fillStyle = '#38bdf8'; ctx.fillRect(0, 0, 512, 8);
+    ctx.fillStyle = GOLD; ctx.fillRect(0, 0, 512, 8);
     ctx.font = '700 36px sans-serif'; ctx.textAlign = 'left';
     const lines = newsLines.length ? newsLines : ['信息部简报将在此滚动显示'];
     for (let i = 0; i < 8; i++) {
@@ -796,7 +793,7 @@ export function buildOffice(scene, teams) {
     for (const R of Object.values(rooms)) {
       if (!R.lamp) continue;
       const st = state.status[R.id] ?? 'idle';
-      const c = st === 'busy' ? '#f59e0b' : st === 'confirm' ? '#f43f5e' : '#22c55e';
+      const c = st === 'busy' ? ORANGE : st === 'confirm' ? GOLD : '#efe4cf';
       R.lamp.core.material.color.set(c).multiplyScalar(2.4); R.lamp.ring.material.color.set(c).multiplyScalar(2); R.lamp.halo.material.color.set(c);
       const k = st === 'confirm' ? 0.5 + 0.5 * Math.abs(Math.sin(t * 3)) : st === 'busy' ? 0.85 + 0.15 * Math.sin(t * 5) : 0.8;
       R.lamp.halo.material.opacity = 0.12 + 0.25 * k; R.lamp.halo.scale.setScalar(0.9 + 0.3 * k);
@@ -808,12 +805,12 @@ export function buildOffice(scene, teams) {
       }
     }
     // ED avatar
-    if (rooms.ed.boss) { const b = rooms.ed.boss; b.userData.gesture = Math.sin(t * 0.7) > 0.6; animateAgent(b, t, dt); b.userData.dot.material.color.set(state.status.ed === 'confirm' ? '#f43f5e' : state.status.ed === 'busy' ? '#f59e0b' : '#22c55e'); }
+    if (rooms.ed.boss) { const b = rooms.ed.boss; b.userData.gesture = Math.sin(t * 0.7) > 0.6; animateAgent(b, t, dt); b.userData.dot.material.color.set(state.status.ed === 'confirm' ? GOLD : state.status.ed === 'busy' ? ORANGE : '#efe4cf'); }
     // walkers
     for (const w of walkers) {
       const st = state.status[w.team];
       const a = w.agent, u = a.userData;
-      u.dot.material.color.set(st === 'busy' ? '#f59e0b' : st === 'confirm' ? '#f43f5e' : '#22c55e');
+      u.dot.material.color.set(st === 'busy' ? ORANGE : st === 'confirm' ? GOLD : '#efe4cf');
       if (w.wait > 0) {
         w.wait -= dt; u.mode = 'stand'; animateAgent(a, t, dt);
         if (w.wait <= 0 && !(st && st !== 'idle') && w.i === 0) w.wait = 3; // idle teams stay home
@@ -844,7 +841,7 @@ export function buildOffice(scene, teams) {
     for (const v of visitors) {
       const a = v.agent, u = a.userData;
       const st = v.team ? state.status[v.team] : 'idle';
-      u.dot.material.color.set('#22c55e').multiplyScalar(2);
+      u.dot.material.color.set(GOLD).multiplyScalar(1.4);
       if (v.phase === 'idle') {
         a.visible = false;
         v.wait -= dt;
@@ -964,7 +961,7 @@ function agendaTexture() {
   const c = document.createElement('canvas'); c.width = 512; c.height = 288;
   const g = c.getContext('2d');
   g.fillStyle = '#0c1a2e'; g.fillRect(0, 0, 512, 288);
-  g.fillStyle = '#38bdf8'; g.fillRect(0, 0, 512, 8);
+  g.fillStyle = '#D0B993'; g.fillRect(0, 0, 512, 8);
   g.fillStyle = '#f8fafc'; g.font = '700 32px sans-serif'; g.textAlign = 'center';
   g.fillText('每周一 9:00 跨部门例会', 256, 110);
   g.fillText('每月 1 日 10:00 发展规划会', 256, 175);
@@ -974,7 +971,7 @@ function loungeBoardTexture() {
   const c = document.createElement('canvas'); c.width = 512; c.height = 288;
   const g = c.getContext('2d');
   g.fillStyle = '#102033'; g.fillRect(0, 0, 512, 288);
-  g.fillStyle = '#f59e0b'; g.fillRect(0, 0, 512, 10);
+  g.fillStyle = '#E87708'; g.fillRect(0, 0, 512, 10);
   g.fillStyle = '#f8fafc'; g.font = '700 46px "PingFang SC","Noto Sans SC",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillText('本周跨部门例会', 256, 132);
   g.fillStyle = '#8b97b0'; g.font = '500 24px sans-serif'; g.fillText('周一  9:00', 256, 196);
@@ -1028,9 +1025,12 @@ function furnishLounge(g, def) {
   box(g, 0.07, 0.04, 0.05, coolX - 0.18, 0.78, coolZ, M('#334155', { m: .4 }), { cast: false });
   cyl(g, 0.045, 0.04, 0.06, coolX - 0.22, 0.62, coolZ, M('#f8fafc', { r: .35 }), 8);
   // east + south walls, door stays on the west
-  const wallMat = M('#3a2a22', { r: .85 });
-  box(g, 0.12, WALL_H, D, W / 2 - 0.06, 0, 0, wallMat);
-  box(g, W, 0.12, 0.12, 0, 0, D / 2 - 0.06, wallMat);
+  const wallMat = smokeGlass();
+  const gold = goldFrame();
+  box(g, 0.04, WALL_H, D, W / 2 - 0.02, 0, 0, wallMat, { cast: false });
+  box(g, W, WALL_H, 0.04, 0, 0, D / 2 - 0.02, wallMat, { cast: false });
+  box(g, 0.045, 0.04, D, W / 2, WALL_H - 0.02, 0, gold, { cast: false });
+  box(g, W, 0.04, 0.045, 0, WALL_H - 0.02, D / 2, gold, { cast: false });
   // wall-mounted flat TV, with the weekly meeting plaque beside it
   box(g, 1.15, 0.42, 0.04, -2.15, 1.55, -D / 2 + 0.16, M('#1e293b'), { cast: false });
   const plaque = new THREE.Mesh(new THREE.PlaneGeometry(1.05, 0.32), new THREE.MeshBasicMaterial({ map: loungeBoardTexture(), toneMapped: false }));
@@ -1114,7 +1114,7 @@ function decorate(R, dyn, teamById) {
     const scr = new THREE.Group(); scr.position.set(0, 0, bz + 0.6); g.add(scr);
     box(scr, 0.12, 1.2, 0.12, -1.4, 0, 0, M('#111827', { m: .5 })); box(scr, 0.12, 1.2, 0.12, 1.4, 0, 0, M('#111827', { m: .5 }));
     box(scr, 3.3, 1.4, 0.08, 0, 1.05, 0, M('#0b0f19', { r: .3 }));
-    const big = new THREE.Mesh(new THREE.PlaneGeometry(3.15, 1.25), screenMat('dash', '#22d3ee', false)); big.position.set(0, 1.75, 0.045); scr.add(big);
+    const big = new THREE.Mesh(new THREE.PlaneGeometry(3.15, 1.25), screenMat('dash', GOLD, false)); big.position.set(0, 1.75, 0.045); scr.add(big);
     plant(g, bx + 0.6, bz + 0.6, 1.2, 1); plant(g, W / 2 - 0.6, bz + 0.6, 1.2, 1);
     plant(g, bx + 0.6, D / 2 - 0.6, 1, 0); plant(g, W / 2 - 0.6, D / 2 - 0.6, 1, 0);
     rug(g, 0, 0, 7, 3.6, '#0a2230');
@@ -1214,7 +1214,7 @@ function decorate(R, dyn, teamById) {
     // two compute racks with blinking LEDs (data-centre nod)
     R.leds = [];
     const rackM = M('#141a26', { r: .4, m: .5 }), door = M('#1e2636', { r: .3, m: .6 });
-    const ledMats = [0, 1, 2, 3].map(i => { const m = new THREE.MeshBasicMaterial({ color: ['#22d3ee', '#22c55e', '#38bdf8', '#a78bfa'][i], toneMapped: false }); R.leds.push({ m, base: m.color.clone() }); return m; });
+    const ledMats = [0, 1, 2, 3].map(i => { const m = new THREE.MeshBasicMaterial({ color: [GOLD, ORANGE, GOLD, ORANGE][i], toneMapped: false }); R.leds.push({ m, base: m.color.clone() }); return m; });
     for (let i = 0; i < 2; i++) {
       const r = new THREE.Group(); r.position.set(bx + 0.65, 0, -0.4 + i * 1.0); r.rotation.y = Math.PI / 2; g.add(r);
       box(r, 0.85, 2.0, 0.95, 0, 0, 0, rackM, { round: 0.02 }); box(r, 0.75, 1.85, 0.02, 0, 0.08, 0.48, door, { cast: false });
@@ -1230,22 +1230,21 @@ function decorate(R, dyn, teamById) {
     plant(g, 4.1, -2.9, 1.0, 1); plant(g, 4.1, 3.0, 1.2, 2); floorLamp(g, bx + 0.6, 2.9);
   } else if (id === 'privfin') {
     // private glass room: frosted purple glass all round, locked door
-    box(g, 0.14, WALL_H, D, bx + 0.07, 0, 0, M(hex(mix(def.color, '#20263a', 0.5)), { r: .85 }));
-    box(g, W, WALL_H, 0.14, 0, 0, bz + 0.07, M(hex(mix(def.color, '#20263a', 0.5)), { r: .85 }));
+    box(g, 0.04, WALL_H, D, bx + 0.02, 0, 0, smokeGlass(), { cast: false });
+    box(g, W, WALL_H, 0.04, 0, 0, bz + 0.02, smokeGlass(), { cast: false });
     desks.push(deskSet(g, -1.0, bz + 1.1, 0, t, { kinds: ['dash', 'chart'], chair: accentChair, dim: true, monitors: 2 }));
     box(g, 0.7, 0.9, 0.6, 2.2, 0, bz + 0.5, M('#374151', { m: .6, r: .35 }), { round: 0.04 });
     cabinet(g, bx + 0.45, 0.2, Math.PI / 2, 0.55, 1.3); plant(g, 3.8, 2.8, 1.2, 2); plant(g, bx + 0.6, 3.0, 1, 0);
     // sofa
-    box(g, 1.8, 0.42, 0.8, 2.6, 0, 0.8, M('#4c1d95', { r: .9 }), { round: 0.08 }); box(g, 1.8, 0.5, 0.2, 2.6, 0.35, 0.5, M('#5b21b6', { r: .9 }), { round: 0.08 });
-    glassRun(g, -W / 2, D / 2, W / 2, D / 2, WALL_H, [[0.62, 0.76]], '#c4b5fd', 0.32);
-    glassRun(g, W / 2, -D / 2, W / 2, D / 2, WALL_H, [], '#c4b5fd', 0.32);
-    // closed glass door + frosted band
-    const door = new THREE.Mesh(boxG(W * 0.14, WALL_H, 0.04), M('#a78bfa', { r: .1, op: .45 })); door.position.set(-W / 2 + W * 0.69, WALL_H / 2, D / 2); g.add(door);
-    const band = new THREE.Mesh(boxG(W, 0.5, 0.035), M('#ede9fe', { r: .9, op: .55 })); band.position.set(0, 1.25, D / 2 + 0.01); g.add(band);
-    const band2 = new THREE.Mesh(boxG(0.035, 0.5, D), M('#ede9fe', { r: .9, op: .55 })); band2.position.set(W / 2 + 0.01, 1.25, 0); g.add(band2);
+    box(g, 1.8, 0.42, 0.8, 2.6, 0, 0.8, M('#1c1917', { r: .9 }), { round: 0.08 }); box(g, 1.8, 0.5, 0.2, 2.6, 0.35, 0.5, M('#292524', { r: .9 }), { round: 0.08 });
+    glassRun(g, -W / 2, D / 2, W / 2, D / 2, WALL_H, [[0.62, 0.76]]);
+    glassRun(g, W / 2, -D / 2, W / 2, D / 2, WALL_H, []);
+    const door = new THREE.Mesh(boxG(W * 0.14, WALL_H, 0.04), smokeGlass()); door.position.set(-W / 2 + W * 0.69, WALL_H / 2, D / 2); g.add(door);
+    const band = new THREE.Mesh(boxG(W, 0.04, 0.035), goldFrame()); band.position.set(0, 1.25, D / 2 + 0.02); g.add(band);
+    const band2 = new THREE.Mesh(boxG(0.035, 0.04, D), goldFrame()); band2.position.set(W / 2 + 0.02, 1.25, 0); g.add(band2);
     // padlock icon (3D) above door
     const lk = new THREE.Group(); lk.position.set(-W / 2 + W * 0.69, 2.75, D / 2 + 0.05); g.add(lk);
-    const lkb = new THREE.Mesh(rboxG(0.42, 0.34, 0.12, 0.05), M('#fbbf24', { m: .7, r: .3, e: '#f59e0b', ei: .45 })); lkb.userData.keep = true; lk.add(lkb);
+    const lkb = new THREE.Mesh(rboxG(0.42, 0.34, 0.12, 0.05), M(GOLD, { m: .7, r: .3, e: ORANGE, ei: .35 })); lkb.userData.keep = true; lk.add(lkb);
     const sh = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.04, 8, 16, Math.PI), M('#e5e7eb', { m: .9, r: .2 })); sh.position.y = 0.17; sh.userData.keep = true; lk.add(sh);
     const kh = new THREE.Mesh(boxG(0.06, 0.12, 0.02), M('#1f2937')); kh.position.z = 0.065; kh.userData.keep = true; lk.add(kh);
     R.lock = lk;
@@ -1292,8 +1291,8 @@ function decorate(R, dyn, teamById) {
     const doorFrac = id === 'market' ? [[0.74, 0.88]] : id === 'legal' ? [[0.60, 0.73]] : id === 'proposal' ? [[0.05, 0.19]] : [[0.4, 0.54]];
     const wing = id === 'design' || id === 'showroom';
     const sideDoor = id === 'archive' || id === 'meeting';
-    glassRun(g, -W / 2, D / 2, W / 2, D / 2, 2.2, wing ? [] : doorFrac, '#d5e4f2', 0.34);
-    glassRun(g, W / 2, -D / 2, W / 2, D / 2, 2.2, sideDoor ? [[0.34, 0.62]] : (!wing && def.z > 0 ? [[0.1, 0.26]] : []), '#d5e4f2', 0.34);
+    glassRun(g, -W / 2, D / 2, W / 2, D / 2, 2.2, wing ? [] : doorFrac);
+    glassRun(g, W / 2, -D / 2, W / 2, D / 2, 2.2, sideDoor ? [[0.34, 0.62]] : (!wing && def.z > 0 ? [[0.1, 0.26]] : []));
     if (!wing) {
       const [a, b] = doorFrac[0];
       doorFrame(g, -W / 2 + ((a + b) / 2) * W, D / 2, 0, (b - a) * W, 2.2);
