@@ -177,6 +177,16 @@ function chip(s) { return `<span class="chip ${s === 'doing' ? 'busy' : esc(s)}"
 
 function renderPanel(id) {
   const t = teamOf(id); const body = $('#panelBody');
+  if (id === 'lounge') {
+    const L = DATA.lounge || {};
+    const n = office.rooms.lounge?.occupancy ?? 0;
+    const note = L.lastMeeting ? `<div class="sec"><h4>最新纪要</h4><div class="card"><div class="cur">${esc(L.lastMeeting)}</div></div></div>` : '';
+    body.innerHTML = `<div class="ph" style="--c:#f59e0b"><div class="ic">☕</div><div><h3>${esc(L.name || '休息室')}</h3><div class="sub">跨部门交流区 · 每周一 9:00 例会</div></div></div>` +
+      `<div class="sec"><h4>例会</h4><div class="card"><div class="cur">${esc(L.meeting || '每周一 9:00 跨部门例会')}</div></div></div>` +
+      note +
+      `<div class="sec"><div class="card empty">当前 ${n} 人在休息室</div></div>`;
+    return;
+  }
   if (!t) {
     const m = MINOR[id]; const c = office.rooms[id]?.def.color ?? '#64748b';
     body.innerHTML = `<div class="ph" style="--c:${c}"><div class="ic">·</div><div><h3>${esc(m?.name ?? id)}</h3><div class="sub">公共区域</div></div></div><div class="sec"><div class="card empty">${esc(m?.text ?? '')}</div></div>`;
@@ -344,7 +354,14 @@ function renderDirectory() {
       html += `<section class="dgroup"><h3><i class="dot ${esc(g.status)}"></i>${esc(g.label)}<span class="n">${teams.length}</span></h3>${teams.length ? teams.map(deptCard).join('') : '<div class="dnone">无</div>'}</section>`;
     }
   }
-  root.innerHTML = html;
+  root.innerHTML = html + sharedSpaceCard();
+}
+function sharedSpaceCard() {
+  const L = DATA.lounge || {};
+  const n = office.rooms.lounge?.occupancy ?? 0;
+  const sel = state.selected === 'lounge' ? ' sel' : '';
+  const extra = [L.meeting, L.lastMeeting].filter(Boolean).map(s => `<div class="dnone">${esc(s)}</div>`).join('');
+  return `<section class="dgroup"><h3>共享空间</h3><button type="button" class="dcard${sel}" data-team="lounge" style="--c:#f59e0b"><div class="dtop"><span class="ic">☕</span><div><div class="nm">${esc(L.name || '休息室')}</div><div class="sub">共享空间 · ${n} 人在此</div></div></div>${extra}</button></section>`;
 }
 $('#dirBody').addEventListener('click', e => { const c = e.target.closest('.dcard'); if (c) selectRoom(c.dataset.team, 'directory'); });
 $('#dirMode').addEventListener('click', e => {
@@ -419,8 +436,8 @@ function frame() {
   }
   controls.update();
   // keep target inside the office
-  controls.target.x = THREE.MathUtils.clamp(controls.target.x, -22, 22);
-  controls.target.z = THREE.MathUtils.clamp(controls.target.z, -20, 20);
+  controls.target.x = THREE.MathUtils.clamp(controls.target.x, -30, 30);
+  controls.target.z = THREE.MathUtils.clamp(controls.target.z, -22, 24);
   controls.target.y = 0;
   office.update(t, dt, state);
   tickBubbles(dt);

@@ -346,7 +346,11 @@ function roomShell(root, def, ctx) {
   if (def.walls !== 'glass') {
     // back (-z) wall with windows
     box(g, w, WALL_H, 0.14, 0, 0, hz + 0.07, wallMat);
-    box(g, 0.14, WALL_H, d, hx + 0.07, 0, 0, wallMat);
+    if (def.door === 'west') {
+      const gap = 1.8, seg = (d - gap) / 2;
+      box(g, 0.14, WALL_H, seg, hx + 0.07, 0, -(gap + seg) / 2, wallMat);
+      box(g, 0.14, WALL_H, seg, hx + 0.07, 0, (gap + seg) / 2, wallMat);
+    } else box(g, 0.14, WALL_H, d, hx + 0.07, 0, 0, wallMat);
     box(g, w, 0.1, 0.02, 0, 0, hz + 0.15, trim, { cast: false });
     box(g, 0.02, 0.1, d, hx + 0.15, 0, 0, trim, { cast: false });
     // top cap
@@ -422,6 +426,7 @@ export const LAYOUT = {
   corpfin:  { x: -13.5, z: 12,  w: 10, d: 8.5, icon: '会', sign: '会计部', signSub: 'ACCOUNTING' },
   logistics:{ x: 0,     z: 12,  w: 11, d: 8.5, icon: '物', sign: '物流部', signSub: 'LOGISTICS' },
   privfin:  { x: 13.5,  z: 12,  w: 10, d: 8.5, icon: '🔒', walls: 'glass', private: true, floorTone: '#5b3d8f', sign: '私人助理', signSub: 'PRIVATE · 仅 EDWARD' },
+  lounge:   { x: 25.6, z: 0,   w: 9.4, d: 11, icon: '☕', color: '#f59e0b', door: 'west', floorTone: '#c4a574', floorMix: 0.35, sign: '休息室', signSub: 'LOUNGE', label: '休息室' },
 };
 
 export function buildOffice(scene, teams) {
@@ -538,6 +543,41 @@ export function buildOffice(scene, teams) {
     rooms[wd.from].walkers.push(a);
   }
 
+  /* lounge annex: short bridge from the east corridor, two visitors max */
+  const lounge = rooms.lounge;
+  const annex = new THREE.Mesh(rboxG(11.2, 0.1, 13.2, 0.06), M('#161d30', { r: .7 }));
+  annex.position.set(lounge.def.x, -0.04, 0); annex.receiveShadow = true; staticG.add(annex);
+  const bridge = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 2.3), M('#12182a', { r: .6 }));
+  bridge.position.set(20.2, 0.02, 0.15); bridge.receiveShadow = true; staticG.add(bridge);
+  const loungeLight = new THREE.PointLight('#fdba74', 1.1, 9, 1.8);
+  loungeLight.position.set(lounge.def.x, 3.1, 0.4); root.add(loungeLight);
+  const stSpan = lounge.labelEl?.querySelector('.st span');
+  if (stSpan) stSpan.textContent = '暂无成员';
+  lounge.occupancy = 0;
+
+  const lingerSpots = [
+    new THREE.Vector3(lounge.def.x - 1.1, FLOOR_H, 1.5),
+    new THREE.Vector3(lounge.def.x + 0.4, FLOOR_H, -1.4),
+  ];
+  function loungePath(room) {
+    const c = room.def, y = FLOOR_H;
+    const aisleX = c.x < -2 ? -6.75 : (Math.abs(c.x) < 3 ? 0.5 : 6.75);
+    return [
+      new THREE.Vector3(c.x + Math.sign(aisleX - c.x) * c.w * 0.38, y, c.z),
+      new THREE.Vector3(aisleX, y, c.z),
+      new THREE.Vector3(aisleX, y, 0.35),
+      new THREE.Vector3(19.4, y, 0.35),
+      new THREE.Vector3(lounge.def.x - lounge.def.w / 2 + 0.9, y, 0.15),
+    ];
+  }
+  const visitors = [];
+  for (let i = 0; i < 2; i++) {
+    const a = makeAgent({ shirt: i ? '#e7e5e4' : '#fed7aa', pants: '#1e293b' });
+    a.visible = false; dyn.add(a);
+    visitors.push({ agent: a, team: null, pts: [], i: 0, dir: 1, phase: 'idle', wait: 1.5 + i * 2.4, speed: 1.15, spot: i });
+  }
+  let occTick = 0;
+
   /* merge static geometry by material to cut draw calls */
   staticG.updateMatrixWorld(true);
   const buckets = new Map();
@@ -621,12 +661,118 @@ export function buildOffice(scene, teams) {
       }
       animateAgent(a, t, dt);
     }
+    // idle / standby staff drift into the lounge, at most two at a time
+    const inside = (p) => Math.abs(p.x - lounge.def.x) < lounge.def.w / 2 && Math.abs(p.z - lounge.def.z) < lounge.def.d / 2;
+    let occ = 0;
+    for (const v of visitors) {
+      const a = v.agent, u = a.userData;
+      const st = v.team ? state.status[v.team] : 'idle';
+      u.dot.material.color.set('#22c55e').multiplyScalar(2);
+      if (v.phase === 'idle') {
+        a.visible = false;
+        v.wait -= dt;
+        if (v.wait > 0) continue;
+        const used = new Set(visitors.filter(o => o !== v && o.team).map(o => o.team));
+        const pick = Object.values(rooms).find(R => R.team && !R.team.private && state.status[R.id] === 'idle' && !used.has(R.id));
+        if (!pick) { v.wait = 2.5; continue; }
+        v.team = pick.id;
+        v.pts = loungePath(pick).concat([lingerSpots[v.spot % lingerSpots.length]]);
+        v.i = 0; v.dir = 1; v.phase = 'go';
+        a.position.copy(v.pts[0]); a.visible = true;
+        continue;
+      }
+      if (st && st !== 'idle' && v.phase !== 'back') { v.phase = 'back'; v.dir = -1; }
+      if (v.phase === 'linger') {
+        occ++;
+        v.wait -= dt; u.mode = 'stand'; animateAgent(a, t, dt);
+        if (v.wait <= 0) { v.phase = 'back'; v.dir = -1; }
+        continue;
+      }
+      const target = v.pts[v.i + v.dir];
+      if (!target) {
+        if (v.dir > 0) { v.phase = 'linger'; v.wait = 6 + rnd() * 5; u.mode = 'stand'; }
+        else { v.phase = 'idle'; v.team = null; v.wait = 7 + rnd() * 8; a.visible = false; }
+        continue;
+      }
+      if (inside(a.position)) occ++;
+      u.mode = 'walk';
+      tmp.subVectors(target, a.position); tmp.y = 0;
+      const dist = tmp.length(), stp = v.speed * dt;
+      if (dist <= stp) { a.position.x = target.x; a.position.z = target.z; v.i += v.dir; }
+      else {
+        tmp.multiplyScalar(stp / dist); a.position.x += tmp.x; a.position.z += tmp.z;
+        const ang = Math.atan2(tmp.x, tmp.z); let da = ang - a.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
+        a.rotation.y += da * Math.min(1, dt * 10);
+      }
+      animateAgent(a, t, dt);
+    }
+    occTick -= dt;
+    if (occTick <= 0) {
+      occTick = 0.45;
+      if (lounge.occupancy !== occ) {
+        lounge.occupancy = occ;
+        const span = lounge.labelEl?.querySelector('.st span');
+        if (span) span.textContent = occ ? `${occ} 人在此` : '暂无成员';
+        const sub = document.querySelector('.dcard[data-team="lounge"] .sub');
+        if (sub) sub.textContent = `共享空间 · ${occ} 人在此`;
+      }
+    }
     // server LEDs
     if (rooms.info?.leds) rooms.info.leds.forEach((o, i) => { o.m.color.copy(o.base).multiplyScalar((Math.sin(t * (3 + i * 1.7) + i) > 0.2) ? 1.4 : 0.35); });
     // screens subtle scroll
     for (const m of screenMats.values()) { if (m.map) m.map.offset.y = (Math.floor(t * 2) % 8) * 0.004; }
   }
   return { rooms, update, walkers, root };
+}
+
+function loungeBoardTexture() {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 288;
+  const g = c.getContext('2d');
+  g.fillStyle = '#102033'; g.fillRect(0, 0, 512, 288);
+  g.fillStyle = '#f59e0b'; g.fillRect(0, 0, 512, 10);
+  g.fillStyle = '#f8fafc'; g.font = '700 46px "PingFang SC","Noto Sans SC",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('本周跨部门例会', 256, 132);
+  g.fillStyle = '#8b97b0'; g.font = '500 24px sans-serif'; g.fillText('周一  9:00', 256, 196);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function furnishLounge(g, def) {
+  const W = def.w, D = def.d;
+  const sofaM = M('#b45309', { r: .82 });
+  const sofa = (x, z, ry) => {
+    const s = new THREE.Group(); s.position.set(x, 0, z); s.rotation.y = ry; g.add(s);
+    box(s, 2.05, 0.36, 0.78, 0, 0.28, 0, sofaM, { round: 0.08 });
+    box(s, 2.05, 0.5, 0.18, 0, 0.48, -0.32, sofaM, { round: 0.06 });
+    box(s, 0.18, 0.42, 0.78, -0.96, 0.36, 0, sofaM, { round: 0.05 });
+    box(s, 0.18, 0.42, 0.78, 0.96, 0.36, 0, sofaM, { round: 0.05 });
+  };
+  sofa(-1.15, 2.15, Math.PI);
+  sofa(-1.15, -0.35, 0);
+  // round table between the sofas
+  cyl(g, 0.55, 0.55, 0.06, -1.15, 0.42, 0.9, M(WOOD, { r: .45 }), 20);
+  cyl(g, 0.06, 0.08, 0.42, -1.15, 0, 0.9, M('#1f2937'), 8);
+  chair(g, -0.35, 0.9, -Math.PI / 2, '#92400e');
+  // coffee bar along the east wall
+  const bar = M('#1f2937', { r: .45, m: .35 });
+  box(g, 0.7, 1.05, 3.4, W / 2 - 0.55, 0, -0.2, bar, { round: 0.03 });
+  box(g, 0.74, 0.06, 3.45, W / 2 - 0.55, 1.05, -0.2, M('#d6d3d1', { r: .35 }), { round: 0.02 });
+  const machine = new THREE.Group(); machine.position.set(W / 2 - 0.55, 1.11, -1.15); g.add(machine);
+  box(machine, 0.42, 0.48, 0.36, 0, 0.24, 0, M('#111827', { m: .6, r: .35 }), { round: 0.03 });
+  box(machine, 0.18, 0.12, 0.04, 0, 0.42, 0.18, M('#f59e0b', { e: '#fbbf24', ei: 0.8 }), { cast: false });
+  cyl(machine, 0.07, 0.06, 0.08, -0.1, 0, 0.16, M('#f8fafc', { r: .4 }), 10);
+  cyl(g, 0.11, 0.09, 0.16, W / 2 - 0.7, 1.11, 0.55, M('#44403c', { r: .4 }), 12);
+  // east + south walls so the room reads as enclosed, door stays on the west
+  const wallMat = M('#3a2a22', { r: .85 });
+  box(g, 0.12, WALL_H, D, W / 2 - 0.06, 0, 0, wallMat);
+  box(g, W, 0.12, 0.12, 0, 0, D / 2 - 0.06, wallMat);
+  // TV / board
+  box(g, 2.5, 1.35, 0.08, 0.9, 1.15, -D / 2 + 0.16, M('#0b0f19', { r: .3 }), { cast: false });
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.28, 1.12), new THREE.MeshBasicMaterial({ map: loungeBoardTexture(), toneMapped: false }));
+  screen.position.set(0.9, 1.7, -D / 2 + 0.22); screen.userData.keep = true; g.add(screen);
+  plant(g, -W / 2 + 0.55, -D / 2 + 0.7, 1.15, 2);
+  plant(g, W / 2 - 1.3, D / 2 - 0.7, 1.05, 0);
+  plant(g, -W / 2 + 0.6, D / 2 - 0.65, 0.9, 1);
+  floorLamp(g, W / 2 - 1.15, -D / 2 + 0.8, '#fdba74');
+  rug(g, -1.15, 0.9, 3.1, 3.2, '#e7d3b0');
 }
 
 /* ---------------- per-room decoration ---------------- */
@@ -801,9 +947,11 @@ function decorate(R, dyn, teamById) {
     const sh = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.04, 8, 16, Math.PI), M('#e5e7eb', { m: .9, r: .2 })); sh.position.y = 0.17; sh.userData.keep = true; lk.add(sh);
     const kh = new THREE.Mesh(boxG(0.06, 0.12, 0.02), M('#1f2937')); kh.position.z = 0.065; kh.userData.keep = true; lk.add(kh);
     R.lock = lk;
+  } else if (id === 'lounge') {
+    furnishLounge(g, def);
   }
   // front glass partitions for open team rooms
-  if (def.walls !== 'glass') {
+  if (def.walls !== 'glass' && id !== 'lounge') {
     const doorFrac = id === 'market' ? [[0.74, 0.88]] : id === 'legal' ? [[0.60, 0.73]] : id === 'proposal' ? [[0.05, 0.19]] : [[0.4, 0.54]];
     const doorSide = (def.z < 0);
     glassRun(g, -W / 2, D / 2, W / 2, D / 2, 1.05, doorFrac);

@@ -1,11 +1,16 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-05T11:36:00+08:00",
+  "updatedAt": "2026-11-05T12:40:00+08:00",
   "office": {
     "title": "Evergate AI Office",
     "company": "EVERGATE HOLDING SDN BHD",
     "owner": "Edward Cheng",
     "tagline": "马来西亚 AI 数据中心顾问"
+  },
+  "lounge": {
+    "name": "休息室",
+    "meeting": "每周一 9:00 跨部门例会",
+    "lastMeeting": "首次例会将于 11月09日 举行"
   },
   "statusLabels": {
     "busy": "忙碌",
@@ -241,9 +246,21 @@
       "status": "done",
       "title": "全球 AI 动态快讯（每小时扫描）",
       "updatedAt": "2026-11-05T11:36:00+08:00"
+    },
+    {
+      "id": "t17",
+      "team": "ed",
+      "status": "doing",
+      "title": "新增休息室 + 每周跨部门例会",
+      "updatedAt": "2026-11-05T12:40:00+08:00"
     }
   ],
   "feed": [
+    {
+      "team": "ed",
+      "time": "2026-11-05T12:40:00+08:00",
+      "text": "进行中：新增休息室 + 每周跨部门例会"
+    },
     {
       "team": "info",
       "time": "2026-11-05T11:36:00+08:00",
