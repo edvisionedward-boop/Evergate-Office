@@ -963,7 +963,7 @@ export function buildOffice(scene, teams) {
     visitors.push({ agent: a, team: null, pts: [], i: 0, dir: 1, phase: 'idle', wait: 1.5 + i * 2.4, speed: 1.15, spot: i });
   }
   const meetRoom = rooms.meeting;
-  const meetSeats = [[-2.4, -1.72], [0.4, -1.72], [-1.0, 1.72], [1.8, 1.72]].map(([x, z]) => new THREE.Vector3(meetRoom.def.x + x, FLOOR_H, meetRoom.def.z + z));
+  const meetSeats = [[-2.7, -1.78], [0, -1.78], [-1.35, 1.78], [1.35, 1.78]].map(([x, z]) => new THREE.Vector3(meetRoom.def.x + x, FLOOR_H, meetRoom.def.z + z));
   const meeters = [];
   const meetFrom = ['market', 'invest', 'logistics', 'design'];
   for (let i = 0; i < meetSeats.length; i++) {
@@ -1253,15 +1253,21 @@ function furnishMeeting(g, def) {
   const { w: W, d: D } = def;
   const wood = M('#c4a574', { r: .45 });
   const metal = M('#1f2937', { m: .45, r: .4 });
-  box(g, 7.4, 0.08, 2.15, 0.55, 0.72, 0, wood, { round: 0.04 });
-  for (const [x, z] of [[-2.55, -0.72], [3.55, -0.72], [-2.55, 0.72], [3.55, 0.72], [0.5, -0.72], [0.5, 0.72]]) {
+  // 12 seats: 5 along each long side, one at each end. The screen is the west end.
+  box(g, 6.8, 0.08, 2.05, 0, 0.72, 0, wood, { round: 0.04 });
+  for (const [x, z] of [[-2.7, -0.68], [2.7, -0.68], [-2.7, 0.68], [2.7, 0.68], [0, -0.68], [0, 0.68]]) {
     cyl(g, 0.07, 0.09, 0.72, x, 0, z, metal, 8, { cast: false });
   }
-  rug(g, 0.55, 0, 8.8, 4.4);
-  for (const x of [-2.4, -1.0, 0.4, 1.8, 3.2]) {
-    chair(g, x, -1.72, Math.PI, '#334155');
-    chair(g, x, 1.72, 0, '#334155');
+  rug(g, 0, 0, 10.2, 4.8);
+  const sideX = [-2.7, -1.35, 0, 1.35, 2.7];
+  for (const x of sideX) {
+    chair(g, x, -1.78, Math.PI - 0.42, '#334155');
+    chair(g, x, 1.78, 0.42, '#334155');
   }
+  // East head looks straight down the table at the screen. West head is turned
+  // toward the screen as well, so nobody sits with it behind them.
+  chair(g, 4.2, 0, Math.PI / 2, '#1e293b');
+  chair(g, -4.25, 0, Math.PI / 2, '#1e293b');
   // projection screen on the west wall, facing the door and the camera
   const sW = 5.6, sH = 2.02, sx = -W / 2 + 0.1;
   box(g, 0.08, sH + 0.18, sW + 0.2, sx, 0.16, 0, M('#0a0a0a', { r: .35, m: .4 }), { cast: false });
@@ -1272,9 +1278,9 @@ function furnishMeeting(g, def) {
   screen.rotation.y = Math.PI / 2;
   screen.userData.keep = true;
   g.add(screen);
-  // ceiling projector, aimed west at the screen
+  // ceiling projector over the west end of the table; the beam clears the head chair
   const proj = new THREE.Group();
-  proj.position.set(-1.15, 2.16, 0);
+  proj.position.set(-2.05, 2.22, 0);
   g.add(proj);
   cyl(proj, 0.02, 0.02, 0.28, 0, 0, 0, M('#9aa3b2', { m: .65, r: .3 }), 6, { cast: false });
   box(proj, 0.28, 0.04, 0.28, 0, 0.22, 0, M('#c5ccd6', { m: .5, r: .35 }), { cast: false });
@@ -1284,13 +1290,13 @@ function furnishMeeting(g, def) {
   const glow = new THREE.Mesh(sphG(0.05, 8, 6), B('#f7fbff', { op: .9, add: true }));
   glow.position.set(-0.52, -0.11, 0);
   proj.add(glow);
-  const beamLen = (-W / 2 + 0.45) - (-1.7);
+  const beamLen = (-2.55) - (sx + 0.12);
   const beam = new THREE.Mesh(
-    new THREE.ConeGeometry(0.72, Math.abs(beamLen), 18, 1, true),
+    new THREE.ConeGeometry(0.48, Math.abs(beamLen), 18, 1, true),
     new THREE.MeshBasicMaterial({ color: '#e7f1fb', transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide }),
   );
   beam.geometry.translate(0, -Math.abs(beamLen) / 2, 0);
-  beam.rotation.z = -Math.PI / 2 + 0.18;
+  beam.rotation.z = -Math.PI / 2 + 0.2;
   beam.position.set(-0.55, -0.08, 0);
   beam.userData.keep = true;
   proj.add(beam);
