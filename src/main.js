@@ -261,8 +261,10 @@ function renderBoard() {
 $('#boardCols').addEventListener('click', e => { const c = e.target.closest('.tcard'); if (c) selectRoom(c.dataset.team); });
 $('#boardStats').addEventListener('click', e => { const c = e.target.closest('.bschip'); if (c) selectRoom(c.dataset.team); });
 function setTab(v) { document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === v)); }
-document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
-  const v = b.dataset.view; setTab(v);
+function openView(v) {
+  setTab(v);
+  $('#navfabMenu').classList.add('hidden');
+  $('#navfabBtn').setAttribute('aria-expanded', 'false');
   if (v === 'board') {
     $('#panel').classList.add('hidden'); state.selected = null;
     $('#directory').classList.add('hidden');
@@ -277,7 +279,17 @@ document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () =>
     $('#board').classList.add('hidden');
     $('#directory').classList.add('hidden');
   }
-}));
+}
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => openView(b.dataset.view)));
+$('#navfabBtn').addEventListener('click', () => {
+  const menu = $('#navfabMenu');
+  const open = menu.classList.toggle('hidden') === false;
+  $('#navfabBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+$('#navfabMenu').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (b?.dataset.view) openView(b.dataset.view);
+});
 $('#boardClose').addEventListener('click', () => { $('#board').classList.add('hidden'); setTab('office'); });
 
 const DONE_SHOW = 3;
@@ -417,4 +429,7 @@ function frame() {
   if (first) { first = false; setTimeout(() => $('#loading').classList.add('gone'), 150); window.__ready = true; }
 }
 renderer.setAnimationLoop(frame);
-window.__app = { popBubble, selectRoom, closePanel, setTab, office, camera, controls, renderer };
+window.__app = { popBubble, selectRoom, closePanel, setTab, openView, office, camera, controls, renderer };
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {});
+}
