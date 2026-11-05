@@ -1,0 +1,11 @@
+import { chromium } from 'playwright-core';
+const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox', '--allow-file-access-from-files=false'] });
+const p = await b.newPage({ viewport: { width: 1280, height: 800 } });
+p.on('pageerror', e => console.log('ERR', e.message));
+await p.goto('file:///workspace/evergate/office-app/dist/index.html');
+await p.waitForFunction(() => window.__ready, null, { timeout: 60000 });
+await p.waitForTimeout(3000);
+console.log(await p.evaluate(() => [...document.querySelectorAll('.rlabel .nm')].map(e => e.textContent).join(',')));
+console.log(await p.evaluate(() => document.querySelector('#updated').textContent));
+await p.screenshot({ path: 'screens/offline-file.png' });
+await b.close();

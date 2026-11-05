@@ -1,0 +1,264 @@
+{
+  "version": 1,
+  "updatedAt": "2026-11-05T10:04:00+08:00",
+  "office": {
+    "title": "Evergate AI Office",
+    "company": "EVERGATE HOLDING SDN BHD",
+    "owner": "Edward Cheng",
+    "tagline": "马来西亚 AI 数据中心顾问"
+  },
+  "statusLabels": {
+    "busy": "忙碌",
+    "confirm": "等你确认",
+    "idle": "空闲"
+  },
+  "teams": [
+    {
+      "id": "ed",
+      "name": "ED 中央指挥室",
+      "short": "ED",
+      "color": "#22d3ee",
+      "status": "busy",
+      "statusNote": "忙碌",
+      "agents": 1,
+      "currentTask": "制作 3D 办公室 App",
+      "private": false
+    },
+    {
+      "id": "market",
+      "name": "市场部",
+      "short": "市场",
+      "color": "#3b82f6",
+      "status": "idle",
+      "statusNote": "空闲",
+      "agents": 3,
+      "currentTask": null,
+      "private": false
+    },
+    {
+      "id": "corpfin",
+      "name": "财务部",
+      "short": "财务",
+      "color": "#f59e0b",
+      "status": "idle",
+      "statusNote": "空闲",
+      "agents": 2,
+      "currentTask": null,
+      "private": false
+    },
+    {
+      "id": "privfin",
+      "name": "私人助理",
+      "short": "私人助理",
+      "color": "#a855f7",
+      "status": "idle",
+      "statusNote": "待命",
+      "agents": 1,
+      "currentTask": null,
+      "private": true
+    },
+    {
+      "id": "logistics",
+      "name": "物流部",
+      "short": "物流",
+      "color": "#10b981",
+      "status": "idle",
+      "statusNote": "待命",
+      "agents": 2,
+      "currentTask": null,
+      "private": false
+    },
+    {
+      "id": "legal",
+      "name": "法务部",
+      "short": "法务",
+      "color": "#ef4444",
+      "status": "busy",
+      "statusNote": "忙碌",
+      "agents": 3,
+      "currentTask": "卖方确认清单与法律漏洞分析",
+      "private": false
+    },
+    {
+      "id": "proposal",
+      "name": "策划部",
+      "short": "策划",
+      "color": "#ec4899",
+      "status": "confirm",
+      "statusNote": "等你确认",
+      "agents": 2,
+      "currentTask": "等你确认：是否把法律发现更新进计划书 V2.4",
+      "private": false
+    },
+    {
+      "id": "invest",
+      "name": "投资部",
+      "short": "投资",
+      "color": "#84cc16",
+      "status": "idle",
+      "statusNote": "待命",
+      "agents": 2,
+      "currentTask": null,
+      "private": false,
+      "note": "投资研究 · 新设立"
+    },
+    {
+      "id": "info",
+      "name": "信息部",
+      "short": "信息",
+      "color": "#f97316",
+      "status": "busy",
+      "statusNote": "忙碌",
+      "agents": 2,
+      "currentTask": "设置每日 AI 简报",
+      "private": false,
+      "note": "每日 AI 新闻简报"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t1",
+      "team": "proposal",
+      "status": "done",
+      "title": "土地收购项目买方权益保障计划书 V2.3 已上传 Drive",
+      "updatedAt": "2026-11-05T09:50:00+08:00"
+    },
+    {
+      "id": "t2",
+      "team": "market",
+      "status": "done",
+      "title": "DCTF 27 个项目 / 57 个运营数据中心核查",
+      "updatedAt": "2026-11-05T09:50:00+08:00"
+    },
+    {
+      "id": "t3",
+      "team": "corpfin",
+      "status": "done",
+      "title": "2026 财报审阅及给会计的 12 项核对清单",
+      "updatedAt": "2026-11-05T09:50:00+08:00"
+    },
+    {
+      "id": "t4",
+      "team": "legal",
+      "status": "done",
+      "title": "土地收购项目完整法律备忘录（27 页，55 条来源，含 DCTF 有条件批准须离网供电补充）",
+      "updatedAt": "2026-11-05T09:50:00+08:00"
+    },
+    {
+      "id": "t5",
+      "team": "ed",
+      "status": "done",
+      "title": "升级 3D 办公室页面",
+      "updatedAt": "2026-11-05T09:50:00+08:00"
+    },
+    {
+      "id": "t6",
+      "team": "legal",
+      "status": "doing",
+      "title": "卖方确认清单与法律漏洞分析",
+      "updatedAt": "2026-11-05T09:50:00+08:00"
+    },
+    {
+      "id": "t7",
+      "team": "ed",
+      "status": "doing",
+      "title": "制作 3D 办公室 App",
+      "updatedAt": "2026-11-05T09:50:00+08:00"
+    },
+    {
+      "id": "t8",
+      "team": "proposal",
+      "status": "confirm",
+      "title": "是否把法律发现更新进计划书 V2.4",
+      "updatedAt": "2026-11-05T09:50:00+08:00"
+    },
+    {
+      "id": "t9",
+      "team": "proposal",
+      "status": "confirm",
+      "title": "是否删除 Drive 里旧的 V2.2",
+      "updatedAt": "2026-11-05T09:50:00+08:00"
+    },
+    {
+      "id": "t10",
+      "team": "ed",
+      "status": "confirm",
+      "title": "Google Calendar 连接授权",
+      "updatedAt": "2026-11-05T09:50:00+08:00"
+    },
+    {
+      "id": "t11",
+      "team": "info",
+      "status": "doing",
+      "title": "设置每日 AI 简报",
+      "updatedAt": "2026-11-05T10:04:00+08:00"
+    }
+  ],
+  "feed": [
+    {
+      "team": "info",
+      "time": "2026-11-05T10:04:00+08:00",
+      "text": "进行中：设置每日 AI 简报"
+    },
+    {
+      "team": "invest",
+      "time": "2026-11-05T10:04:00+08:00",
+      "text": "投资部已设立，待命中"
+    },
+    {
+      "team": "ed",
+      "time": "2026-11-05T09:50:00+08:00",
+      "text": "进行中：制作 3D 办公室 App"
+    },
+    {
+      "team": "ed",
+      "time": "2026-11-05T09:50:00+08:00",
+      "text": "等你确认：Google Calendar 连接授权"
+    },
+    {
+      "team": "ed",
+      "time": "2026-11-05T09:50:00+08:00",
+      "text": "已完成：升级 3D 办公室页面"
+    },
+    {
+      "team": "legal",
+      "time": "2026-11-05T09:50:00+08:00",
+      "text": "进行中：卖方确认清单与法律漏洞分析"
+    },
+    {
+      "team": "legal",
+      "time": "2026-11-05T09:50:00+08:00",
+      "text": "已完成：土地收购项目完整法律备忘录（27 页，55 条来源）"
+    },
+    {
+      "team": "legal",
+      "time": "2026-11-05T09:50:00+08:00",
+      "text": "备忘录含 DCTF 有条件批准须离网供电补充"
+    },
+    {
+      "team": "proposal",
+      "time": "2026-11-05T09:50:00+08:00",
+      "text": "等你确认：是否把法律发现更新进计划书 V2.4"
+    },
+    {
+      "team": "proposal",
+      "time": "2026-11-05T09:50:00+08:00",
+      "text": "等你确认：是否删除 Drive 里旧的 V2.2"
+    },
+    {
+      "team": "proposal",
+      "time": "2026-11-05T09:50:00+08:00",
+      "text": "已完成：土地收购项目买方权益保障计划书 V2.3 已上传 Drive"
+    },
+    {
+      "team": "market",
+      "time": "2026-11-05T09:50:00+08:00",
+      "text": "已完成：DCTF 27 个项目 / 57 个运营数据中心核查"
+    },
+    {
+      "team": "corpfin",
+      "time": "2026-11-05T09:50:00+08:00",
+      "text": "已完成：2026 财报审阅及给会计的 12 项核对清单"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Evergate AI Office</title>
+<meta name="description" content="EVERGATE HOLDING SDN BHD · 3D AI 虚拟办公室" />
+<meta name="theme-color" content="#070b14" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="AI Office" />
+<meta name="format-detection" content="telephone=no" />
+<link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+<link rel="icon" type="image/png" href="%BASE_URL%icons/favicon.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="%BASE_URL%icons/apple-touch-icon.png" />
+</head>
+<body>
+<div id="app">
+  <canvas id="scene"></canvas>
+  <div id="labels"></div>
+
+  <header id="topbar">
+    <div class="brand">
+      <div class="logo"><span></span></div>
+      <div class="brand-text">
+        <div class="t1">Evergate AI Office</div>
+        <div class="t2" id="company">EVERGATE HOLDING SDN BHD</div>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" data-view="office">办公室</button>
+      <button class="tab" data-view="board">任务板 <b id="confirmBadge" class="badge">0</b></button>
+    </nav>
+    <div class="summary" id="summary"></div>
+  </header>
+
+  <div id="legend">
+    <span><i class="dot busy"></i>忙碌</span>
+    <span><i class="dot confirm"></i>等你确认</span>
+    <span><i class="dot idle"></i>空闲</span>
+    <span class="upd" id="updated"></span>
+  </div>
+
+  <aside id="panel" class="hidden" aria-live="polite">
+    <div class="grab"></div>
+    <button class="close" id="panelClose" aria-label="关闭">✕</button>
+    <div id="panelBody"></div>
+  </aside>
+
+  <section id="board" class="hidden">
+    <div class="board-head">
+      <h2>任务板</h2>
+      <button class="close" id="boardClose" aria-label="关闭">✕</button>
+    </div>
+    <div class="cols" id="boardCols"></div>
+  </section>
+
+  <div id="loading"><div class="spin"></div><div>正在布置办公室…</div></div>
+</div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
