@@ -343,7 +343,7 @@
       "status": "busy",
       "statusNote": "忙碌",
       "agents": 4,
-      "currentTask": "市场判断 v0.6 修订（待 ED 审核）",
+      "currentTask": "三年发展战略大纲·框架 v0.3（ED 已审，内部工作稿）",
       "private": false,
       "note": "新增战略规划 · 11-05",
       "duty": "公司发展战略规划、新项目评估与计划书",
@@ -579,6 +579,20 @@
       "status": "doing",
       "title": "品牌视觉规范",
       "updatedAt": "2026-11-05T14:00:00+08:00"
+    },
+    {
+      "id": "t21",
+      "team": "proposal",
+      "status": "doing",
+      "title": "三年发展战略大纲·框架 v0.3（ED 已审，内部工作稿）",
+      "updatedAt": "2026-11-05T22:10:00+08:00"
+    },
+    {
+      "id": "t22",
+      "team": "proposal",
+      "status": "done",
+      "title": "市场判断 v0.6 定稿（内部）",
+      "updatedAt": "2026-11-05T22:10:00+08:00"
     },
     {
       "id": "t20",
