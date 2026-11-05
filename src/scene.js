@@ -668,8 +668,8 @@ export function buildOffice(scene, teams) {
   lounge.occupancy = 0;
 
   const lingerSpots = [
-    { pos: new THREE.Vector3(lounge.def.x - 1.15, FLOOR_H, lounge.def.z + 1.55), ry: Math.PI },
-    { pos: new THREE.Vector3(lounge.def.x + 1.35, FLOOR_H, lounge.def.z + 1.7), ry: Math.PI },
+    { pos: new THREE.Vector3(lounge.def.x - 1.15, FLOOR_H, lounge.def.z + 1.45), ry: Math.PI },
+    { pos: new THREE.Vector3(lounge.def.x + 1.15, FLOOR_H, lounge.def.z + 3.1), ry: 0 },
   ];
   function loungePath(room) {
     const c = room.def, y = FLOOR_H;
@@ -956,13 +956,14 @@ function furnishLounge(g, def) {
   cyl(g, 0.55, 0.55, 0.06, -1.15, 0.42, 0.9, M(WOOD, { r: .45 }), 20);
   cyl(g, 0.06, 0.08, 0.42, -1.15, 0, 0.9, M('#1f2937'), 8);
   chair(g, -0.35, 0.9, -Math.PI / 2, '#92400e');
-  // dining table for eating and resting
-  cyl(g, 0.72, 0.72, 0.06, 1.35, 0.72, 2.55, M('#c4a574', { r: .42 }), 22);
-  cyl(g, 0.08, 0.1, 0.72, 1.35, 0, 2.55, M('#1f2937'), 8);
-  chair(g, 1.35, 1.55, Math.PI, '#44403c');
-  chair(g, 1.35, 3.55, 0, '#44403c');
-  chair(g, 0.4, 2.55, Math.PI / 2, '#44403c');
-  chair(g, 2.3, 2.55, -Math.PI / 2, '#44403c');
+  // dining table, set south of the sofa zone so people can walk between them
+  const dineX = 1.15, dineZ = 4.15;
+  cyl(g, 0.72, 0.72, 0.06, dineX, 0.72, dineZ, M('#c4a574', { r: .42 }), 22);
+  cyl(g, 0.08, 0.1, 0.72, dineX, 0, dineZ, M('#1f2937'), 8);
+  chair(g, dineX, dineZ - 1.05, Math.PI, '#44403c');
+  chair(g, dineX, dineZ + 1.05, 0, '#44403c');
+  chair(g, dineX - 1.05, dineZ, Math.PI / 2, '#44403c');
+  chair(g, dineX + 1.05, dineZ, -Math.PI / 2, '#44403c');
   // coffee bar along the east wall
   const bar = M('#1f2937', { r: .45, m: .35 });
   box(g, 0.7, 1.05, 2.6, W / 2 - 0.55, 0, -1.35, bar, { round: 0.03 });
@@ -980,6 +981,12 @@ function furnishLounge(g, def) {
   box(g, 0.02, 1.7, 0.02, W / 2 - 0.5, 0.08, 1.48, M('#94a3b8', { m: .7, r: .3 }), { cast: false });
   box(g, 0.03, 0.55, 0.03, W / 2 - 0.22, 1.15, 1.48, M('#334155', { m: .6 }), { cast: false });
   box(g, 0.03, 0.55, 0.03, W / 2 - 0.78, 1.15, 1.48, M('#334155', { m: .6 }), { cast: false });
+  // standing water cooler against the east wall, between the bar and the fridge
+  const coolX = W / 2 - 0.48, coolZ = 0.15;
+  box(g, 0.4, 1.02, 0.4, coolX, 0, coolZ, M('#eef2f6', { m: .45, r: .3 }), { round: 0.04 });
+  cyl(g, 0.14, 0.14, 0.46, coolX, 1.02, coolZ, M('#3b82f6', { m: .12, r: .22, op: 0.82 }), 12);
+  box(g, 0.07, 0.04, 0.05, coolX - 0.18, 0.78, coolZ, M('#334155', { m: .4 }), { cast: false });
+  cyl(g, 0.045, 0.04, 0.06, coolX - 0.22, 0.62, coolZ, M('#f8fafc', { r: .35 }), 8);
   // east + south walls, door stays on the west
   const wallMat = M('#3a2a22', { r: .85 });
   box(g, 0.12, WALL_H, D, W / 2 - 0.06, 0, 0, wallMat);
@@ -1005,7 +1012,7 @@ function furnishLounge(g, def) {
   plant(g, -W / 2 + 0.6, D / 2 - 0.65, 0.9, 1);
   floorLamp(g, W / 2 - 1.15, -D / 2 + 0.8, '#fdba74');
   rug(g, -1.15, 0.9, 3.1, 3.2, '#e7d3b0');
-  rug(g, 1.35, 2.55, 2.4, 2.4, '#d6c2a4');
+  rug(g, 1.15, 4.15, 2.6, 2.6, '#d6c2a4');
 }
 let loungeTv = null;
 function loungeTvArt() {
