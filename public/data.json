@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-05T13:10:00+08:00",
+  "updatedAt": "2026-11-05T14:00:00+08:00",
   "office": {
     "title": "Evergate AI Office",
     "company": "EVERGATE HOLDING SDN BHD",
@@ -45,6 +45,7 @@
     "groups": [
       { "id": "command", "name": "ED 中央指挥室", "teams": ["ed"] },
       { "id": "biz", "name": "业务类", "teams": ["market", "invest", "info", "proposal"] },
+      { "id": "creative", "name": "设计创意", "teams": ["design"] },
       { "id": "support", "name": "支持类", "teams": ["corpfin", "legal", "logistics"] },
       { "id": "private", "name": "私密", "teams": ["privfin"] }
     ]
@@ -94,6 +95,18 @@
       "currentTask": null,
       "private": true,
       "privateNote": "私密内容，仅 Edward 可见"
+    },
+    {
+      "id": "design",
+      "name": "设计部",
+      "short": "设计",
+      "color": "#d946ef",
+      "status": "idle",
+      "statusNote": "新成立，待命",
+      "agents": 1,
+      "currentTask": "品牌视觉规范",
+      "private": false,
+      "note": "设计创意 · 新设立"
     },
     {
       "id": "logistics",
@@ -279,6 +292,20 @@
       "status": "doing",
       "title": "档案室 / 会议室 / 新闻墙 / 日夜变化",
       "updatedAt": "2026-11-05T13:10:00+08:00"
+    },
+    {
+      "id": "t19",
+      "team": "design",
+      "status": "doing",
+      "title": "品牌视觉规范",
+      "updatedAt": "2026-11-05T14:00:00+08:00"
+    },
+    {
+      "id": "t20",
+      "team": "design",
+      "status": "doing",
+      "title": "双语公司网站视觉设计",
+      "updatedAt": "2026-11-05T14:00:00+08:00"
     }
   ],
   "feed": [
@@ -286,6 +313,11 @@
       "team": "ed",
       "time": "2026-11-05T12:40:00+08:00",
       "text": "进行中：新增休息室 + 每周跨部门例会"
+    },
+    {
+      "team": "design",
+      "time": "2026-11-05T14:00:00+08:00",
+      "text": "设计部已设立，待命中"
     },
     {
       "team": "info",

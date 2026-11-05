@@ -327,13 +327,20 @@ function deskSet(parent, x, z, ry, team, opt = {}) {
   const kinds = opt.kinds ?? ['code', 'chart'];
   const n = opt.monitors ?? 2;
   const mStand = M('#111522', { r: .4, m: .3 });
+  const mw = opt.wide ? 1.15 : 0.6, mh = opt.wide ? 0.64 : 0.37;
+  const sw = opt.wide ? 1.05 : 0.56, sh = opt.wide ? 0.56 : 0.33;
   for (let i = 0; i < n; i++) {
     const mx = n === 1 ? 0 : (i - (n - 1) / 2) * 0.62, ang = n === 1 ? 0 : (i - (n - 1) / 2) * -0.35;
     const mg = new THREE.Group(); mg.position.set(mx, 0.77, -0.18); mg.rotation.y = ang; g.add(mg);
-    box(mg, 0.18, 0.015, 0.14, 0, 0, 0, mStand); box(mg, 0.04, 0.22, 0.03, 0, 0, -0.03, mStand);
-    box(mg, 0.6, 0.37, 0.035, 0, 0.18, 0, mStand, { round: 0.012 });
-    const s = new THREE.Mesh(G('scr', () => new THREE.PlaneGeometry(0.56, 0.33)), screenMat(kinds[i % kinds.length], team.color, opt.dim));
-    s.position.set(0, 0.365, 0.019); mg.add(s);
+    box(mg, 0.18, 0.015, 0.14, 0, 0, 0, mStand); box(mg, 0.04, opt.wide ? 0.28 : 0.22, 0.03, 0, 0, -0.03, mStand);
+    box(mg, mw, mh, 0.035, 0, opt.wide ? 0.28 : 0.18, 0, mStand, { round: 0.012 });
+    const s = new THREE.Mesh(G('scr' + (opt.wide ? 'w' : ''), () => new THREE.PlaneGeometry(sw, sh)), screenMat(kinds[i % kinds.length], team.color, opt.dim));
+    s.position.set(0, (opt.wide ? 0.28 : 0.18) + mh / 2 - 0.01, 0.019); mg.add(s);
+  }
+  if (opt.tablet) {
+    box(g, 0.38, 0.02, 0.26, 0.38, 0.76, 0.1, M('#0f172a', { r: .28 }), { ry: -0.4 });
+    box(g, 0.3, 0.012, 0.18, 0.38, 0.78, 0.1, M(team.color, { e: team.color, ei: 0.45, r: .2 }), { ry: -0.4, cast: false });
+    box(g, 0.16, 0.012, 0.012, 0.55, 0.78, 0.22, M('#e2e8f0', { m: .4 }), { ry: 0.6, cast: false });
   }
   box(g, 0.42, 0.012, 0.16, -0.02, 0.775, 0.14, M('#232a38', { r: .45 }), { cast: false });
   const keys = new THREE.Mesh(G('keys', () => new THREE.PlaneGeometry(0.4, 0.14)), new THREE.MeshBasicMaterial({ map: keyTexture(), toneMapped: false }));
@@ -430,7 +437,11 @@ function roomShell(root, def, ctx) {
   const hx = -w / 2, hz = -d / 2;
   if (def.walls !== 'glass') {
     // back (-z) wall with windows
-    box(g, w, WALL_H, 0.14, 0, 0, hz + 0.07, wallMat);
+    if (def.door === 'north') {
+      const gap = 1.8, seg = (w - gap) / 2;
+      box(g, seg, WALL_H, 0.14, -(gap + seg) / 2, 0, hz + 0.07, wallMat);
+      box(g, seg, WALL_H, 0.14, (gap + seg) / 2, 0, hz + 0.07, wallMat);
+    } else box(g, w, WALL_H, 0.14, 0, 0, hz + 0.07, wallMat);
     if (def.door === 'west') {
       const gap = 1.8, seg = (d - gap) / 2;
       box(g, 0.14, WALL_H, seg, hx + 0.07, 0, -(gap + seg) / 2, wallMat);
@@ -514,6 +525,7 @@ export const LAYOUT = {
   lounge:   { x: 25.6, z: 0,   w: 9.4, d: 11, icon: '☕', color: '#f59e0b', door: 'west', floorTone: '#c4a574', floorMix: 0.35, sign: '休息室', signSub: 'LOUNGE', label: '休息室' },
   archive:  { x: -25.8, z: -8, w: 8.4, d: 8.2, icon: '🗂', color: '#64748b', floorTone: '#cfc3ae', sign: '档案室', signSub: 'ARCHIVE', label: '档案室' },
   meeting:  { x: -25.8, z: 8.2, w: 9.2, d: 8.4, icon: '议', color: '#0ea5e9', sign: '会议室', signSub: 'MEETING', label: '会议室' },
+  design:   { x: 26.2, z: 14.6, w: 9.2, d: 8.2, icon: '设', color: '#d946ef', door: 'north', sign: '设计部', signSub: 'DESIGN', label: '设计部' },
 };
 
 export function buildOffice(scene, teams) {
@@ -691,11 +703,20 @@ export function buildOffice(scene, teams) {
   const meetRoom = rooms.meeting;
   const meetSeats = [[-1.3, -1.2], [1.3, -1.2], [-1.3, 1.2], [1.3, 1.2]].map(([x, z]) => new THREE.Vector3(meetRoom.def.x + x, FLOOR_H, meetRoom.def.z + z));
   const meeters = [];
-  for (let i = 0; i < 4; i++) {
-    const a = makeAgent({ shirt: ['#bfdbfe', '#bbf7d0', '#fde68a', '#fecaca'][i], pants: '#1e293b' });
+  const meetFrom = ['market', 'proposal', 'logistics', 'design'];
+  for (let i = 0; i < meetSeats.length; i++) {
+    const tid = meetFrom[i];
+    const a = makeAgent({ shirt: rooms[tid]?.def.color || '#bfdbfe', pants: '#1e293b' });
     a.visible = false; dyn.add(a);
-    meeters.push({ agent: a, seat: meetSeats[i], phase: 'away' });
+    meeters.push({ agent: a, seat: meetSeats[i], phase: 'away', team: tid });
   }
+  const designRoom = rooms.design;
+  const designPad = new THREE.Mesh(rboxG(10.8, 0.1, 9.8, 0.05), M('#161d30', { r: .7 }));
+  designPad.position.set(designRoom.def.x, -0.04, designRoom.def.z); designPad.receiveShadow = true; staticG.add(designPad);
+  const designLink = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.08, 5.8), M('#12182a', { r: .6 }));
+  designLink.position.set(designRoom.def.x, 0.02, 9.7); designLink.receiveShadow = true; staticG.add(designLink);
+  const designLight = new THREE.PointLight(designRoom.def.color, 0.85, 9, 1.8);
+  designLight.position.set(designRoom.def.x, 3.1, designRoom.def.z); root.add(designLight);
   const newsLabelEl = document.createElement('div');
   newsLabelEl.className = 'rlabel'; newsLabelEl.dataset.room = 'news'; newsLabelEl.style.setProperty('--c', '#38bdf8');
   newsLabelEl.innerHTML = `<div class="ic">讯</div><div><div class="nm">新闻墙</div><div class="st"><i class="dot idle"></i><span>点击查看</span></div></div>`;
@@ -801,6 +822,7 @@ export function buildOffice(scene, teams) {
     }
     // idle / standby staff drift into the lounge, at most two at a time
     const inside = (p) => Math.abs(p.x - lounge.def.x) < lounge.def.w / 2 && Math.abs(p.z - lounge.def.z) < lounge.def.d / 2;
+    const loungePool = () => Object.values(rooms).filter(R => R.team && !R.team.private && state.status[R.id] === 'idle');
     let occ = 0;
     for (const v of visitors) {
       const a = v.agent, u = a.userData;
@@ -811,7 +833,8 @@ export function buildOffice(scene, teams) {
         v.wait -= dt;
         if (v.wait > 0) continue;
         const used = new Set(visitors.filter(o => o !== v && o.team).map(o => o.team));
-        const pick = Object.values(rooms).find(R => R.team && !R.team.private && state.status[R.id] === 'idle' && !used.has(R.id));
+        const pool = loungePool().filter(R => !used.has(R.id));
+        const pick = pool.length ? pool[(Math.floor(t) + v.spot) % pool.length] : null;
         if (!pick) { v.wait = 2.5; continue; }
         v.team = pick.id;
         v.pts = loungePath(pick).concat([lingerSpots[v.spot % lingerSpots.length].pos]);
@@ -1218,6 +1241,13 @@ function decorate(R, dyn, teamById) {
     cabinet(g, 3.3, -2.2, 0, 0.7, 1.5, '#94a3b8');
     boxesStack(g, 2.2, 1.4); boxesStack(g, 3.2, 1.6);
     box(g, 1.4, 0.9, 0.7, -2.2, 0, 1.6, M('#b08968', { r: .8 }));
+  } else if (id === 'design') {
+    desks.push(deskSet(g, 1.35, 1.05, 0, t, { kinds: ['chart'], monitors: 1, wide: true, tablet: true, chair: accentChair, papers: true }));
+    whiteboard(g, W / 2 - 0.16, 1.4, -0.3, -Math.PI / 2, 1.6, t);
+    poster(g, -2.4, 1.45, bz + 0.22, 0, 1.15, 1.45, t.color);
+    cabinet(g, 3.3, -0.6, -Math.PI / 2, 0.5, 1.15);
+    plant(g, 3.3, 2.7, 1.15, 1); plant(g, -3.4, 2.5, 1.05, 0);
+    rug(g, 1.35, 1.7, 2.6, 2.0, hex(mix(def.color, '#f8fafc', 0.72)));
   } else if (id === 'meeting') {
     box(g, 3.2, 0.08, 1.5, 0, 0.72, 0, M('#c4a574', { r: .45 }), { round: 0.04 });
     cyl(g, 0.12, 0.16, 0.72, -1.2, 0, -0.4, M('#1f2937'), 8);
@@ -1234,17 +1264,20 @@ function decorate(R, dyn, teamById) {
   if (def.walls !== 'glass' && id !== 'lounge') {
     const doorFrac = id === 'market' ? [[0.74, 0.88]] : id === 'legal' ? [[0.60, 0.73]] : id === 'proposal' ? [[0.05, 0.19]] : [[0.4, 0.54]];
     const doorSide = (def.z < 0);
-    glassRun(g, -W / 2, D / 2, W / 2, D / 2, 2.2, doorFrac, '#d5e4f2', 0.34);
-    glassRun(g, W / 2, -D / 2, W / 2, D / 2, 2.2, (id === 'archive' || id === 'meeting') ? [[0.34, 0.62]] : (def.z > 0 ? [[0.1, 0.26]] : []), '#d5e4f2', 0.34);
-    const [a, b] = doorFrac[0];
-    doorFrame(g, -W / 2 + ((a + b) / 2) * W, D / 2, 0, (b - a) * W, 2.2);
+    glassRun(g, -W / 2, D / 2, W / 2, D / 2, 2.2, id === 'design' ? [] : doorFrac, '#d5e4f2', 0.34);
+    glassRun(g, W / 2, -D / 2, W / 2, D / 2, 2.2, (id === 'archive' || id === 'meeting') ? [[0.34, 0.62]] : (def.z > 0 && id !== 'design' ? [[0.1, 0.26]] : []), '#d5e4f2', 0.34);
+    if (id !== 'design') {
+      const [a, b] = doorFrac[0];
+      doorFrame(g, -W / 2 + ((a + b) / 2) * W, D / 2, 0, (b - a) * W, 2.2);
+    }
     if (id === 'archive' || id === 'meeting') doorFrame(g, W / 2, 0, Math.PI / 2, 0.28 * D, 2.2);
+    if (id === 'design') doorFrame(g, 0, -D / 2, 0, 1.8, 2.2);
   }
   if (id !== 'lounge') pendant(g, id === 'ed' ? -1.4 : 0, 0.2);
   if (id === 'ed') pendant(g, 1.4, 0.2);
   const shirts = [shirtA, shirtB, '#e2e8f0'];
   const n = Math.min(desks.length, t.agents ?? desks.length);
   for (let i = 0; i < desks.length; i++) {
-    if (i < n) seat(desks[i], shirts[i % 3]);
+    if (i < n) seat(desks[i], id === 'design' ? t.color : shirts[i % 3]);
   }
 }
