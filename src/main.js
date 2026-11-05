@@ -32,28 +32,28 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.95;
+renderer.toneMappingExposure = 1.02;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#070b14');
-scene.fog = new THREE.Fog('#070b14', 70, 140);
+scene.background = new THREE.Color('#d5e2ee');
+scene.fog = new THREE.Fog('#c9d5e2', 78, 220);
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-scene.environmentIntensity = 0.35;
+scene.environmentIntensity = 0.55;
 
 const camera = new THREE.PerspectiveCamera(32, 1, 0.5, 300);
 const labelRenderer = new CSS2DRenderer({ element: $('#labels') });
 
 /* lights */
-const hemi = new THREE.HemisphereLight('#b9c7ff', '#1a1430', 0.85); scene.add(hemi);
-const sun = new THREE.DirectionalLight('#fff1dc', 2.0);
-sun.position.set(-14, 30, 18); sun.castShadow = true;
-sun.shadow.mapSize.set(1024, 1024);
-Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 24, bottom: -24, near: 5, far: 80 });
-sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.03; sun.shadow.radius = 3;
+const hemi = new THREE.HemisphereLight('#fff4e4', '#3d3428', 0.72); scene.add(hemi);
+const sun = new THREE.DirectionalLight('#fff6ea', 1.55);
+sun.position.set(-18, 34, 16); sun.castShadow = true;
+sun.shadow.mapSize.set(isMobile ? 512 : 1024, isMobile ? 512 : 1024);
+Object.assign(sun.shadow.camera, { left: -28, right: 32, top: 26, bottom: -26, near: 8, far: 90 });
+sun.shadow.bias = -0.00045; sun.shadow.normalBias = 0.035; sun.shadow.radius = isMobile ? 2 : 3.2;
 scene.add(sun);
-const fill = new THREE.DirectionalLight('#7dd3fc', 0.45); fill.position.set(20, 12, -10); scene.add(fill);
+const fill = new THREE.DirectionalLight('#ffd8b0', 0.28); fill.position.set(22, 10, 14); scene.add(fill);
 
 /* office */
 const office = buildOffice(scene, DATA.teams);
