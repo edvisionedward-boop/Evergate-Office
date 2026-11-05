@@ -99,16 +99,33 @@ function setupComposer() {
 }
 setupComposer();
 
-function resize() {
-  const w = window.innerWidth, h = window.innerHeight;
+/* Canvas CSS box, not window.innerWidth/Height. On iPad Safari those diverge
+   after rotation, toolbar show/hide, and visualViewport changes, and the
+   CSS2D layer (anchored top-left) then slides off the WebGL image. */
+let viewW = 0, viewH = 0, viewPR = 0, viewReady = false;
+function syncView() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  const pr = Math.min(window.devicePixelRatio || 1, 2);
+  if (w < 2 || h < 2) return false;
+  if (w === viewW && h === viewH && pr === viewPR) return true;
+  viewW = w; viewH = h; viewPR = pr;
   camera.aspect = w / h; camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(pr);
   renderer.setSize(w, h, false);
   labelRenderer.setSize(w, h);
-  if (composer) { composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); composer.setSize(w, h); bloom.resolution.set(w / 2, h / 2); }
+  if (composer) { composer.setPixelRatio(pr); composer.setSize(w, h); bloom.resolution.set(w / 2, h / 2); }
+  if (!viewReady) { viewReady = true; goHome(false); }
+  return true;
 }
-window.addEventListener('resize', () => { resize(); });
-resize(); goHome(false);
+const viewBox = canvas.parentElement || canvas;
+if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => syncView()).observe(viewBox);
+window.addEventListener('resize', syncView);
+window.addEventListener('orientationchange', syncView);
+if (window.visualViewport) {
+  visualViewport.addEventListener('resize', syncView);
+  visualViewport.addEventListener('scroll', syncView);
+}
+syncView();
 
 /* ---------- picking ---------- */
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
@@ -119,7 +136,9 @@ canvas.addEventListener('pointerup', e => {
   if (!down || e.pointerId !== down.id) return;
   const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), dt = performance.now() - down.t; down = null;
   if (moved > 8 || dt > 450) return;
-  ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  const rect = canvas.getBoundingClientRect();
+  const rw = rect.width || canvas.clientWidth, rh = rect.height || canvas.clientHeight;
+  ndc.set((e.clientX - rect.left) / rw * 2 - 1, -((e.clientY - rect.top) / rh) * 2 + 1);
   ray.setFromCamera(ndc, camera);
   const h = ray.intersectObjects(hits, false)[0];
   if (h) selectRoom(h.object.userData.room); else closePanel();
@@ -190,7 +209,7 @@ function selectRoom(id) {
   const right = new THREE.Vector3(HOME_DIR.z, 0, -HOME_DIR.x).normalize();
   const fwd = new THREE.Vector3(-HOME_DIR.x, 0, -HOME_DIR.z).normalize();
   if (portrait) tgt.addScaledVector(fwd, -2.2);
-  else if (innerWidth > 760) tgt.addScaledVector(right, 3.6).addScaledVector(fwd, -0.6);
+  else if (viewW > 760) tgt.addScaledVector(right, 3.6).addScaledVector(fwd, -0.6);
   flyTo(tgt, portrait ? 31 : 22, HOME_DIR);
 }
 function closePanel() {
@@ -235,10 +254,12 @@ function popBubble() {
   const agent = pool[Math.floor(Math.random() * pool.length)];
   const latest = DATA.feed.filter(f => f.team === t.id).sort((a, b) => new Date(b.time) - new Date(a.time))[0];
   if (activeBubbles.some(b => b.agent === agent)) return;
-  if (activeBubbles.length >= (innerWidth <= 760 ? 1 : 3)) return;
+  if (activeBubbles.length >= (viewW <= 760 ? 1 : 3)) return;
+  const host = document.createElement('div'); host.className = 'bubble-host';
   const el = document.createElement('div'); el.className = 'bubble'; el.style.setProperty('--c', t.color);
   el.innerHTML = `<b>${esc(t.name)}</b>${esc(latest.text)}`;
-  const o = new CSS2DObject(el); agent.userData.bubbleAnchor.add(o);
+  host.appendChild(el);
+  const o = new CSS2DObject(host); agent.userData.bubbleAnchor.add(o);
   const b = { o, el, agent, life: 5.2 }; activeBubbles.push(b);
 }
 function tickBubbles(dt) {
@@ -273,6 +294,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) load
 let last = performance.now(), T = 0;
 let first = true;
 function frame() {
+  syncView();
   const now = performance.now(); const dt = Math.min((now - last) / 1000, 0.05); last = now; T += dt; const t = T;
   if (tween) {
     tween.t += dt / tween.dur; const k = tween.t >= 1 ? 1 : 1 - Math.pow(1 - tween.t, 3);

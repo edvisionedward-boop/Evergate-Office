@@ -9,7 +9,7 @@
 html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-text-size-adjust:100%}
 #app{position:fixed;inset:0}
 #scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
-#labels{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden}
+#labels{position:absolute;top:0;left:0;pointer-events:none;z-index:3;overflow:hidden}
 button{font:inherit;color:inherit}
 
 /* top bar */
@@ -42,8 +42,8 @@ button{font:inherit;color:inherit}
 
 /* room labels */
 .rlabel{pointer-events:auto;cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;border-radius:12px;background:rgba(10,14,26,.82);
-  border:1px solid rgba(255,255,255,.1);box-shadow:0 6px 18px rgba(0,0,0,.35);white-space:nowrap;transform-origin:50% 100%;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .15s}
-.rlabel:active{transform:scale(.96)}
+  border:1px solid rgba(255,255,255,.1);box-shadow:0 6px 18px rgba(0,0,0,.35);white-space:nowrap;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.rlabel:active{filter:brightness(1.12)}
 .rlabel .ic{width:26px;height:26px;border-radius:8px;background:var(--c);display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;box-shadow:0 0 12px color-mix(in srgb,var(--c) 60%,transparent)}
 .rlabel .nm{font-size:12.5px;font-weight:700;line-height:1.2}
 .rlabel .st{font-size:10.5px;color:var(--mut);display:flex;align-items:center;gap:5px;margin-top:2px}
@@ -53,6 +53,7 @@ button{font:inherit;color:inherit}
 .rlabel.sel{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 0 22px color-mix(in srgb,var(--c) 45%,transparent)}
 
 /* speech bubbles */
+.bubble-host{pointer-events:none;display:block;width:max-content;max-width:210px}
 .bubble{pointer-events:none;max-width:210px;background:#f8fafc;color:#0f172a;font-size:11.5px;line-height:1.35;padding:7px 10px;border-radius:12px;
   box-shadow:0 8px 20px rgba(0,0,0,.4);position:relative;transform-origin:50% 100%;animation:pop .35s cubic-bezier(.2,1.4,.4,1);white-space:normal;width:max-content}
 .bubble:after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#f8fafc}
@@ -140,5 +141,6 @@ button{font:inherit;color:inherit}
   .rlabel .ic{width:20px;height:20px;border-radius:6px;font-size:10px}
   .rlabel .nm{font-size:11px}
   .rlabel .st{font-size:9.5px}
-  .bubble{max-width:160px;font-size:10.5px;padding:6px 8px}
+  .bubble-host,.bubble{max-width:160px}
+  .bubble{font-size:10.5px;padding:6px 8px}
 }
