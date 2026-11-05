@@ -37,6 +37,11 @@
     <div class="summary" id="summary"></div>
   </header>
 
+  <div id="quickbar">
+    <button type="button" id="homeBtn">回到总览</button>
+    <div id="quickscroll"></div>
+  </div>
+
   <div id="legend">
     <span><i class="dot busy"></i>忙碌</span>
     <span><i class="dot confirm"></i>等你确认</span>
@@ -65,6 +70,10 @@
   <section id="board" class="hidden">
     <div class="board-head">
       <h2>任务板</h2>
+      <div class="seg" id="boardMode">
+        <button type="button" data-mode="tasks" class="on">任务</button>
+        <button type="button" data-mode="grades">考核</button>
+      </div>
       <button class="close" id="boardClose" aria-label="关闭">✕</button>
     </div>
     <div id="boardStats"></div>

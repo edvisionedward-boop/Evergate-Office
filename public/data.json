@@ -16,20 +16,60 @@
     "name": "档案室",
     "folderUrl": "https://drive.google.com/drive/folders/1VdMyoUOg74lFOt0TO1NFYY4eJAbf-c98",
     "categories": [
-      { "name": "法律文件", "items": ["项目法律备忘录"] },
-      { "name": "项目文件", "items": ["土地收购计划书 V2.3"] },
-      { "name": "财务", "items": ["2026 财务报告", "会计师资料清单"] },
-      { "name": "公司", "items": ["公司简介 Corporate Profile"] }
+      {
+        "name": "法律文件",
+        "items": [
+          "项目法律备忘录"
+        ]
+      },
+      {
+        "name": "项目文件",
+        "items": [
+          "土地收购计划书 V2.3"
+        ]
+      },
+      {
+        "name": "财务",
+        "items": [
+          "2026 财务报告",
+          "会计师资料清单"
+        ]
+      },
+      {
+        "name": "公司",
+        "items": [
+          "公司简介 Corporate Profile"
+        ]
+      }
     ]
   },
   "meetings": [
-    { "title": "每周一 9:00 跨部门例会", "weekday": 1, "start": "09:00", "end": "09:45" },
-    { "title": "每月 1 日 10:00 发展规划会", "monthday": 1, "start": "10:00", "end": "10:45" }
+    {
+      "title": "每周一 9:00 跨部门例会",
+      "weekday": 1,
+      "start": "09:00",
+      "end": "09:45"
+    },
+    {
+      "title": "每月 1 日 10:00 发展规划会",
+      "monthday": 1,
+      "start": "10:00",
+      "end": "10:45"
+    }
   ],
   "news": [
-    { "title": "信息部简报将在此滚动显示", "time": "2026-11-05T08:00:00+08:00" },
-    { "title": "信息部简报将在此滚动显示", "time": "2026-11-05T09:00:00+08:00" },
-    { "title": "信息部简报将在此滚动显示", "time": "2026-11-05T10:00:00+08:00" }
+    {
+      "title": "信息部简报将在此滚动显示",
+      "time": "2026-11-05T08:00:00+08:00"
+    },
+    {
+      "title": "信息部简报将在此滚动显示",
+      "time": "2026-11-05T09:00:00+08:00"
+    },
+    {
+      "title": "信息部简报将在此滚动显示",
+      "time": "2026-11-05T10:00:00+08:00"
+    }
   ],
   "statusLabels": {
     "busy": "忙碌",
@@ -38,16 +78,60 @@
   },
   "directory": {
     "statusGroups": [
-      { "status": "busy", "label": "忙碌" },
-      { "status": "confirm", "label": "等你确认" },
-      { "status": "idle", "label": "待命空闲" }
+      {
+        "status": "busy",
+        "label": "忙碌"
+      },
+      {
+        "status": "confirm",
+        "label": "等你确认"
+      },
+      {
+        "status": "idle",
+        "label": "待命空闲"
+      }
     ],
     "groups": [
-      { "id": "command", "name": "ED 中央指挥室", "teams": ["ed"] },
-      { "id": "biz", "name": "业务类", "teams": ["market", "invest", "info", "proposal"] },
-      { "id": "creative", "name": "设计创意", "teams": ["design"] },
-      { "id": "support", "name": "支持类", "teams": ["corpfin", "legal", "logistics"] },
-      { "id": "private", "name": "私密", "teams": ["privfin"] }
+      {
+        "id": "command",
+        "name": "ED 中央指挥室",
+        "teams": [
+          "ed"
+        ]
+      },
+      {
+        "id": "biz",
+        "name": "业务类",
+        "teams": [
+          "market",
+          "invest",
+          "info",
+          "proposal"
+        ]
+      },
+      {
+        "id": "creative",
+        "name": "设计创意",
+        "teams": [
+          "design"
+        ]
+      },
+      {
+        "id": "support",
+        "name": "支持类",
+        "teams": [
+          "corpfin",
+          "legal",
+          "logistics"
+        ]
+      },
+      {
+        "id": "private",
+        "name": "私密",
+        "teams": [
+          "privfin"
+        ]
+      }
     ]
   },
   "teams": [
@@ -60,7 +144,20 @@
       "statusNote": "忙碌",
       "agents": 1,
       "currentTask": "修复标签跑位 + 部门总览",
-      "private": false
+      "private": false,
+      "duty": "统筹各部门进度、例会与待确认事项",
+      "grade": "pending",
+      "gradeNote": "待周一例会后首次评定",
+      "gradedAt": null,
+      "staff": [
+        {
+          "id": "ed-1",
+          "name": "ED 1",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        }
+      ]
     },
     {
       "id": "market",
@@ -71,7 +168,34 @@
       "statusNote": "空闲",
       "agents": 3,
       "currentTask": null,
-      "private": false
+      "private": false,
+      "duty": "市场研究与对外资料整理",
+      "grade": "pending",
+      "gradeNote": "待周一例会后首次评定",
+      "gradedAt": null,
+      "staff": [
+        {
+          "id": "market-1",
+          "name": "市场 1",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        },
+        {
+          "id": "market-2",
+          "name": "市场 2",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        },
+        {
+          "id": "market-3",
+          "name": "市场 3",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        }
+      ]
     },
     {
       "id": "corpfin",
@@ -82,7 +206,27 @@
       "statusNote": "空闲",
       "agents": 2,
       "currentTask": null,
-      "private": false
+      "private": false,
+      "duty": "会计报表与费用核对",
+      "grade": "pending",
+      "gradeNote": "待周一例会后首次评定",
+      "gradedAt": null,
+      "staff": [
+        {
+          "id": "corpfin-1",
+          "name": "会计 1",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        },
+        {
+          "id": "corpfin-2",
+          "name": "会计 2",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        }
+      ]
     },
     {
       "id": "privfin",
@@ -94,7 +238,8 @@
       "agents": 1,
       "currentTask": null,
       "private": true,
-      "privateNote": "私密内容，仅 Edward 可见"
+      "privateNote": "私密内容，仅 Edward 可见",
+      "privateLabel": "私密"
     },
     {
       "id": "design",
@@ -106,7 +251,20 @@
       "agents": 1,
       "currentTask": "品牌视觉规范",
       "private": false,
-      "note": "设计创意 · 新设立"
+      "note": "设计创意 · 新设立",
+      "duty": "品牌视觉规范与双语网站视觉",
+      "grade": "pending",
+      "gradeNote": "待周一例会后首次评定",
+      "gradedAt": null,
+      "staff": [
+        {
+          "id": "design-1",
+          "name": "设计 1",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        }
+      ]
     },
     {
       "id": "logistics",
@@ -117,7 +275,27 @@
       "statusNote": "待命",
       "agents": 2,
       "currentTask": null,
-      "private": false
+      "private": false,
+      "duty": "物流协调与仓储安排",
+      "grade": "pending",
+      "gradeNote": "待周一例会后首次评定",
+      "gradedAt": null,
+      "staff": [
+        {
+          "id": "logistics-1",
+          "name": "物流 1",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        },
+        {
+          "id": "logistics-2",
+          "name": "物流 2",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        }
+      ]
     },
     {
       "id": "legal",
@@ -128,7 +306,34 @@
       "statusNote": "忙碌",
       "agents": 3,
       "currentTask": "卖方确认清单与法律漏洞分析",
-      "private": false
+      "private": false,
+      "duty": "法律文件审阅与清单核对",
+      "grade": "pending",
+      "gradeNote": "待周一例会后首次评定",
+      "gradedAt": null,
+      "staff": [
+        {
+          "id": "legal-1",
+          "name": "法务 1",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        },
+        {
+          "id": "legal-2",
+          "name": "法务 2",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        },
+        {
+          "id": "legal-3",
+          "name": "法务 3",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        }
+      ]
     },
     {
       "id": "proposal",
@@ -139,7 +344,27 @@
       "statusNote": "等你确认",
       "agents": 2,
       "currentTask": "等你确认：是否把法律发现更新进计划书 V2.4",
-      "private": false
+      "private": false,
+      "duty": "计划书整理与版本更新",
+      "grade": "pending",
+      "gradeNote": "待周一例会后首次评定",
+      "gradedAt": null,
+      "staff": [
+        {
+          "id": "proposal-1",
+          "name": "策划 1",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        },
+        {
+          "id": "proposal-2",
+          "name": "策划 2",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        }
+      ]
     },
     {
       "id": "invest",
@@ -151,7 +376,27 @@
       "agents": 2,
       "currentTask": null,
       "private": false,
-      "note": "投资研究 · 新设立"
+      "note": "投资研究 · 新设立",
+      "duty": "投资研究与项目比较",
+      "grade": "pending",
+      "gradeNote": "待周一例会后首次评定",
+      "gradedAt": null,
+      "staff": [
+        {
+          "id": "invest-1",
+          "name": "投资 1",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        },
+        {
+          "id": "invest-2",
+          "name": "投资 2",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        }
+      ]
     },
     {
       "id": "info",
@@ -163,7 +408,27 @@
       "agents": 2,
       "currentTask": "全球 AI 动态快讯（每小时扫描）",
       "private": false,
-      "note": "每日 AI 新闻简报"
+      "note": "每日 AI 新闻简报",
+      "duty": "每日 AI 简报与动态扫描",
+      "grade": "pending",
+      "gradeNote": "待周一例会后首次评定",
+      "gradedAt": null,
+      "staff": [
+        {
+          "id": "info-1",
+          "name": "信息 1",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        },
+        {
+          "id": "info-2",
+          "name": "信息 2",
+          "grade": "pending",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null
+        }
+      ]
     }
   ],
   "tasks": [
@@ -409,5 +674,27 @@
       "time": "2026-11-05T09:50:00+08:00",
       "text": "已完成：2026 财报审阅及给会计的 12 项核对清单"
     }
-  ]
+  ],
+  "grades": {
+    "S": {
+      "label": "S",
+      "tone": "gold"
+    },
+    "A": {
+      "label": "A",
+      "tone": "orange"
+    },
+    "B": {
+      "label": "B",
+      "tone": "silver"
+    },
+    "C": {
+      "label": "C",
+      "tone": "gray"
+    },
+    "pending": {
+      "label": "待评",
+      "tone": "pending"
+    }
+  }
 }

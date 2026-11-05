@@ -22,7 +22,7 @@ const fmtTime = (iso) => {
 const ST_LABEL = { busy: '忙碌', confirm: '等你确认', idle: '空闲', doing: '进行中', done: '已完成' };
 
 let DATA = SEED, DATA_SRC = 'embedded';
-const state = { status: {}, selected: null, dirMode: 'status', clock: { mode: 'auto', day: 1, offDuty: false, meeting: false } };
+const state = { status: {}, selected: null, staffId: null, dirMode: 'status', boardMode: 'tasks', clock: { mode: 'auto', day: 1, offDuty: false, meeting: false } };
 
 /* ---------- renderer ---------- */
 const isMobile = matchMedia('(max-width: 760px)').matches || /iPhone|iPad|Android/i.test(navigator.userAgent);
@@ -140,10 +140,29 @@ canvas.addEventListener('pointerup', e => {
   const rw = rect.width || canvas.clientWidth, rh = rect.height || canvas.clientHeight;
   ndc.set((e.clientX - rect.left) / rw * 2 - 1, -((e.clientY - rect.top) / rh) * 2 + 1);
   ray.setFromCamera(ndc, camera);
-  const h = ray.intersectObjects(hits, false)[0];
-  if (h) selectRoom(h.object.userData.room); else closePanel();
+  const people = [];
+  for (const R of Object.values(office.rooms)) {
+    for (const a of R.agents || []) people.push(a);
+    if (R.boss) people.push(R.boss);
+  }
+  const person = ray.intersectObjects(people, true)[0];
+  const roomHit = ray.intersectObjects(hits, false)[0];
+  let who = null;
+  if (person && (!roomHit || person.distance <= roomHit.distance + 0.35)) {
+    let o = person.object;
+    while (o && !o.userData.room) o = o.parent;
+    who = o?.userData;
+  }
+  if (who?.room) selectRoom(who.room, null, who.staffId);
+  else if (roomHit) selectRoom(roomHit.object.userData.room);
+  else closePanel();
 });
-$('#labels').addEventListener('click', e => { const el = e.target.closest('.rlabel'); if (el) selectRoom(el.dataset.room); });
+$('#labels').addEventListener('click', e => {
+  const tag = e.target.closest('.ptag');
+  if (tag) { selectRoom(tag.dataset.room, null, tag.dataset.staff); return; }
+  const el = e.target.closest('.rlabel');
+  if (el) selectRoom(el.dataset.room);
+});
 
 /* ---------- UI ---------- */
 const teamOf = (id) => DATA.teams.find(t => t.id === id);
@@ -157,8 +176,20 @@ function applyData() {
     el.classList.toggle('sel', state.selected === R.id);
     if (!t) continue;
     el.querySelector('.nm').textContent = t.name;
-    const st = el.querySelector('.st');
+    const gb = el.querySelector('.nmrow .gbadge');
+    if (gb) {
+      if (t.private || !t.grade) gb.hidden = true;
+      else { gb.hidden = false; paintGradeEl(gb, t.grade); }
+    }
+    for (const a of [R.boss, ...(R.agents || [])].filter(Boolean)) {
+      const s = (t.staff || []).find(x => x.id === a.userData.staffId);
+      const b = a.userData.badgeEl?.querySelector('.gbadge');
+      const nm = a.userData.badgeEl?.querySelector('.pn');
+      if (nm && s) nm.textContent = s.name;
+      if (b && s && !t.private) paintGradeEl(b, s.grade);
+    }
     const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
+    const st = el.querySelector('.st');
     st.innerHTML = `<i class="dot ${esc(t.status)}"></i><span>${esc(lbl)}${t.private ? ' · 私密' : ` · ${t.agents ?? 0} 位成员`}</span>`;
   }
   const cnt = { busy: 0, confirm: 0, idle: 0 };
@@ -169,6 +200,7 @@ function applyData() {
   $('#updated').textContent = `更新 ${fmtTime(DATA.updatedAt)} (UTC+8)`;
   $('#company').textContent = DATA.office?.company ?? 'EVERGATE HOLDING SDN BHD';
   if (office.setNews) office.setNews(DATA.news);
+  renderQuick();
   renderBoard();
   renderDirectory();
   paintShiftLabels();
@@ -176,6 +208,25 @@ function applyData() {
 }
 
 function chip(s) { return `<span class="chip ${s === 'doing' ? 'busy' : esc(s)}">${esc(ST_LABEL[s] ?? s)}</span>`; }
+
+function gradeMeta(grade) {
+  return DATA.grades?.[grade] || { label: grade || '', tone: 'pending' };
+}
+function paintGradeEl(el, grade) {
+  const meta = gradeMeta(grade);
+  el.className = `gbadge g-${meta.tone || 'pending'}`;
+  el.textContent = meta.tone === 'pending' ? '' : (meta.label || '');
+}
+function badgeHtml(grade) {
+  const meta = gradeMeta(grade);
+  const letter = meta.tone === 'pending' ? '' : (meta.label || '');
+  return `<i class="gbadge g-${esc(meta.tone || 'pending')}">${esc(letter)}</i>`;
+}
+function teamUpdatedAt(t) {
+  const times = (DATA.tasks || []).filter(x => x.team === t.id).map(x => x.updatedAt).filter(Boolean);
+  times.sort((a, b) => new Date(b) - new Date(a));
+  return times[0] || DATA.updatedAt || '';
+}
 
 function renderPanel(id) {
   const t = teamOf(id); const body = $('#panelBody');
@@ -215,26 +266,29 @@ function renderPanel(id) {
     body.innerHTML = `<div class="ph" style="--c:${c}"><div class="ic">·</div><div><h3>${esc(m?.name ?? id)}</h3><div class="sub">公共区域</div></div></div><div class="sec"><div class="card empty">${esc(m?.text ?? '')}</div></div>`;
     return;
   }
-  const lbl = t.statusNote || ST_LABEL[t.status];
-  const head = `<div class="ph" style="--c:${esc(t.color)}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? (t.private ? '私' : ''))}</div><div><h3>${esc(t.name)}</h3>
-    <div class="sub"><span class="chip ${esc(t.status)}"><i class="dot ${esc(t.status)}"></i>${esc(lbl)}</span>${t.private ? '' : `<span>${t.agents ?? 0} 位 AI 成员</span>`}</div></div></div>`;
   if (t.private) {
-    const note = t.privateNote || '私密内容，仅 Edward 可见';
-    body.innerHTML = head + `<div class="sec"><div class="card private"><div class="lk">私</div><div>${esc(note)}</div></div></div>`;
+    const word = t.privateLabel || '私密';
+    body.innerHTML = `<div class="ph" style="--c:${esc(t.color)}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '私')}</div><div><h3>${esc(t.name)}</h3></div></div><div class="sec"><div class="card private"><div>${esc(word)}</div></div></div>`;
     return;
   }
-  const tasks = DATA.tasks.filter(x => x.team === id);
-  const order = { confirm: 0, doing: 1, done: 2 };
-  tasks.sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
-  const feed = DATA.feed.filter(f => f.team === id).sort((a, b) => new Date(b.time) - new Date(a.time));
+  const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
+  const doing = DATA.tasks.filter(x => x.team === id && x.status === 'doing');
+  const done = DATA.tasks.filter(x => x.team === id && x.status === 'done').sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 3);
+  const meta = gradeMeta(t.grade);
+  const staff = (t.staff || []).map(s => `<li class="srow${state.staffId === s.id ? ' on' : ''}"><span class="sn">${esc(s.name)}</span>${badgeHtml(s.grade)}<span class="snote">${esc(s.gradeNote || '')}</span></li>`).join('');
+  const head = `<div class="ph" style="--c:${esc(t.color)}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '')}</div><div><h3>${esc(t.name)}</h3>
+    <div class="sub"><span class="chip ${esc(t.status)}"><i class="dot ${esc(t.status)}"></i>${esc(lbl)}</span>${badgeHtml(t.grade)}<span class="glab">${esc(meta.label || '')}</span></div></div></div>`;
   body.innerHTML = head +
-    `<div class="sec"><h4>当前任务</h4><div class="card"><div class="cur ${t.currentTask ? '' : 'none'}">${t.currentTask ? esc(t.currentTask) : (t.status === 'idle' ? '暂无任务 · 待命中' : '—')}</div></div></div>` +
-    `<div class="sec"><h4>任务 <span>${tasks.length}</span></h4>${tasks.length ? `<div class="card tlist">${tasks.map(x => `<div class="titem">${chip(x.status)}<div>${esc(x.title)}</div></div>`).join('')}</div>` : '<div class="card empty">暂无任务</div>'}</div>` +
-    `<div class="sec"><h4>最新动态 <span>UTC+8</span></h4>${feed.length ? `<ul class="feed" style="--c:${esc(t.color)}">${feed.map(f => `<li><time>${fmtTime(f.time)}</time>${esc(f.text)}</li>`).join('')}</ul>` : '<div class="card empty">暂无动态</div>'}</div>`;
+    `<div class="sec"><h4>职责</h4><div class="card"><div class="cur">${esc(t.duty || '—')}</div></div></div>` +
+    `<div class="sec"><h4>本周在做</h4>${doing.length ? `<div class="card tlist">${doing.map(x => `<div class="titem">${chip(x.status)}<div>${esc(x.title)}</div></div>`).join('')}</div>` : '<div class="card empty">—</div>'}</div>` +
+    `<div class="sec"><h4>最近完成</h4>${done.length ? `<div class="card tlist">${done.map(x => `<div class="titem">${chip(x.status)}<div>${esc(x.title)}</div></div>`).join('')}</div>` : '<div class="card empty">—</div>'}</div>` +
+    `<div class="sec"><h4>考核</h4><div class="card gradebox">${badgeHtml(t.grade)}<div><div class="cur">${esc(t.gradeNote || '')}</div>${t.gradedAt ? `<div class="gdate">${esc(fmtTime(t.gradedAt))}</div>` : ''}</div></div>${staff ? `<ul class="staff">${staff}</ul>` : ''}</div>` +
+    `<div class="sec"><h4>最后更新</h4><div class="card"><div class="cur">${esc(fmtTime(teamUpdatedAt(t)))} (UTC+8)</div></div></div>`;
 }
-function selectRoom(id, source) {
+function selectRoom(id, source, staffId) {
   const wideDir = source === 'directory' && viewW > 760 && !$('#directory').classList.contains('hidden');
   state.selected = id;
+  state.staffId = staffId || null;
   if (!wideDir) {
     $('#board').classList.add('hidden');
     $('#directory').classList.add('hidden');
@@ -256,11 +310,13 @@ function selectRoom(id, source) {
   else if (portrait) tgt.addScaledVector(fwd, -2.2);
   else if (viewW > 760) tgt.addScaledVector(right, 3.6).addScaledVector(fwd, -0.6);
   flyTo(tgt, portrait ? 31 : 22, HOME_DIR);
+  renderQuick();
 }
 function closePanel() {
-  if (!state.selected) return;
-  state.selected = null; $('#panel').classList.add('hidden');
+  if (!state.selected && $('#panel').classList.contains('hidden')) return;
+  state.selected = null; state.staffId = null; $('#panel').classList.add('hidden');
   Object.values(office.rooms).forEach(R => R.labelEl.classList.remove('sel'));
+  renderQuick();
   goHome(true);
 }
 $('#panelClose').addEventListener('click', closePanel);
@@ -271,6 +327,21 @@ function teamCounts(team) {
   return { members: team.agents ?? 0, doing: n('doing'), confirm: n('confirm'), done: n('done'), total: tasks.length };
 }
 function renderBoard() {
+  const mode = state.boardMode || 'tasks';
+  document.querySelectorAll('#boardMode button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  if (mode === 'grades') {
+    const teams = DATA.teams.filter(t => !t.private);
+    const counts = {};
+    for (const t of teams) counts[t.grade || 'pending'] = (counts[t.grade || 'pending'] || 0) + 1;
+    const summary = Object.entries(DATA.grades || {}).map(([k, meta]) => `${meta.label} ${counts[k] || 0}`).join(' · ');
+    $('#boardStats').innerHTML = `<div class="bstotal">考核 <b>${esc(summary)}</b></div>`;
+    $('#boardCols').innerHTML = `<div class="col grade-col">${teams.map(t => {
+      const meta = gradeMeta(t.grade);
+      const people = (t.staff || []).map(s => `<span class="smini">${badgeHtml(s.grade)}<b>${esc(s.name)}</b></span>`).join('');
+      return `<button type="button" class="gcard" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="top">${badgeHtml(t.grade)}<div><div class="bn">${esc(t.name)}</div><div class="glab">${esc(meta.label || '')}</div></div></div><div class="snote">${esc(t.gradeNote || '')}</div>${t.gradedAt ? `<div class="gdate">${esc(fmtTime(t.gradedAt))}</div>` : ''}<div class="sminis">${people}</div></button>`;
+    }).join('')}</div>`;
+    return;
+  }
   const members = DATA.teams.reduce((n, t) => n + (t.agents ?? 0), 0);
   const chips = DATA.teams.map(t => {
     const c = teamCounts(t);
@@ -291,7 +362,10 @@ function renderBoard() {
     }).join('') || '<div class="empty" style="padding:6px 4px">暂无</div>'}</div>`;
   }).join('');
 }
-$('#boardCols').addEventListener('click', e => { const c = e.target.closest('.tcard'); if (c) selectRoom(c.dataset.team); });
+$('#boardCols').addEventListener('click', e => {
+  const c = e.target.closest('.tcard, .gcard');
+  if (c) selectRoom(c.dataset.team);
+});
 $('#boardStats').addEventListener('click', e => { const c = e.target.closest('.bschip'); if (c) selectRoom(c.dataset.team); });
 function setTab(v) { document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === v)); }
 function openView(v) {
@@ -324,6 +398,36 @@ $('#navfabMenu').addEventListener('click', e => {
   if (b?.dataset.view) openView(b.dataset.view);
 });
 $('#boardClose').addEventListener('click', () => { $('#board').classList.add('hidden'); setTab('office'); });
+$('#boardMode')?.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b?.dataset.mode) return;
+  state.boardMode = b.dataset.mode;
+  renderBoard();
+});
+
+function renderQuick() {
+  const row = $('#quickscroll');
+  if (!row) return;
+  row.innerHTML = DATA.teams.map(t => {
+    const icon = office.rooms[t.id]?.def.icon ?? (t.private ? '私' : '·');
+    const on = state.selected === t.id ? ' on' : '';
+    return `<button type="button" class="qchip${on}" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><span class="qi">${esc(icon)}</span><span>${esc(t.short || t.name)}</span></button>`;
+  }).join('');
+}
+$('#homeBtn')?.addEventListener('click', () => {
+  state.selected = null; state.staffId = null;
+  $('#panel').classList.add('hidden');
+  $('#board').classList.add('hidden');
+  $('#directory').classList.add('hidden');
+  setTab('office');
+  Object.values(office.rooms).forEach(R => R.labelEl.classList.remove('sel'));
+  renderQuick();
+  goHome(true);
+});
+$('#quickscroll')?.addEventListener('click', e => {
+  const b = e.target.closest('.qchip');
+  if (b) selectRoom(b.dataset.team);
+});
 
 const DONE_SHOW = 3;
 function directoryTasks(team) {

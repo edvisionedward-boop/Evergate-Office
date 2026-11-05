@@ -266,6 +266,24 @@ export function makeAgent(o = {}) {
   root.userData = { legs, arms, headG, dot, doc, hips, bubbleAnchor, phase: rnd() * 10, mode: 'stand' };
   return root;
 }
+function nameTag(agent, staff, roomId) {
+  if (!agent || !staff) return agent;
+  agent.userData.room = roomId;
+  agent.userData.staffId = staff.id;
+  const el = document.createElement('div');
+  el.className = 'ptag';
+  el.dataset.room = roomId;
+  el.dataset.staff = staff.id;
+  el.textContent = '';
+  const pn = document.createElement('span'); pn.className = 'pn'; pn.textContent = staff.name; el.appendChild(pn);
+  const badge = document.createElement('i'); badge.className = 'gbadge'; el.appendChild(badge);
+  const o = new CSS2DObject(el);
+  o.position.set(0, 1.78, 0);
+  o.center.set(0, 1);
+  agent.add(o);
+  agent.userData.badgeEl = el;
+  return agent;
+}
 export function setSeated(a) {
   const u = a.userData; u.mode = 'seated';
   u.legs.forEach(l => { l.rotation.x = -1.45; });
@@ -562,7 +580,7 @@ function labelEl(def) {
   el.style.setProperty('--c', def.color);
   el.dataset.room = def.id;
   el.innerHTML = def.minor ? `<div class="nm">${def.label}</div>` :
-    `<div class="ic">${def.icon}</div><div><div class="nm">${def.label}</div><div class="st"><i class="dot idle"></i><span>空闲</span></div></div>`;
+    `<div class="ic">${def.icon}</div><div><div class="nmrow"><div class="nm">${def.label}</div><i class="gbadge" hidden></i></div><div class="st"><i class="dot idle"></i><span>空闲</span></div></div>`;
   return el;
 }
 
@@ -1172,6 +1190,7 @@ function decorate(R, dyn, teamById) {
     chair(g, -3.1, 0, -Math.PI / 2, '#0e7490');
     const boss = makeAgent({ shirt: '#1e3a5f', pants: '#111827', tie: '#dc2626', hair: '#111827', skin: '#e9bf9c' });
     boss.position.set(def.x - 3.15, FLOOR_H, def.z + 0.9); boss.rotation.y = Math.PI / 2 + 0.3; dyn.add(boss); R.boss = boss;
+    if (!t.private) nameTag(boss, (t.staff || [])[0], id);
     // big display stand at back
     const scr = new THREE.Group(); scr.position.set(0, 0, bz + 0.6); g.add(scr);
     box(scr, 0.12, 1.2, 0.12, -1.4, 0, 0, M('#111827', { m: .5 })); box(scr, 0.12, 1.2, 0.12, 1.4, 0, 0, M('#111827', { m: .5 }));
@@ -1366,7 +1385,8 @@ function decorate(R, dyn, teamById) {
   if (id === 'ed') pendant(g, 1.4, 0.2);
   const shirts = [shirtA, shirtB, '#e2e8f0'];
   const n = Math.min(desks.length, t.agents ?? desks.length);
+  const staff = t.private ? [] : (t.staff || []);
   for (let i = 0; i < desks.length; i++) {
-    if (i < n) seat(desks[i], id === 'design' ? t.color : shirts[i % 3]);
+    if (i < n) nameTag(seat(desks[i], id === 'design' ? t.color : shirts[i % 3]), staff[i], id);
   }
 }
