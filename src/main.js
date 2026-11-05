@@ -232,7 +232,22 @@ function closePanel() {
 }
 $('#panelClose').addEventListener('click', closePanel);
 
+function teamCounts(team) {
+  const tasks = DATA.tasks.filter(x => x.team === team.id);
+  const n = (s) => tasks.filter(x => x.status === s).length;
+  return { members: team.agents ?? 0, doing: n('doing'), confirm: n('confirm'), done: n('done'), total: tasks.length };
+}
 function renderBoard() {
+  const members = DATA.teams.reduce((n, t) => n + (t.agents ?? 0), 0);
+  const chips = DATA.teams.map(t => {
+    const c = teamCounts(t);
+    const icon = t.private ? '🔒' : (office.rooms[t.id]?.def.icon ?? '·');
+    const stats = t.private
+      ? `<div class="bpriv">私密</div>`
+      : `<div class="bc"><span>进行中 ${c.doing}</span><span>等你确认 ${c.confirm}</span><span>已完成 ${c.done}</span></div><div class="bt">共 ${c.total} 项</div>`;
+    return `<button type="button" class="bschip" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="top"><span class="ic">${esc(icon)}</span><span class="bn">${esc(t.name)}</span></div><div class="bm">成员 ${c.members} 人</div>${stats}</button>`;
+  }).join('');
+  $('#boardStats').innerHTML = `<div class="bstotal">全公司 <b>成员 ${members}</b> / <b>任务 ${DATA.tasks.length}</b></div><div class="bsrow">${chips}</div>`;
   const cols = [['doing', '进行中', 'busy'], ['confirm', '等你确认', 'confirm'], ['done', '已完成', 'idle']];
   $('#boardCols').innerHTML = cols.map(([k, name, dot]) => {
     const items = DATA.tasks.filter(x => x.status === k);
@@ -244,6 +259,7 @@ function renderBoard() {
   }).join('');
 }
 $('#boardCols').addEventListener('click', e => { const c = e.target.closest('.tcard'); if (c) selectRoom(c.dataset.team); });
+$('#boardStats').addEventListener('click', e => { const c = e.target.closest('.bschip'); if (c) selectRoom(c.dataset.team); });
 function setTab(v) { document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === v)); }
 document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
   const v = b.dataset.view; setTab(v);

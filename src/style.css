@@ -97,11 +97,23 @@ button{font:inherit;color:inherit}
 .private p{margin:6px 0 0;color:var(--mut);font-size:12px}
 
 /* board */
-#board{position:absolute;z-index:7;left:0;right:0;top:0;bottom:0;padding:calc(66px + var(--sat)) calc(16px + var(--sar)) calc(16px + var(--sab)) calc(16px + var(--sal));
+#board{position:absolute;z-index:7;left:0;right:0;top:0;bottom:0;padding:calc(66px + var(--sat)) calc(16px + var(--sar)) calc(16px + var(--sab)) calc(16px + var(--sal));opacity:1;
   background:rgba(5,8,16,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;transition:opacity .25s}
+#board.hidden{opacity:0}
 .board-head{display:flex;align-items:center;justify-content:space-between;max-width:1100px;margin:0 auto 12px;position:relative}
 .board-head h2{margin:0;font-size:18px}
 .board-head .close{position:static}
+.bstotal{max-width:1100px;margin:0 auto 8px;font-size:13px;color:var(--mut)}
+.bstotal b{color:var(--tx);font-weight:700}
+.bsrow{max-width:1100px;margin:0 auto 14px;display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;padding-bottom:2px}
+.bschip{flex:0 0 auto;width:168px;scroll-snap-align:start;text-align:left;color:inherit;cursor:pointer;border:1px solid var(--line);border-top:3px solid var(--c);background:rgba(13,18,32,.92);border-radius:12px;padding:8px 10px 9px}
+.bschip .top{display:flex;gap:8px;align-items:center;min-width:0}
+.bschip .ic{width:26px;height:26px;border-radius:8px;background:var(--c);display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;flex:none}
+.bschip .bn{font-size:12.5px;font-weight:700;line-height:1.25}
+.bschip .bm{margin-top:6px;font-size:11.5px;color:var(--tx)}
+.bschip .bc{margin-top:4px;display:flex;flex-direction:column;gap:1px;font-size:11px;line-height:1.35;color:var(--mut)}
+.bschip .bt{margin-top:2px;font-size:11.5px;font-weight:700;color:var(--tx)}
+.bschip .bpriv{margin-top:6px;font-size:12px;font-weight:700;color:#d8b4fe}
 .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:1100px;margin:0 auto}
 .col{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px}
 .col h3{margin:2px 2px 10px;font-size:14px;display:flex;align-items:center;gap:8px}
@@ -150,6 +162,8 @@ button{font:inherit;color:inherit}
   #directory{left:calc(16px + var(--sal));right:auto;top:72px;bottom:58px;width:min(400px,38vw);padding:16px 14px 12px;border-radius:20px;
     background:var(--panel);border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.45)}
   #directory .dir-head,#dirBody{max-width:none}
+  .bsrow{flex-wrap:wrap;overflow:visible}
+  .bschip{flex:1 1 190px;width:auto;min-width:190px;max-width:250px}
   #directory.hidden{transform:translateX(-28px)}
 }
 /* mobile */
@@ -164,6 +178,7 @@ button{font:inherit;color:inherit}
   #panel.hidden{transform:translateY(40px)}
   #panel .grab{display:block;width:40px;height:4px;border-radius:3px;background:rgba(255,255,255,.2);margin:0 auto 10px}
   .cols{grid-template-columns:1fr}
+  .bschip{width:168px}
   #board,#directory{padding-top:calc(118px + var(--sat))}
   .rlabel{gap:6px;padding:4px 8px 4px 4px;border-radius:10px}
   .rlabel .ic{width:20px;height:20px;border-radius:6px;font-size:10px}
