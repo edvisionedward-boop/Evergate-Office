@@ -676,8 +676,12 @@ export function buildOffice(scene, teams) {
     const el = labelEl(def); R.labelEl = el;
     const lo = new CSS2DObject(el);
     if (def.id === 'ed') lo.position.set(def.x - 0.2, 5.6, def.z - def.d * 0.34);
+    // 法务部 sits just north of ED; lift its plate so the member line clears ED's name.
+    else if (def.id === 'legal') lo.position.set(def.x, 6.55, def.z - def.d * 0.1);
     else lo.position.set(def.x, def.minor ? 3.15 : 4.15, def.z - def.d * 0.1);
-    lo.center.set(def.x > 18 ? 0.92 : def.x < -18 ? 0.08 : 0.5, 1);
+    // Meeting's status line is long; hang it toward the left edge so it misses 投资部.
+    const anchorX = def.id === 'meeting' ? 0.92 : def.id === 'archive' ? 0.32 : def.x > 18 ? 0.92 : def.x < -18 ? 0.08 : 0.5;
+    lo.center.set(anchorX, 1);
     lo.renderOrder = 3;
     root.add(lo); R.label = lo;
     // status lamp

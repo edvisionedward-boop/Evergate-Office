@@ -196,7 +196,7 @@ function applyData() {
   DATA.teams.forEach(t => cnt[t.status] = (cnt[t.status] || 0) + 1);
   const pend = DATA.tasks.filter(x => x.status === 'confirm').length;
   $('#confirmBadge').textContent = pend; $('#confirmBadge').style.display = pend ? '' : 'none';
-  $('#summary').innerHTML = `<span class="pill"><i class="dot busy"></i>${cnt.busy} 忙碌</span><span class="pill"><i class="dot confirm"></i>${pend} 项等你确认</span><span class="pill">${DATA.teams.length} 个团队</span>`;
+  $('#summary').innerHTML = `<span class="pill"><i class="dot busy"></i>${cnt.busy} 忙碌</span><span class="pill"><i class="dot confirm"></i>${pend} 项等你确认</span><span class="pill teams">${DATA.teams.length} 个团队</span>`;
   $('#updated').textContent = '';
   paintFooter();
   $('#company').textContent = DATA.office?.company ?? 'EVERGATE HOLDING SDN BHD';
@@ -334,7 +334,14 @@ function selectRoom(id, source, staffId) {
 function syncPanelChrome() {
   const open = !$('#panel').classList.contains('hidden');
   document.getElementById('app').classList.toggle('panel-open', open);
+  const panel = $('#panel');
+  if (!panel) return;
+  if (open && viewW > 760) {
+    const bar = $('#topbar').getBoundingClientRect().height;
+    panel.style.top = `${Math.ceil(bar + 8)}px`;
+  } else panel.style.top = '';
 }
+window.addEventListener('resize', () => syncPanelChrome());
 function closePanel() {
   if (!state.selected && $('#panel').classList.contains('hidden')) return;
   state.selected = null; state.staffId = null; $('#panel').classList.add('hidden');
@@ -555,7 +562,82 @@ function popBubble() {
   el.innerHTML = `<b>${esc(t.name)}</b>${esc(latest.text)}`;
   host.appendChild(el);
   const o = new CSS2DObject(host); o.renderOrder = t.id === 'ed' ? 40 : 8; agent.userData.bubbleAnchor.add(o);
-  const b = { o, el, agent, life: 5.2 }; activeBubbles.push(b);
+  const b = { o, el, agent, life: 5.2, ed: t.id === 'ed' }; activeBubbles.push(b);
+}
+const labelNudge = {};
+function separateLabels() {
+  const list = Object.values(office.rooms).filter(R => R.labelEl);
+  if (list.length < 2) return;
+  const pad = 8;
+  const base = {};
+  for (const R of list) {
+    const m = R.labelEl.getBoundingClientRect();
+    const cur = labelNudge[R.id] || { x: 0, y: 0 };
+    if (m.width < 2 || m.height < 2) continue;
+    base[R.id] = { left: m.left - cur.x, top: m.top - cur.y, right: m.right - cur.x, bottom: m.bottom - cur.y };
+  }
+  const ids = Object.keys(base);
+  const pos = {};
+  for (const id of ids) pos[id] = { ...base[id] };
+  for (let pass = 0; pass < 10; pass++) {
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        const A = pos[ids[i]], B = pos[ids[j]];
+        const ox = Math.min(A.right, B.right) - Math.max(A.left, B.left);
+        const oy = Math.min(A.bottom, B.bottom) - Math.max(A.top, B.top);
+        if (ox <= 0 || oy <= 0) continue;
+        if (ox < oy) {
+          const left = A.left <= B.left ? A : B;
+          const right = left === A ? B : A;
+          const d = (ox + pad) / 2;
+          left.left -= d; left.right -= d; right.left += d; right.right += d;
+        } else {
+          const up = A.top <= B.top ? A : B;
+          const down = up === A ? B : A;
+          const d = (oy + pad) / 2;
+          up.top -= d; up.bottom -= d; down.top += d; down.bottom += d;
+        }
+      }
+    }
+  }
+  for (const R of list) {
+    const b = base[R.id];
+    if (!b) continue;
+    const p = pos[R.id];
+    const x = Math.round(Math.max(-96, Math.min(96, p.left - b.left)));
+    const y = Math.round(Math.max(-72, Math.min(72, p.top - b.top)));
+    labelNudge[R.id] = { x, y };
+    R.labelEl.style.marginLeft = x ? `${x}px` : '';
+    R.labelEl.style.marginTop = y ? `${y}px` : '';
+  }
+}
+function layoutEdBubble(el) {
+  const label = office.rooms.ed?.labelEl;
+  if (!label) return;
+  const lr = label.getBoundingClientRect();
+  const br = el.getBoundingClientRect();
+  if (br.width < 20 || lr.width < 20) return;
+  const cs = getComputedStyle(el);
+  const curLeft = parseFloat(cs.left) || 0;
+  const curTop = parseFloat(cs.top) || 0;
+  const originX = br.left - curLeft;
+  const originY = br.top - curTop;
+  let left = lr.left + (lr.width - br.width) / 2;
+  let top = lr.top - 14 - br.height;
+  const others = Object.values(office.rooms).filter(R => R.labelEl && R.id !== 'ed').map(R => R.labelEl.getBoundingClientRect());
+  const hits = (x, y) => others.some(o => x < o.right - 0.5 && x + br.width > o.left + 0.5 && y < o.bottom - 0.5 && y + br.height > o.top + 0.5);
+  if (hits(left, top)) {
+    let placed = false;
+    for (const dir of [-1, 1]) {
+      let x = left;
+      for (let i = 0; i < 10 && hits(x, top); i++) x += dir * 24;
+      if (!hits(x, top)) { left = x; placed = true; break; }
+    }
+    if (!placed) { for (let i = 0; i < 8 && hits(left, top); i++) top -= 22; }
+  }
+  top = Math.max(8, top);
+  el.style.left = `${Math.round(left - originX)}px`;
+  el.style.top = `${Math.round(top - originY)}px`;
 }
 function tickBubbles(dt) {
   bubbleTimer -= dt;
@@ -709,6 +791,8 @@ function frame() {
   tickBubbles(dt);
   if (composer) composer.render(); else renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
+  separateLabels();
+  for (const b of activeBubbles) if (b.ed) layoutEdBubble(b.el);
   if ((T % 0.5) < dt) applyClock();
   if (first) { first = false; setTimeout(() => $('#loading').classList.add('gone'), 150); window.__ready = true; }
 }
