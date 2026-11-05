@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-05T10:04:00+08:00",
+  "updatedAt": "2026-11-05T11:36:00+08:00",
   "office": {
     "title": "Evergate AI Office",
     "company": "EVERGATE HOLDING SDN BHD",
@@ -12,6 +12,19 @@
     "confirm": "等你确认",
     "idle": "空闲"
   },
+  "directory": {
+    "statusGroups": [
+      { "status": "busy", "label": "忙碌" },
+      { "status": "confirm", "label": "等你确认" },
+      { "status": "idle", "label": "待命空闲" }
+    ],
+    "groups": [
+      { "id": "command", "name": "ED 中央指挥室", "teams": ["ed"] },
+      { "id": "biz", "name": "业务类", "teams": ["market", "invest", "info", "proposal"] },
+      { "id": "support", "name": "支持类", "teams": ["corpfin", "legal", "logistics"] },
+      { "id": "private", "name": "私密", "teams": ["privfin"] }
+    ]
+  },
   "teams": [
     {
       "id": "ed",
@@ -21,7 +34,7 @@
       "status": "busy",
       "statusNote": "忙碌",
       "agents": 1,
-      "currentTask": "制作 3D 办公室 App",
+      "currentTask": "修复标签跑位 + 部门总览",
       "private": false
     },
     {
@@ -37,8 +50,8 @@
     },
     {
       "id": "corpfin",
-      "name": "财务部",
-      "short": "财务",
+      "name": "会计部",
+      "short": "会计",
       "color": "#f59e0b",
       "status": "idle",
       "statusNote": "空闲",
@@ -55,7 +68,8 @@
       "statusNote": "待命",
       "agents": 1,
       "currentTask": null,
-      "private": true
+      "private": true,
+      "privateNote": "私密内容，仅 Edward 可见"
     },
     {
       "id": "logistics",
@@ -110,7 +124,7 @@
       "status": "busy",
       "statusNote": "忙碌",
       "agents": 2,
-      "currentTask": "设置每日 AI 简报",
+      "currentTask": "全球 AI 动态快讯（每小时扫描）",
       "private": false,
       "note": "每日 AI 新闻简报"
     }
@@ -189,16 +203,76 @@
     {
       "id": "t11",
       "team": "info",
+      "status": "done",
+      "title": "设置每日 AI 简报（每天 8:00）",
+      "updatedAt": "2026-11-05T11:36:00+08:00"
+    },
+    {
+      "id": "t12",
+      "team": "ed",
+      "status": "done",
+      "title": "3D 办公室上线 GitHub Pages",
+      "updatedAt": "2026-11-05T11:36:00+08:00"
+    },
+    {
+      "id": "t13",
+      "team": "ed",
+      "status": "done",
+      "title": "查询公司官网域名",
+      "updatedAt": "2026-11-05T11:36:00+08:00"
+    },
+    {
+      "id": "t14",
+      "team": "ed",
       "status": "doing",
-      "title": "设置每日 AI 简报",
-      "updatedAt": "2026-11-05T10:04:00+08:00"
+      "title": "修复标签跑位 + 部门总览",
+      "updatedAt": "2026-11-05T11:36:00+08:00"
+    },
+    {
+      "id": "t15",
+      "team": "ed",
+      "status": "confirm",
+      "title": "选定官网域名",
+      "updatedAt": "2026-11-05T11:36:00+08:00"
+    },
+    {
+      "id": "t16",
+      "team": "info",
+      "status": "done",
+      "title": "全球 AI 动态快讯（每小时扫描）",
+      "updatedAt": "2026-11-05T11:36:00+08:00"
     }
   ],
   "feed": [
     {
       "team": "info",
-      "time": "2026-11-05T10:04:00+08:00",
-      "text": "进行中：设置每日 AI 简报"
+      "time": "2026-11-05T11:36:00+08:00",
+      "text": "已完成：全球 AI 动态快讯（每小时扫描）"
+    },
+    {
+      "team": "info",
+      "time": "2026-11-05T11:36:00+08:00",
+      "text": "已完成：设置每日 AI 简报（每天 8:00）"
+    },
+    {
+      "team": "ed",
+      "time": "2026-11-05T11:36:00+08:00",
+      "text": "进行中：修复标签跑位 + 部门总览"
+    },
+    {
+      "team": "ed",
+      "time": "2026-11-05T11:36:00+08:00",
+      "text": "等你确认：选定官网域名"
+    },
+    {
+      "team": "ed",
+      "time": "2026-11-05T11:36:00+08:00",
+      "text": "已完成：3D 办公室上线 GitHub Pages"
+    },
+    {
+      "team": "ed",
+      "time": "2026-11-05T11:36:00+08:00",
+      "text": "已完成：查询公司官网域名"
     },
     {
       "team": "invest",

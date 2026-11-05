@@ -14,7 +14,7 @@ button{font:inherit;color:inherit}
 
 /* top bar */
 #topbar{position:absolute;left:0;right:0;top:0;padding:calc(10px + var(--sat)) calc(14px + var(--sar)) 10px calc(14px + var(--sal));
-  display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,rgba(7,11,20,.92),rgba(7,11,20,.55) 70%,rgba(7,11,20,0));pointer-events:none;z-index:5}
+  display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,rgba(7,11,20,.92),rgba(7,11,20,.55) 70%,rgba(7,11,20,0));pointer-events:none;z-index:8}
 #topbar>*{pointer-events:auto}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
 .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#0e7490,#22d3ee);display:grid;place-items:center;box-shadow:0 0 18px rgba(34,211,238,.45)}
@@ -112,6 +112,30 @@ button{font:inherit;color:inherit}
 .tcard .tt{font-size:13.5px;line-height:1.45}
 .tcard.confirm{background:rgba(244,63,94,.07)}
 
+/* department directory */
+#directory{position:absolute;z-index:7;left:0;right:0;top:0;bottom:0;padding:calc(66px + var(--sat)) calc(16px + var(--sar)) calc(16px + var(--sab)) calc(16px + var(--sal));
+  background:rgba(5,8,16,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.dir-head{display:grid;grid-template-columns:1fr auto;gap:8px 10px;align-items:center;max-width:720px}
+.dir-head .seg{grid-column:1 / -1;justify-self:start}
+.seg{display:flex;background:rgba(15,23,42,.8);border:1px solid var(--line);border-radius:10px;padding:2px}
+.seg button{border:0;background:transparent;color:var(--mut);border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer}
+.seg button.on{background:rgba(255,255,255,.12);color:var(--tx)}
+#dirBody{max-width:720px;margin:0 auto}
+.dgroup{margin:0 0 16px}
+.dgroup h3{margin:0 0 8px;font-size:13px;color:var(--mut);display:flex;align-items:center;gap:8px;font-weight:600}
+.dgroup h3 .n{margin-left:auto;font-weight:500}
+.dcard{display:block;width:100%;text-align:left;border:1px solid var(--line);border-left:3px solid var(--c);background:rgba(255,255,255,.045);border-radius:14px;padding:10px 12px;margin:0 0 10px;cursor:pointer}
+.dcard.sel{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 0 18px color-mix(in srgb,var(--c) 35%,transparent)}
+.dtop{display:flex;gap:10px;align-items:center}
+.dtop .ic{width:34px;height:34px;border-radius:10px;background:var(--c);display:grid;place-items:center;font-weight:800;font-size:13px;color:#fff;flex:none}
+.dtop .nm{font-weight:700;font-size:14.5px;line-height:1.25}
+.dtop .sub{font-size:11.5px;color:var(--mut);display:flex;gap:6px;align-items:center;margin-top:2px}
+.dtasks{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.dtasks li{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.4}
+.dtasks .chip{flex:none;margin-top:1px}
+.dlock{margin-top:8px;font-size:13px;font-weight:600;text-align:center;padding:12px 8px;border-radius:10px;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.28)}
+.dnone{color:var(--mut);font-size:12.5px;margin-top:8px}
+
 .hidden{opacity:0;pointer-events:none!important}
 #panel.hidden{transform:translateX(30px)}
 
@@ -123,20 +147,24 @@ button{font:inherit;color:inherit}
 /* desktop panel */
 @media (min-width:761px){
   #panel{right:calc(16px + var(--sar));top:72px;bottom:16px;width:380px;border-radius:20px;padding:20px}
+  #directory{left:calc(16px + var(--sal));right:auto;top:72px;bottom:58px;width:min(400px,38vw);padding:16px 14px 12px;border-radius:20px;
+    background:var(--panel);border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.45)}
+  #directory .dir-head,#dirBody{max-width:none}
+  #directory.hidden{transform:translateX(-28px)}
 }
 /* mobile */
 @media (max-width:760px){
   #topbar{flex-wrap:wrap;gap:8px 10px;padding-bottom:8px}
   .summary{display:none}
-  .tabs{margin-left:auto}
-  .tab{padding:6px 10px;font-size:12.5px}
+  .tabs{margin-left:0;width:100%}
+  .tab{flex:1;justify-content:center;padding:6px 4px;font-size:12px}
   .t1{font-size:14px}
   #legend{font-size:10.5px;gap:9px;padding:6px 10px;left:50%;transform:translateX(-50%);white-space:nowrap}
   #panel{left:0;right:0;bottom:0;max-height:56vh;border-radius:22px 22px 0 0;padding:14px 16px calc(18px + var(--sab));border-bottom:0}
   #panel.hidden{transform:translateY(40px)}
   #panel .grab{display:block;width:40px;height:4px;border-radius:3px;background:rgba(255,255,255,.2);margin:0 auto 10px}
   .cols{grid-template-columns:1fr}
-  #board{padding-top:calc(118px + var(--sat))}
+  #board,#directory{padding-top:calc(118px + var(--sat))}
   .rlabel{gap:6px;padding:4px 8px 4px 4px;border-radius:10px}
   .rlabel .ic{width:20px;height:20px;border-radius:6px;font-size:10px}
   .rlabel .nm{font-size:11px}

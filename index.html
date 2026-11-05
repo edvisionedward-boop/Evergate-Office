@@ -31,6 +31,7 @@
     <nav class="tabs">
       <button class="tab active" data-view="office">办公室</button>
       <button class="tab" data-view="board">任务板 <b id="confirmBadge" class="badge">0</b></button>
+      <button class="tab" data-view="directory">部门总览</button>
     </nav>
     <div class="summary" id="summary"></div>
   </header>
@@ -47,6 +48,18 @@
     <button class="close" id="panelClose" aria-label="关闭">✕</button>
     <div id="panelBody"></div>
   </aside>
+
+  <section id="directory" class="hidden" aria-label="部门总览">
+    <div class="board-head dir-head">
+      <h2>部门总览</h2>
+      <button class="close" id="dirClose" aria-label="关闭">✕</button>
+      <div class="seg" id="dirMode">
+        <button type="button" data-mode="status" class="on">按状态</button>
+        <button type="button" data-mode="group">按类别</button>
+      </div>
+    </div>
+    <div id="dirBody"></div>
+  </section>
 
   <section id="board" class="hidden">
     <div class="board-head">

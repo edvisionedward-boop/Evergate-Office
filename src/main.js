@@ -22,7 +22,7 @@ const fmtTime = (iso) => {
 const ST_LABEL = { busy: '忙碌', confirm: '等你确认', idle: '空闲', doing: '进行中', done: '已完成' };
 
 let DATA = SEED, DATA_SRC = 'embedded';
-const state = { status: {}, selected: null };
+const state = { status: {}, selected: null, dirMode: 'status' };
 
 /* ---------- renderer ---------- */
 const isMobile = matchMedia('(max-width: 760px)').matches || /iPhone|iPad|Android/i.test(navigator.userAgent);
@@ -169,7 +169,8 @@ function applyData() {
   $('#updated').textContent = `更新 ${fmtTime(DATA.updatedAt)} (UTC+8)`;
   $('#company').textContent = DATA.office?.company ?? 'EVERGATE HOLDING SDN BHD';
   renderBoard();
-  if (state.selected) renderPanel(state.selected);
+  renderDirectory();
+  if (state.selected && !$('#panel').classList.contains('hidden')) renderPanel(state.selected);
 }
 
 function chip(s) { return `<span class="chip ${s === 'doing' ? 'busy' : esc(s)}">${esc(ST_LABEL[s] ?? s)}</span>`; }
@@ -185,7 +186,8 @@ function renderPanel(id) {
   const head = `<div class="ph" style="--c:${esc(t.color)}"><div class="ic">${t.private ? '🔒' : esc(office.rooms[id]?.def.icon ?? '')}</div><div><h3>${esc(t.name)}</h3>
     <div class="sub"><span class="chip ${esc(t.status)}"><i class="dot ${esc(t.status)}"></i>${esc(lbl)}</span>${t.private ? '' : `<span>${t.agents ?? 0} 位 AI 成员</span>`}</div></div></div>`;
   if (t.private) {
-    body.innerHTML = head + `<div class="sec"><div class="card private"><div class="lk">🔒</div><div>私密内容，仅 Edward 可见</div></div></div>`;
+    const note = t.privateNote || '私密内容，仅 Edward 可见';
+    body.innerHTML = head + `<div class="sec"><div class="card private"><div class="lk">🔒</div><div>${esc(note)}</div></div></div>`;
     return;
   }
   const tasks = DATA.tasks.filter(x => x.team === id);
@@ -197,18 +199,28 @@ function renderPanel(id) {
     `<div class="sec"><h4>任务 <span>${tasks.length}</span></h4>${tasks.length ? `<div class="card tlist">${tasks.map(x => `<div class="titem">${chip(x.status)}<div>${esc(x.title)}</div></div>`).join('')}</div>` : '<div class="card empty">暂无任务</div>'}</div>` +
     `<div class="sec"><h4>最新动态 <span>UTC+8</span></h4>${feed.length ? `<ul class="feed" style="--c:${esc(t.color)}">${feed.map(f => `<li><time>${fmtTime(f.time)}</time>${esc(f.text)}</li>`).join('')}</ul>` : '<div class="card empty">暂无动态</div>'}</div>`;
 }
-function selectRoom(id) {
+function selectRoom(id, source) {
+  const wideDir = source === 'directory' && viewW > 760 && !$('#directory').classList.contains('hidden');
   state.selected = id;
-  $('#board').classList.add('hidden'); setTab('office');
-  renderPanel(id); $('#panel').classList.remove('hidden'); $('#panel').scrollTop = 0;
+  if (!wideDir) {
+    $('#board').classList.add('hidden');
+    $('#directory').classList.add('hidden');
+    setTab('office');
+    renderPanel(id); $('#panel').classList.remove('hidden'); $('#panel').scrollTop = 0;
+  } else {
+    $('#panel').classList.add('hidden');
+    document.querySelectorAll('.dcard').forEach(el => el.classList.toggle('sel', el.dataset.team === id));
+  }
   Object.values(office.rooms).forEach(R => R.labelEl.classList.toggle('sel', R.id === id));
   const R = office.rooms[id];
+  if (!R) return;
   const tgt = R.center.clone();
   const portrait = camera.aspect < 0.8;
-  // shift target so the room sits in the visible area (left of side panel / above bottom sheet)
+  // shift target so the room sits in the visible area (beside the open frame / above the bottom sheet)
   const right = new THREE.Vector3(HOME_DIR.z, 0, -HOME_DIR.x).normalize();
   const fwd = new THREE.Vector3(-HOME_DIR.x, 0, -HOME_DIR.z).normalize();
-  if (portrait) tgt.addScaledVector(fwd, -2.2);
+  if (wideDir) tgt.addScaledVector(right, -4.4).addScaledVector(fwd, -0.4);
+  else if (portrait) tgt.addScaledVector(fwd, -2.2);
   else if (viewW > 760) tgt.addScaledVector(right, 3.6).addScaledVector(fwd, -0.6);
   flyTo(tgt, portrait ? 31 : 22, HOME_DIR);
 }
@@ -235,10 +247,86 @@ $('#boardCols').addEventListener('click', e => { const c = e.target.closest('.tc
 function setTab(v) { document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === v)); }
 document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
   const v = b.dataset.view; setTab(v);
-  if (v === 'board') { $('#panel').classList.add('hidden'); state.selected = null; $('#board').classList.remove('hidden'); }
-  else $('#board').classList.add('hidden');
+  if (v === 'board') {
+    $('#panel').classList.add('hidden'); state.selected = null;
+    $('#directory').classList.add('hidden');
+    $('#board').classList.remove('hidden');
+    Object.values(office.rooms).forEach(R => R.labelEl.classList.remove('sel'));
+  } else if (v === 'directory') {
+    $('#panel').classList.add('hidden');
+    $('#board').classList.add('hidden');
+    $('#directory').classList.remove('hidden');
+    renderDirectory();
+  } else {
+    $('#board').classList.add('hidden');
+    $('#directory').classList.add('hidden');
+  }
 }));
 $('#boardClose').addEventListener('click', () => { $('#board').classList.add('hidden'); setTab('office'); });
+
+const DONE_SHOW = 3;
+function directoryTasks(team) {
+  const all = DATA.tasks.filter(x => x.team === team.id);
+  const byTime = (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt);
+  return [
+    ...all.filter(x => x.status === 'doing').sort(byTime),
+    ...all.filter(x => x.status === 'confirm').sort(byTime),
+    ...all.filter(x => x.status === 'done').sort(byTime).slice(0, DONE_SHOW),
+  ];
+}
+function deptCard(t) {
+  const icon = t.private ? '🔒' : (office.rooms[t.id]?.def.icon ?? '·');
+  const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status] || '';
+  const sel = state.selected === t.id ? ' sel' : '';
+  if (t.private) {
+    const note = t.privateNote || '私密内容，仅 Edward 可见';
+    return `<button type="button" class="dcard${sel}" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="dtop"><span class="ic">🔒</span><div class="nm">${esc(t.name)}</div></div><div class="dlock">🔒 ${esc(note)}</div></button>`;
+  }
+  const head = `<div class="dtop"><span class="ic">${esc(icon)}</span><div><div class="nm">${esc(t.name)}</div><div class="sub"><i class="dot ${esc(t.status)}"></i>${esc(lbl)} · ${t.agents ?? 0} 位成员</div></div></div>`;
+  const tasks = directoryTasks(t);
+  const body = tasks.length
+    ? `<ul class="dtasks">${tasks.map(x => `<li>${chip(x.status)}<span>${esc(x.title)}</span></li>`).join('')}</ul>`
+    : '<div class="dnone">暂无任务</div>';
+  return `<button type="button" class="dcard${sel}" data-team="${esc(t.id)}" style="--c:${esc(t.color)}">${head}${body}</button>`;
+}
+function renderDirectory() {
+  const root = $('#dirBody');
+  if (!root) return;
+  const mode = state.dirMode || 'status';
+  let html = '';
+  if (mode === 'group') {
+    const groups = DATA.directory?.groups || [];
+    const seen = new Set();
+    for (const g of groups) {
+      const teams = (g.teams || []).map(teamOf).filter(Boolean);
+      teams.forEach(t => seen.add(t.id));
+      if (!teams.length) continue;
+      html += `<section class="dgroup"><h3>${esc(g.name)}<span class="n">${teams.length}</span></h3>${teams.map(deptCard).join('')}</section>`;
+    }
+    const rest = DATA.teams.filter(t => !seen.has(t.id));
+    if (rest.length) html += `<section class="dgroup"><h3>其他<span class="n">${rest.length}</span></h3>${rest.map(deptCard).join('')}</section>`;
+  } else {
+    const groups = DATA.directory?.statusGroups || [
+      { status: 'busy', label: '忙碌' },
+      { status: 'confirm', label: '等你确认' },
+      { status: 'idle', label: '待命空闲' },
+    ];
+    for (const g of groups) {
+      const teams = DATA.teams.filter(t => t.status === g.status);
+      html += `<section class="dgroup"><h3><i class="dot ${esc(g.status)}"></i>${esc(g.label)}<span class="n">${teams.length}</span></h3>${teams.length ? teams.map(deptCard).join('') : '<div class="dnone">无</div>'}</section>`;
+    }
+  }
+  root.innerHTML = html;
+}
+$('#dirBody').addEventListener('click', e => { const c = e.target.closest('.dcard'); if (c) selectRoom(c.dataset.team, 'directory'); });
+$('#dirMode').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b || !b.dataset.mode) return;
+  state.dirMode = b.dataset.mode;
+  $('#dirMode').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  renderDirectory();
+});
+$('#dirClose').addEventListener('click', () => { $('#directory').classList.add('hidden'); setTab('office'); });
 
 /* ---------- speech bubbles ---------- */
 let bubbleTimer = 2.5, bubbleIdx = 0;

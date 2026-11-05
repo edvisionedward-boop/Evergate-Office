@@ -419,7 +419,7 @@ export const LAYOUT = {
   invest:   { x: -13.5, z: 0,   w: 10, d: 8.5, icon: '投', sign: '投资部', signSub: 'INVESTMENT' },
   ed:       { x: 0,     z: 0,   w: 11, d: 9,   icon: 'ED', walls: 'glass', floorTone: '#1b3a4a', sign: 'ED 中央指挥室', signSub: 'COMMAND CENTER' },
   info:     { x: 13.5,  z: 0,   w: 10, d: 8.5, icon: '信', sign: '信息部', signSub: 'AI NEWS & INFO' },
-  corpfin:  { x: -13.5, z: 12,  w: 10, d: 8.5, icon: '财', sign: '财务部', signSub: 'FINANCE' },
+  corpfin:  { x: -13.5, z: 12,  w: 10, d: 8.5, icon: '会', sign: '会计部', signSub: 'ACCOUNTING' },
   logistics:{ x: 0,     z: 12,  w: 11, d: 8.5, icon: '物', sign: '物流部', signSub: 'LOGISTICS' },
   privfin:  { x: 13.5,  z: 12,  w: 10, d: 8.5, icon: '🔒', walls: 'glass', private: true, floorTone: '#5b3d8f', sign: '私人助理', signSub: 'PRIVATE · 仅 EDWARD' },
 };
