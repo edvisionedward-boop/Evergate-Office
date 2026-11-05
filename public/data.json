@@ -342,45 +342,38 @@
       "color": "#D0B993",
       "status": "busy",
       "statusNote": "忙碌",
-      "agents": 5,
+      "agents": 4,
       "currentTask": "市场判断 v0.6 修订（待 ED 审核）",
       "private": false,
-      "note": "战略规划 · 新增人员",
+      "note": "新增战略规划 · 11-05",
       "duty": "公司发展战略规划、新项目评估与计划书",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
       "staff": [
         {
           "id": "proposal-1",
-          "name": "战略规划师 1",
+          "name": "规划 1",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "proposal-2",
-          "name": "战略规划师 2",
+          "name": "规划 2",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "proposal-3",
-          "name": "分析师 1",
+          "name": "战略规划师 1",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
         },
         {
           "id": "proposal-4",
-          "name": "分析师 2",
-          "gradeNote": "待周一例会后首次评定",
-          "gradedAt": null,
-          "score": null
-        },
-        {
-          "id": "proposal-5",
-          "name": "文稿主笔",
+          "name": "战略规划师 2",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
