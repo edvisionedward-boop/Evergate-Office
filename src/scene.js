@@ -437,6 +437,7 @@ function deskSet(parent, x, z, ry, team, opt = {}) {
   box(g, 0.07, 0.02, 0.1, 0.36, 0.77, 0.14, M('#1a1f2b'), { cast: false });
   if (opt.mug !== false) cyl(g, 0.04, 0.035, 0.1, -0.55, 0.77, 0.1, M(team.color, { r: .4 }), 8);
   if (opt.papers) { box(g, 0.24, 0.04, 0.32, 0.55, 0.77, 0.05, M('#dde3ec', { r: .9 }), { ry: 0.2 }); }
+  if (opt.privacy) box(g, 1.15, 0.045, 0.1, 0, 1.18, -0.28, M('#1a1f2b', { r: .35 }), { cast: false });
   if (opt.plant !== false) plant(g, opt.papers ? -0.42 : 0.55, 0.18, 0.32, 1, 0.775);
   const ch = chair(g, 0, 0.62, 0, opt.chair ?? '#2b3142');
   return { group: g, seat: new THREE.Vector3(0, 0, 0.58) };
@@ -1749,6 +1750,133 @@ function workstations(g, t, accent, W, D, n) {
   return desks;
 }
 
+function notePlate(parent, x, y, z, lines, ry = 0, w = 0.72, h = 0.46) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 320;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#141820'; ctx.fillRect(0, 0, 512, 320);
+  ctx.strokeStyle = '#D0B993'; ctx.lineWidth = 10; ctx.strokeRect(8, 8, 496, 304);
+  ctx.fillStyle = '#f4efe6'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '600 36px sans-serif';
+  lines.forEach((line, i) => ctx.fillText(line, 256, 70 + i * 52));
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+  sp.position.set(x, y, z); sp.rotation.y = ry; sp.userData.keep = true; parent.add(sp);
+  return sp;
+}
+function frostBand(parent, x0, z0, x1, z1) {
+  const len = Math.hypot(x1 - x0, z1 - z0);
+  if (len < 0.2) return;
+  const ang = Math.atan2(z1 - z0, x1 - x0);
+  const p = new THREE.Mesh(boxG(len, 0.5, 0.015), M('#d5dbe3', { r: .85, m: .02, op: 0.62, side: THREE.DoubleSide }));
+  p.position.set((x0 + x1) / 2, 1.12, (z0 + z1) / 2); p.rotation.y = -ang; p.castShadow = false; parent.add(p);
+}
+function coatHooks(parent, x, z, ry) {
+  const g = new THREE.Group(); g.position.set(x, 1.45, z); g.rotation.y = ry; parent.add(g);
+  box(g, 0.7, 0.04, 0.04, 0, 0, 0, M('#1c1917', { r: .5 }), { cast: false });
+  for (const hx of [-0.22, 0, 0.22]) box(g, 0.03, 0.08, 0.08, hx, -0.05, 0.02, M(GOLD, { m: .4, r: .45 }), { cast: false });
+  notePlate(g, 0, 0.22, 0.02, ['衣帽'], 0, 0.42, 0.16);
+}
+function drawerBank(parent, x, z) {
+  box(parent, 0.4, 0.36, 0.42, x, 0, z, M('#1c2433', { r: .45, m: .28 }), { cast: false });
+  box(parent, 0.05, 0.045, 0.02, x + 0.1, 0.2, z + 0.22, M(GOLD, { m: .45, r: .4 }), { cast: false });
+}
+function furnishMarket(g, t, accent, W, D) {
+  const desks = [];
+  const bz = -D / 2;
+  // North monitor wall, then four analysts facing it. No closed office.
+  const screenMat = new THREE.MeshBasicMaterial({ map: signTexture('公开监测', '产品代际 · 供货 · 日程', '#94a3b8'), toneMapped: false });
+  for (const x of [-2.5, 0, 2.5]) {
+    box(g, 1.7, 0.78, 0.05, x, 1.35, bz + 0.22, M('#0b0f19'), { cast: false });
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(1.55, 0.62), screenMat);
+    s.position.set(x, 1.72, bz + 0.26); s.userData.keep = true; g.add(s);
+    cabinet(g, x, bz + 0.55, 0, 1.55, 0.48, '#1a1f2b');
+  }
+  const rowZ = bz + 2.55;
+  const analysts = [
+    [-3.15, ['dash', 'doc'], 2],
+    [-1.05, ['doc'], 1],
+    [1.05, ['chart'], 1],
+    [3.15, ['doc'], 1],
+  ];
+  const tech = deskSet(g, analysts[0][0], rowZ, 0, t, { kinds: analysts[0][1], monitors: 2, chair: accent, papers: true });
+  const tariff = deskSet(g, analysts[1][0], rowZ, 0, t, { kinds: analysts[1][1], monitors: 1, chair: accent });
+  const energy = deskSet(g, analysts[2][0], rowZ, 0, t, { kinds: analysts[2][1], monitors: 1, chair: accent, papers: true });
+  const retail = deskSet(g, analysts[3][0], rowZ, 0, t, { kinds: analysts[3][1], monitors: 1, chair: accent });
+  const cmo = deskSet(g, 0, -0.85, 0, t, { kinds: ['dash'], monitors: 1, chair: accent, papers: true });
+  cabinet(g, -1.45, -0.85, Math.PI, 0.62, 0.55, '#242018');
+  notePlate(g, -1.15, 1.2, -0.2, ['书面先交 ED', '未核实标待确认', '预测须标前提'], Math.PI / 2, 0.62, 0.48);
+  const brand = deskSet(g, -2.55, 4.3, Math.PI / 2, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true });
+  bookshelf(g, -W / 2 + 0.32, 4.3, Math.PI / 2, 1.15, 1.45);
+  notePlate(g, -W / 2 + 0.2, 1.85, 4.3, ['品牌规范'], Math.PI / 2, 0.7, 0.22);
+  box(g, 1.15, 0.05, 0.62, 0.55, 0.72, 4.85, M('#c4b496', { r: .45 }), { round: 0.02, cast: false });
+  cyl(g, 0.04, 0.05, 0.72, 0.2, 0, 4.85, M('#1a1a1a'), 8, { cast: false });
+  cyl(g, 0.04, 0.05, 0.72, 0.9, 0, 4.85, M('#1a1a1a'), 8, { cast: false });
+  chair(g, 0.55, 4.35, 0, accent); chair(g, 0.55, 5.35, Math.PI, accent);
+  bookshelf(g, -W / 2 + 0.28, -2.4, Math.PI / 2, 1.7, 1.9);
+  const map = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.8), new THREE.MeshBasicMaterial({ map: signTexture('区域图', '空白 · 无标注', '#94a3b8'), toneMapped: false }));
+  map.position.set(W / 2 - 0.16, 1.45, rowZ); map.rotation.y = -Math.PI / 2; map.userData.keep = true; g.add(map);
+  floorLamp(g, W / 2 - 0.7, bz + 1.35);
+  floorLamp(g, -W / 2 + 0.75, 2.3);
+  coatHooks(g, 1.55, D / 2 - 0.18, 0);
+  plant(g, -W / 2 + 0.7, bz + 0.7, 0.9, 1); plant(g, W / 2 - 0.7, bz + 0.7, 0.85, 0);
+  plant(g, -W / 2 + 0.7, D / 2 - 1.3, 0.9, 0); plant(g, W / 2 - 0.7, D / 2 - 1.6, 0.85, 1);
+  // Staff order: CMO, 品牌经理, 科技, 零售, 能源, 国别与关税.
+  desks.push(cmo, brand, tech, retail, energy, tariff);
+  return desks;
+}
+function furnishLegal(g, t, accent, W, D) {
+  const desks = [];
+  const bz = -D / 2, zz = D / 2, bx = -W / 2, ex = W / 2;
+  const labels = ['合约与公司', '海关物流', '马来西亚 AI', '海外 AI', '知产与数据'];
+  labels.forEach((name, i) => {
+    const x = bx + 1.7 + i * 3.15;
+    bookshelf(g, x, bz + 0.4, 0, 2.5, 2.05);
+    notePlate(g, x, 2.15, bz + 0.62, [name], 0, 1.15, 0.28);
+  });
+  const zRow = bz + 2.7;
+  const myLaw = deskSet(g, -6.1, zRow, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
+  const contract = deskSet(g, -4.3, zRow, 0, t, { kinds: ['dash', 'doc'], monitors: 2, chair: accent, papers: true, privacy: true });
+  const maritime = deskSet(g, -2.5, zRow, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, privacy: true });
+  const myAi = deskSet(g, 0.9, zRow, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
+  const ip = deskSet(g, 2.7, zRow, 0, t, { kinds: ['dash', 'doc'], monitors: 2, chair: accent, papers: true, privacy: true });
+  const overseas = deskSet(g, 4.5, zRow, 0, t, { kinds: ['chart'], monitors: 1, chair: accent, privacy: true });
+  for (const x of [-6.1, -4.3, -2.5, 0.9, 2.7, 4.5]) drawerBank(g, x, zRow);
+  box(g, 3.8, 0.06, 0.85, -1.4, 0.74, 0.6, M('#c4b496', { r: .45 }), { round: 0.02, cast: false });
+  cyl(g, 0.05, 0.06, 0.74, -2.9, 0, 0.6, M('#1a1a1a'), 8, { cast: false });
+  cyl(g, 0.05, 0.06, 0.74, 0.1, 0, 0.6, M('#1a1a1a'), 8, { cast: false });
+  fileCabinet(g, -6.9, 1.15, Math.PI / 2, true);
+  notePlate(g, -6.55, 1.55, 1.15, ['档案'], Math.PI / 2, 0.5, 0.2);
+  box(g, 0.52, 0.32, 0.4, -5.5, 0.72, 2.35, M('#e7e5e4', { r: .4 }), { cast: false });
+  box(g, 0.42, 0.08, 0.32, -5.5, 1.04, 2.35, M('#111827'), { cast: false });
+  box(g, 0.34, 0.72, 0.3, -4.7, 0, 2.35, M('#1c1917', { r: .5 }), { cast: false });
+  notePlate(g, -5.7, 1.15, 1.55, ['待核实', '审核中', '已交 ED'], Math.PI, 0.7, 0.42);
+  // Southeast glass closet. Open area still holds both desk groups, the long table and the shelf aisle.
+  const x0 = 5.35, x1 = ex - 0.12, z0 = 3.55, z1 = zz - 0.28;
+  glassRun(g, x0, z1, x0, z0, 2.15, [[0.52, 0.82]]);
+  glassRun(g, x0, z0, x1, z0, 2.15, []);
+  glassRun(g, x1, z0, x1, z1, 2.15, []);
+  glassRun(g, x1, z1, x0, z1, 2.15, []);
+  doorFrame(g, x0, z0 + (z1 - z0) * 0.33, Math.PI / 2, 0.85, 2.05);
+  frostBand(g, x0, z1, x0, z0 + (z1 - z0) * 0.82);
+  frostBand(g, x0, z0 + (z1 - z0) * 0.52, x0, z0);
+  frostBand(g, x0, z0, x1, z0);
+  const clo = deskSet(g, 7.15, 5.35, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
+  drawerBank(g, 7.15, 5.35);
+  chair(g, 6.05, 4.85, -Math.PI / 2, accent);
+  cyl(g, 0.34, 0.34, 0.04, 6.15, 0.7, 4.45, M('#d7c4a3', { r: .45 }), 16, { cast: false });
+  cyl(g, 0.05, 0.06, 0.7, 6.15, 0, 4.45, M('#1a1a1a'), 8, { cast: false });
+  frostBand(g, ex - 0.05, -1.9, ex - 0.05, bz + 0.2);
+  frostBand(g, ex - 0.05, 2.05, ex - 0.05, zz - 0.15);
+  frostBand(g, bx + 0.2, zz - 0.05, ex - 0.2, zz - 0.05);
+  coatHooks(g, ex - 0.2, -2.45, -Math.PI / 2);
+  floorLamp(g, -0.7, -1.4); floorLamp(g, 2.2, 2.2);
+  plant(g, -0.8, zRow + 0.15, 0.85, 1); plant(g, bx + 0.7, zz - 1.1, 0.9, 0);
+  plant(g, 3.6, 2.4, 0.8, 1);
+  // Staff order: CLO, 合同法务, 知产, 马法规, 马AI, 海外AI, 海事.
+  desks.push(clo, contract, ip, myLaw, myAi, overseas, maritime);
+  return desks;
+}
+
 /* ---------------- per-room decoration ---------------- */
 function decorate(R, dyn, teamById) {
   const { def, group: g } = R; const id = def.id;
@@ -1802,13 +1930,9 @@ function decorate(R, dyn, teamById) {
   if (def.walls !== 'glass') windows(g, def);
   const desks = [];
   if (id === 'market') {
-    desks.push(...workstations(g, t, accentChair, W, D, 6));
-    whiteboard(g, bx + 0.14, 1.35, 0.2, Math.PI / 2, 1.7, t);
-    plant(g, bx + 0.7, D / 2 - 0.8, 1.05, 1); plant(g, W / 2 - 0.7, D / 2 - 0.8, 1.0, 0); floorLamp(g, W / 2 - 0.8, 0.4);
+    desks.push(...furnishMarket(g, t, accentChair, W, D));
   } else if (id === 'legal') {
-    desks.push(...workstations(g, t, accentChair, W, D, 7));
-    for (let i = 0; i < 4; i++) bookshelf(g, bx + 0.42, -2.55 + i * 1.7, Math.PI / 2, 1.5, 2.15);
-    plant(g, W / 2 - 0.7, D / 2 - 0.8, 1.0, 0); floorLamp(g, W / 2 - 0.85, 1.4);
+    desks.push(...furnishLegal(g, t, accentChair, W, D));
   } else if (id === 'corpfin') {
     desks.push(...workstations(g, t, accentChair, W, D, 4));
     for (let i = 0; i < 4; i++) cabinet(g, bx + 0.42, -1.7 + i * 0.85, Math.PI / 2, 0.62, 1.35, i % 2 ? '#1a1a1a' : '#2a241c');
@@ -1935,6 +2059,8 @@ function decorate(R, dyn, teamById) {
     if (def.door === 'north') doorFrame(g, 0, -D / 2, 0, 1.7, 2.2);
   }
   if (id === 'meeting') pendant(g, 4.7, -3.9);
+  else if (id === 'market') pendant(g, 3.4, 1.6);
+  else if (id === 'legal') pendant(g, -1.2, 2.6);
   else if (id !== 'lounge' && id !== 'archive') pendant(g, id === 'ed' ? -1.4 : 0, 0.2);
   if (id === 'ed') pendant(g, 1.4, 0.2);
   const shirts = [shirtA, shirtB, '#e2e8f0'];
