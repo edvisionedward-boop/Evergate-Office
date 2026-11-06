@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-06T10:05:00+08:00",
+  "updatedAt": "2026-11-06T12:05:00+08:00",
   "workRules": {
     "taskPoints": 1.0,
     "mistakePoints": -0.3,
@@ -17,7 +17,23 @@
     ],
     "asymptote": 8,
     "trackingStartedAt": "2026-11-06T09:56:00+08:00",
-    "summary": "完成指派任务 +1.00；记录失误 −0.30；周一至周五 09:00–18:00（吉隆坡）+0.50/小时，从 trackingStartedAt 起按钟点计入，不回补上线前的工时。加班 +0.80/小时只记 Edward 交代且已完成的非上班时段工作，记在 overtimeHours，不因傍晚、周末或房间还亮着而自动增加。重大失职由 ED 按情节另扣，记在 extraPenalty。分数可略为负数。进度条不封顶、不升级。"
+    "summary": "完成指派任务按星级加分：1★ +1.00，2★ +1.50，3★ +2.00，4★ +2.50，5★ +3.00；未标星按 1★。任务失败按星级扣分：1★ −0.30，2★ −0.60，3★ −0.90，4★ −1.20，5★ −1.50；同一人连续失败从第 2 次起，该次及之后按该任务星级扣分的 2 倍，完成任一指派任务后连败清零。平时失误若未标星亦按 1★。周一至周五 09:00–18:00（吉隆坡）+0.50/小时，从 trackingStartedAt 起计入，不回补上线前工时，也不改已记下的 workScore 与 tasksDone。加班 +0.80/小时只记 Edward 交代且已完成的非上班时段工作，记在 overtimeHours。重大失职由 ED 按情节另扣，记在 extraPenalty。分数可略为负数。进度条不封顶、不升级。",
+    "starPoints": {
+      "1": 1.0,
+      "2": 1.5,
+      "3": 2.0,
+      "4": 2.5,
+      "5": 3.0
+    },
+    "failurePointsByStar": {
+      "1": -0.3,
+      "2": -0.6,
+      "3": -0.9,
+      "4": -1.2,
+      "5": -1.5
+    },
+    "consecutiveFailureMultiplier": 2,
+    "consecutiveFailureFrom": 2
   },
   "office": {
     "title": "Evergate AI Office",
@@ -176,7 +192,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         }
       ],
       "score": null
@@ -207,7 +224,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "market-2",
@@ -221,7 +239,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "market-3",
@@ -235,7 +254,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "market-4",
@@ -249,7 +269,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "market-5",
@@ -263,7 +284,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "market-6",
@@ -277,7 +299,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         }
       ],
       "score": null,
@@ -309,7 +332,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "corpfin-2",
@@ -323,7 +347,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "corpfin-3",
@@ -337,7 +362,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "corpfin-4",
@@ -351,7 +377,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         }
       ],
       "score": null,
@@ -381,7 +408,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         }
       ]
     },
@@ -412,7 +440,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "design-2",
@@ -426,7 +455,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "design-3",
@@ -440,7 +470,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "design-4",
@@ -454,7 +485,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "design-5",
@@ -468,7 +500,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "design-6",
@@ -482,7 +515,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         }
       ],
       "score": null
@@ -513,7 +547,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "logistics-2",
@@ -527,7 +562,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "logistics-3",
@@ -541,7 +577,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "logistics-4",
@@ -555,7 +592,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "logistics-5",
@@ -569,7 +607,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         }
       ],
       "score": null,
@@ -601,7 +640,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "legal-2",
@@ -615,7 +655,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "legal-3",
@@ -629,7 +670,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "legal-4",
@@ -643,7 +685,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "legal-5",
@@ -657,7 +700,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "legal-6",
@@ -671,7 +715,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "legal-7",
@@ -685,7 +730,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         }
       ],
       "score": null,
@@ -718,7 +764,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "invest-2",
@@ -732,7 +779,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "invest-3",
@@ -746,7 +794,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "invest-4",
@@ -760,7 +809,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "invest-5",
@@ -774,7 +824,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "invest-6",
@@ -788,7 +839,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "invest-7",
@@ -802,7 +854,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         }
       ],
       "score": null
@@ -834,7 +887,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "info-2",
@@ -848,7 +902,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "info-3",
@@ -862,7 +917,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "info-4",
@@ -876,7 +932,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "info-5",
@@ -890,7 +947,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "info-6",
@@ -904,7 +962,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "info-7",
@@ -918,7 +977,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "info-8",
@@ -932,7 +992,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         },
         {
           "id": "info-9",
@@ -946,7 +1007,8 @@
           "mistakes": 0,
           "workScore": 0,
           "extraPenalty": 0,
-          "overtimeHours": 0
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
         }
       ],
       "score": null
@@ -958,203 +1020,232 @@
       "team": "market",
       "status": "done",
       "title": "DCTF 27 个项目 / 57 个运营数据中心核查",
-      "updatedAt": "2026-11-05T23:50:00+08:00"
+      "updatedAt": "2026-11-05T23:50:00+08:00",
+      "stars": 1
     },
     {
       "id": "t3",
       "team": "corpfin",
       "status": "done",
       "title": "2026 财报审阅及给会计的 12 项核对清单",
-      "updatedAt": "2026-11-05T23:50:00+08:00"
+      "updatedAt": "2026-11-05T23:50:00+08:00",
+      "stars": 1
     },
     {
       "id": "t4",
       "team": "legal",
       "status": "done",
       "title": "土地收购项目完整法律备忘录（27 页，55 条来源，含 DCTF 有条件批准须离网供电补充）",
-      "updatedAt": "2026-11-05T09:50:00+08:00"
+      "updatedAt": "2026-11-05T09:50:00+08:00",
+      "stars": 1
     },
     {
       "id": "t5",
       "team": "ed",
       "status": "done",
       "title": "升级 3D 办公室页面",
-      "updatedAt": "2026-11-05T09:50:00+08:00"
+      "updatedAt": "2026-11-05T09:50:00+08:00",
+      "stars": 1
     },
     {
       "id": "t6",
       "team": "legal",
       "status": "doing",
       "title": "卖方确认清单与法律漏洞分析",
-      "updatedAt": "2026-11-05T23:50:00+08:00"
+      "updatedAt": "2026-11-05T23:50:00+08:00",
+      "stars": 1
     },
     {
       "id": "t7",
       "team": "ed",
       "status": "doing",
       "title": "制作 3D 办公室 App",
-      "updatedAt": "2026-11-05T09:50:00+08:00"
+      "updatedAt": "2026-11-05T09:50:00+08:00",
+      "stars": 1
     },
     {
       "id": "t10",
       "team": "ed",
       "status": "confirm",
       "title": "Google Calendar 连接授权",
-      "updatedAt": "2026-11-05T09:50:00+08:00"
+      "updatedAt": "2026-11-05T09:50:00+08:00",
+      "stars": 1
     },
     {
       "id": "t11",
       "team": "info",
       "status": "done",
       "title": "设置每日 AI 简报（每天 8:00）",
-      "updatedAt": "2026-11-05T11:36:00+08:00"
+      "updatedAt": "2026-11-05T11:36:00+08:00",
+      "stars": 1
     },
     {
       "id": "t12",
       "team": "ed",
       "status": "done",
       "title": "3D 办公室上线 GitHub Pages",
-      "updatedAt": "2026-11-05T11:36:00+08:00"
+      "updatedAt": "2026-11-05T11:36:00+08:00",
+      "stars": 1
     },
     {
       "id": "t13",
       "team": "ed",
       "status": "done",
       "title": "查询公司官网域名",
-      "updatedAt": "2026-11-05T11:36:00+08:00"
+      "updatedAt": "2026-11-05T11:36:00+08:00",
+      "stars": 1
     },
     {
       "id": "t14",
       "team": "ed",
       "status": "doing",
       "title": "协调各部门在办事项与办公室工作条",
-      "updatedAt": "2026-11-06T10:05:00+08:00"
+      "updatedAt": "2026-11-06T10:05:00+08:00",
+      "stars": 1
     },
     {
       "id": "t15",
       "team": "ed",
       "status": "confirm",
       "title": "选定官网域名",
-      "updatedAt": "2026-11-05T11:36:00+08:00"
+      "updatedAt": "2026-11-05T11:36:00+08:00",
+      "stars": 1
     },
     {
       "id": "t16",
       "team": "info",
       "status": "done",
       "title": "全球 AI 动态快讯（每小时扫描）",
-      "updatedAt": "2026-11-05T23:50:00+08:00"
+      "updatedAt": "2026-11-05T23:50:00+08:00",
+      "stars": 1
     },
     {
       "id": "t17",
       "team": "ed",
       "status": "doing",
       "title": "新增休息室 + 每周跨部门例会",
-      "updatedAt": "2026-11-05T12:40:00+08:00"
+      "updatedAt": "2026-11-05T12:40:00+08:00",
+      "stars": 1
     },
     {
       "id": "t18",
       "team": "ed",
       "status": "doing",
       "title": "档案室 / 会议室 / 新闻墙 / 日夜变化",
-      "updatedAt": "2026-11-05T13:10:00+08:00"
+      "updatedAt": "2026-11-05T13:10:00+08:00",
+      "stars": 1
     },
     {
       "id": "t19",
       "team": "design",
       "status": "doing",
       "title": "品牌视觉规范",
-      "updatedAt": "2026-11-05T14:00:00+08:00"
+      "updatedAt": "2026-11-05T14:00:00+08:00",
+      "stars": 1
     },
     {
       "id": "t21",
       "team": "invest",
       "status": "doing",
       "title": "三年发展战略大纲·框架 v0.3（ED 已审，内部工作稿）",
-      "updatedAt": "2026-11-05T23:50:00+08:00"
+      "updatedAt": "2026-11-05T23:50:00+08:00",
+      "stars": 1
     },
     {
       "id": "t22",
       "team": "invest",
       "status": "done",
       "title": "市场判断 v0.6 定稿（内部）",
-      "updatedAt": "2026-11-05T22:10:00+08:00"
+      "updatedAt": "2026-11-05T22:10:00+08:00",
+      "stars": 1
     },
     {
       "id": "t20",
       "team": "design",
       "status": "doing",
       "title": "双语公司网站视觉设计",
-      "updatedAt": "2026-11-05T23:50:00+08:00"
+      "updatedAt": "2026-11-05T23:50:00+08:00",
+      "stars": 1
     },
     {
       "id": "t23",
       "team": "market",
       "status": "doing",
       "title": "持续监测全球是否有新 AI 服务器取代 B300 或 GB300（若有则立刻成立专项；若仍领先则准备说明分析，报告先经 ED 再交投资部）",
-      "updatedAt": "2026-11-06T10:05:00+08:00"
+      "updatedAt": "2026-11-06T10:05:00+08:00",
+      "stars": 1
     },
     {
       "id": "t24",
       "team": "market",
       "status": "doing",
       "title": "周一 AI 服务器周报（下次提交 2026-11-09；现在就在准备）",
-      "updatedAt": "2026-11-06T10:05:00+08:00"
+      "updatedAt": "2026-11-06T10:05:00+08:00",
+      "stars": 1
     },
     {
       "id": "t25",
       "team": "market",
       "status": "doing",
       "title": "跟踪 NVIDIA Vera Rubin 最新一代服务器的产品与市场（市场部牵头，配合投资部）",
-      "updatedAt": "2026-11-06T10:05:00+08:00"
+      "updatedAt": "2026-11-06T10:05:00+08:00",
+      "stars": 1
     },
     {
       "id": "t26",
       "team": "invest",
       "status": "doing",
       "title": "Vera Rubin 商业评估（标【预测】，书面先经 ED）",
-      "updatedAt": "2026-11-06T10:05:00+08:00"
+      "updatedAt": "2026-11-06T10:05:00+08:00",
+      "stars": 1
     },
     {
       "id": "t27",
       "team": "invest",
       "status": "doing",
       "title": "本周五路线图进度周报（约 17:00 提交）",
-      "updatedAt": "2026-11-06T10:05:00+08:00"
+      "updatedAt": "2026-11-06T10:05:00+08:00",
+      "stars": 1
     },
     {
       "id": "t28",
       "team": "invest",
       "status": "doing",
       "title": "下周一 8:00 前本周改进建议（首次 11-09，现在准备）",
-      "updatedAt": "2026-11-06T10:05:00+08:00"
+      "updatedAt": "2026-11-06T10:05:00+08:00",
+      "stars": 1
     },
     {
       "id": "t29",
       "team": "logistics",
       "status": "doing",
       "title": "编制 KUL 至中国大陆航班时刻表（不含香港、澳门；允许第三地中转；一周内完成，准确优先，机型为必核字段；同时关注油价波动是否导致廉航取消、减班或换机型，以航司官方通知为准）",
-      "updatedAt": "2026-11-06T10:05:00+08:00"
+      "updatedAt": "2026-11-06T10:05:00+08:00",
+      "stars": 1
     },
     {
       "id": "t30",
       "team": "corpfin",
       "status": "doing",
       "title": "工作日 AI 用量日报（先经 ED 再交 Edward）",
-      "updatedAt": "2026-11-06T10:05:00+08:00"
+      "updatedAt": "2026-11-06T10:05:00+08:00",
+      "stars": 1
     },
     {
       "id": "t31",
       "team": "corpfin",
       "status": "doing",
       "title": "按权责发生制（MFRS 15）重述收入并处理应收账款账龄（Edward 已要求优先）",
-      "updatedAt": "2026-11-06T10:05:00+08:00"
+      "updatedAt": "2026-11-06T10:05:00+08:00",
+      "stars": 1
     },
     {
       "id": "t32",
       "team": "design",
       "status": "confirm",
       "title": "官方 Instagram 方案已交 Edward 审批（账号尚未开通，不得开通或发帖）",
-      "updatedAt": "2026-11-06T10:05:00+08:00"
+      "updatedAt": "2026-11-06T10:05:00+08:00",
+      "stars": 1
     }
   ],
   "feed": [

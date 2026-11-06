@@ -253,10 +253,51 @@ function barHtml(score) {
 }
 function workRules() {
   return DATA.workRules || {
-    taskPoints: 1, mistakePoints: -0.3, hourPoints: 0.5, overtimePoints: 0.8,
+    taskPoints: 1,
+    starPoints: { 1: 1, 2: 1.5, 3: 2, 4: 2.5, 5: 3 },
+    mistakePoints: -0.3,
+    failurePointsByStar: { 1: -0.3, 2: -0.6, 3: -0.9, 4: -1.2, 5: -1.5 },
+    consecutiveFailureMultiplier: 2,
+    consecutiveFailureFrom: 2,
+    hourPoints: 0.5, overtimePoints: 0.8,
     workStart: '09:00', workEnd: '18:00', workDays: [1, 2, 3, 4, 5], asymptote: 8,
     trackingStartedAt: DATA.updatedAt,
   };
+}
+function taskStars(task) {
+  const n = Math.round(Number(task?.stars));
+  return n >= 1 && n <= 5 ? n : 1;
+}
+function tableAmount(table, star, fallback) {
+  const pts = table?.[star] ?? table?.[String(star)];
+  const n = Number(pts);
+  return Number.isFinite(n) ? n : fallback;
+}
+function taskAward(task) {
+  const rules = workRules();
+  return tableAmount(rules.starPoints, taskStars(task), Number(rules.taskPoints) || 1);
+}
+function failureBase(task) {
+  const rules = workRules();
+  const star = taskStars(task);
+  const fromTable = tableAmount(rules.failurePointsByStar, star, NaN);
+  if (Number.isFinite(fromTable)) return Math.abs(fromTable);
+  return Math.abs(Number(rules.mistakePoints) || 0.3) * star;
+}
+function failureDeduction(staff, task) {
+  const rules = workRules();
+  const from = Number(rules.consecutiveFailureFrom) || 2;
+  const mult = Number(rules.consecutiveFailureMultiplier) || 2;
+  const streak = Number(staff?.consecutiveFailures) || 0;
+  const factor = streak + 1 >= from ? mult : 1;
+  return failureBase(task) * factor;
+}
+function workRuleLine() {
+  const r = workRules();
+  const plus = [1, 2, 3, 4, 5].map(n => `${n}★+${taskAward({ stars: n }).toFixed(2)}`).join(' · ');
+  const minus = [1, 2, 3, 4, 5].map(n => `${n}★−${failureBase({ stars: n }).toFixed(2)}`).join(' · ');
+  const mult = Number(r.consecutiveFailureMultiplier) || 2;
+  return `完成 ${plus}（未标按 1★）。失误 ${minus}；连续失败从第 2 次起按 ${mult}×，完成任一指派任务后连败清零。上班 +${Number(r.hourPoints).toFixed(2)}/小时 · 加班（交代并完成）+${Number(r.overtimePoints).toFixed(2)}/小时`;
 }
 function klParts(date) {
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
@@ -400,9 +441,9 @@ function renderPanel(id) {
     <div class="sub"><span class="chip ${esc(t.status)}"><i class="dot ${esc(t.status)}"></i>${esc(lbl)}</span><span class="scorebit">${ringHtml(t.score)}</span></div></div></div>`;
   body.innerHTML = head +
     `<div class="sec"><h4>职责</h4><div class="card"><div class="cur">${esc(t.duty || '—')}</div></div></div>` +
-    `<div class="sec"><h4>本周在做</h4>${doingItems.length ? `<div class="card tlist">${doingItems.map(x => `<div class="titem">${chip(x.status)}<div>${esc(x.title)}</div></div>`).join('')}</div>` : '<div class="card empty">—</div>'}</div>` +
-    `<div class="sec"><h4>最近完成</h4>${done.length ? `<div class="card tlist">${done.map(x => `<div class="titem">${chip(x.status)}<div>${esc(x.title)}</div></div>`).join('')}</div>` : '<div class="card empty">—</div>'}</div>` +
-    `<div class="sec"><h4>考核</h4><div class="card"><div class="snote">完成任务 +1.00 · 失误 −0.30 · 上班 +0.50/小时 · 加班（交代并完成）+0.80/小时</div></div>${staff ? `<ul class="staff">${staff}</ul>` : ''}</div>` +
+    `<div class="sec"><h4>本周在做</h4>${doingItems.length ? `<div class="card tlist">${doingItems.map(x => `<div class="titem">${chip(x.status)}<div>${taskStars(x)}★ ${esc(x.title)}</div></div>`).join('')}</div>` : '<div class="card empty">—</div>'}</div>` +
+    `<div class="sec"><h4>最近完成</h4>${done.length ? `<div class="card tlist">${done.map(x => `<div class="titem">${chip(x.status)}<div>${taskStars(x)}★ ${esc(x.title)}</div></div>`).join('')}</div>` : '<div class="card empty">—</div>'}</div>` +
+    `<div class="sec"><h4>考核</h4><div class="card"><div class="snote">${esc(workRuleLine())}</div></div>${staff ? `<ul class="staff">${staff}</ul>` : ''}</div>` +
     `<div class="sec"><h4>最后更新</h4><div class="card"><div class="cur">${esc(fmtTime(teamUpdatedAt(t)))} (UTC+8)</div></div></div>`;
 }
 function selectRoom(id, source, staffId) {
