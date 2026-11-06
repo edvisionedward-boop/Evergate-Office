@@ -144,6 +144,7 @@ canvas.addEventListener('pointerup', e => {
   for (const R of Object.values(office.rooms)) {
     for (const a of R.agents || []) people.push(a);
     if (R.boss) people.push(R.boss);
+    if (R.guard) people.push(R.guard);
   }
   const person = ray.intersectObjects(people, true)[0];
   const roomHit = ray.intersectObjects(hits, false)[0];
@@ -398,8 +399,29 @@ function renderPanel(id) {
   const t = teamOf(id); const body = $('#panelBody');
   if (id === 'archive') {
     const A = DATA.archive || {};
-    const cats = (A.categories || []).map(c => `<div class="sec"><h4>${esc(c.name)}</h4><div class="card tlist">${(c.items || []).map(item => `<div class="titem"><span>${esc(item)}</span></div>`).join('') || '<div class="empty">暂无</div>'}</div></div>`).join('');
     const link = A.folderUrl ? `<a class="drivebtn" href="${esc(A.folderUrl)}" target="_blank" rel="noopener noreferrer">在 Google Drive 打开</a>` : '';
+    const catList = (cats) => (cats || []).map(c => `<div class="sec"><h4>${esc(c.name)}</h4><div class="card tlist">${(c.items || []).map(item => `<div class="titem"><span>${esc(item)}</span></div>`).join('') || '<div class="empty">暂无</div>'}</div></div>`).join('');
+    if (A.lobby || A.general || A.confidential) {
+      const lobby = A.lobby || {};
+      const guard = lobby.security || {};
+      const general = A.general || {};
+      const secret = A.confidential || {};
+      const logs = Array.isArray(A.accessLog) ? A.accessLog : [];
+      const logBody = logs.length
+        ? logs.map(row => `<div class="titem"><span class="chip idle">${esc(row.room || '')}</span><div><b>${esc(row.name || '')}</b> · ${esc(row.dept || row.department || '')}<br>${esc(row.purpose || '')}<br>${esc(row.in || row.timeIn || '')} – ${esc(row.out || row.timeOut || '')}</div></div>`).join('')
+        : '<div class="empty">暂无进出记录。进出须登记姓名或岗位、部门、房间、事由、进入与离开时间（马来西亚时间）。</div>';
+      const rule = secret.retrievalRule ? `<div class="card rule">${esc(secret.retrievalRule)}</div>` : '';
+      body.innerHTML = `<div class="ph" style="--c:#D0B993"><div class="ic">档</div><div><h3>${esc(A.name || '档案室')}</h3><div class="sub">客厅 · 普通资料库 · 机密资料库</div></div></div>
+        <div class="sec"><h4>${esc(lobby.name || '客厅')}</h4><div class="card tlist"><div class="titem"><span class="chip confirm">${esc(guard.name || '保安')}</span><div>${esc(guard.duty || '24小时值守')}</div></div></div></div>
+        <div class="sec"><h4>${esc(general.name || '普通资料库')}</h4><div class="card">${esc(general.description || '')}</div></div>
+        ${catList(general.categories)}
+        <div class="sec"><h4>${esc(secret.name || '机密资料库')}</h4><div class="card">${esc(secret.description || '')}</div>${rule}</div>
+        ${catList(secret.categories)}
+        <div class="sec"><h4>进出登记</h4><div class="card tlist">${logBody}</div></div>
+        <div class="sec">${link}</div>`;
+      return;
+    }
+    const cats = catList(A.categories);
     body.innerHTML = `<div class="ph" style="--c:#D0B993"><div class="ic">档</div><div><h3>${esc(A.name || '档案室')}</h3><div class="sub">分类目录 · 需登录 Google 查看原件</div></div></div>${cats}<div class="sec">${link}</div>`;
     return;
   }
@@ -675,7 +697,7 @@ function sharedSpaceCard() {
   const sel = (id) => state.selected === id ? ' sel' : '';
   const extra = [L.meeting, L.lastMeeting].filter(Boolean).map(s => `<div class="dnone">${esc(s)}</div>`).join('');
   const lounge = `<button type="button" class="dcard${sel('lounge')}" data-team="lounge" style="--c:#E87708"><div class="dtop"><span class="ic">休</span><div><div class="nm">${esc(L.name || '休息室')}</div><div class="sub">共享空间 · ${n} 人在此</div></div></div>${extra}</button>`;
-  const archive = `<button type="button" class="dcard${sel('archive')}" data-team="archive" style="--c:#D0B993"><div class="dtop"><span class="ic">档</span><div><div class="nm">${esc(DATA.archive?.name || '档案室')}</div><div class="sub">共享空间 · 分类目录</div></div></div></button>`;
+  const archive = `<button type="button" class="dcard${sel('archive')}" data-team="archive" style="--c:#D0B993"><div class="dtop"><span class="ic">档</span><div><div class="nm">${esc(DATA.archive?.name || '档案室')}</div><div class="sub">客厅 · 普通库 · 机密库</div></div></div></button>`;
   const showroom = `<button type="button" class="dcard${sel('showroom')}" data-team="showroom" style="--c:#D0B993"><div class="dtop"><span class="ic">展</span><div><div class="nm">品牌展厅</div><div class="sub">展陈占位 · 非部门</div></div></div></button>`;
   const meeting = `<button type="button" class="dcard${sel('meeting')}" data-team="meeting" style="--c:#D0B993"><div class="dtop"><span class="ic">议</span><div><div class="nm">会议室</div><div class="sub">${esc(nextMeetingText(klNow()))}</div></div></div></button>`;
   const news = `<button type="button" class="dcard${sel('news')}" data-team="news" style="--c:#D0B993"><div class="dtop"><span class="ic">讯</span><div><div class="nm">新闻墙</div><div class="sub">大厅 · 信息部简报</div></div></div></button>`;

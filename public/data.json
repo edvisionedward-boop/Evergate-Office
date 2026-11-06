@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-06T12:23:00+08:00",
+  "updatedAt": "2026-11-06T12:45:00+08:00",
   "workRules": {
     "taskPoints": 1.0,
     "mistakePoints": -0.3,
@@ -52,33 +52,55 @@
   "archive": {
     "name": "档案室",
     "folderUrl": "https://drive.google.com/drive/folders/1VdMyoUOg74lFOt0TO1NFYY4eJAbf-c98",
-    "categories": [
-      {
-        "name": "法律文件",
-        "items": [
-          "项目法律备忘录"
-        ]
-      },
-      {
-        "name": "项目文件",
-        "items": [
-          "土地收购计划书 V2.3"
-        ]
-      },
-      {
-        "name": "财务",
-        "items": [
-          "2026 财务报告",
-          "会计师资料清单"
-        ]
-      },
-      {
-        "name": "公司",
-        "items": [
-          "公司简介 Corporate Profile"
-        ]
+    "lobby": {
+      "name": "客厅",
+      "security": {
+        "name": "保安",
+        "duty": "24小时值守，不得离岗；进出须登记姓名与信息"
       }
-    ]
+    },
+    "general": {
+      "name": "普通资料库",
+      "description": "调研资料与商业报告",
+      "categories": [
+        {
+          "name": "调研资料",
+          "items": ["市场部调研与商业报告", "信息部调研资料"]
+        },
+        {
+          "name": "商业报告",
+          "items": ["物流部业务报告"]
+        },
+        {
+          "name": "任务完成报告",
+          "items": ["设计部任务完成报告", "物流部任务完成报告", "市场部任务完成报告", "信息部任务完成报告"]
+        },
+        {
+          "name": "公司",
+          "items": ["公司简介 Corporate Profile"]
+        }
+      ]
+    },
+    "confidential": {
+      "name": "机密资料库",
+      "description": "法务报告、商业机密文件、财务报表",
+      "retrievalRule": "从机密资料库调取档案，须经 ED 与私人助理连署签名审批；缺少任何一方，保安不得放行。",
+      "categories": [
+        {
+          "name": "法务报告",
+          "items": ["项目法律备忘录", "法务部任务完成报告"]
+        },
+        {
+          "name": "商业机密",
+          "items": ["项目文件"]
+        },
+        {
+          "name": "财务报表",
+          "items": ["2026 财务报告", "会计师资料清单", "会计部任务完成报告"]
+        }
+      ]
+    },
+    "accessLog": []
   },
   "meetings": [
     {
@@ -1332,6 +1354,11 @@
     }
   ],
   "feed": [
+    {
+      "team": "ed",
+      "time": "2026-11-06T12:45:00+08:00",
+      "text": "档案室已扩为客厅、普通资料库与机密资料库"
+    },
     {
       "team": "design",
       "time": "2026-11-06T12:23:00+08:00",
