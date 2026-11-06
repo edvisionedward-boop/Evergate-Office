@@ -566,6 +566,18 @@ function renderBoard() {
     }).join('')}</div>`;
     return;
   }
+  if (mode === 'bars') {
+    const teams = DATA.teams.slice();
+    const people = teams.reduce((n, t) => n + (t.private || workBarOff(null, t) ? 0 : (t.staff || []).filter(s => !workBarOff(s, t)).length), 0);
+    $('#boardStats').innerHTML = `<div class="bstotal">血条分数 <b>与头顶绿条同一实时分数</b> · ${people} 人</div>`;
+    $('#boardCols').innerHTML = `<div class="col grade-col">${teams.map(t => {
+      const rows = t.private
+        ? `<span class="smini"><b>私密</b></span>`
+        : (t.staff || []).map(s => `<span class="smini"><b>${esc(s.name)}</b>${workBarHtml(s)}</span>`).join('');
+      return `<button type="button" class="gcard" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="top"><div class="bn">${esc(t.private ? '私密' : t.name)}</div></div><div class="sminis">${rows}</div></button>`;
+    }).join('')}</div>`;
+    return;
+  }
   const members = DATA.teams.reduce((n, t) => n + (t.agents ?? 0), 0);
   const chips = DATA.teams.map(t => {
     const c = teamCounts(t);
