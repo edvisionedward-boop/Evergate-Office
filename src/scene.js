@@ -360,12 +360,10 @@ function buildGreenery(parent) {
     if (def.door === 'west') corners.splice(2, 1);
     corners.forEach(([lx, lz, s, pot, h], i) => add(def.x + lx, def.z + lz, s, (pot + i) % 2, h, FLOOR_H));
   }
-  add(-6.6, 17.5, 1.45, 1, 2);
-  add(6.6, 17.5, 1.3, 0, 2);
-  add(-2.35, 17.9, 0.48, 1, 0);
-  add(2.35, 17.9, 0.48, 0, 0);
-  add(-3.5, 15.4, 0.9, 0, 1);
-  add(3.5, 15.4, 0.9, 1, 1);
+  add(-6.6, 17.5, 1.45, 1, 2, FLOOR_H);
+  add(6.6, 17.5, 1.3, 0, 2, FLOOR_H);
+  add(-4.2, 21.3, 0.9, 0, 1, FLOOR_H);
+  add(4.2, 21.3, 0.9, 1, 1, FLOOR_H);
   const potGeo = new THREE.CylinderGeometry(0.2, 0.15, 0.34, 8);
   const soilGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 8);
   const leafGeo = new THREE.IcosahedronGeometry(0.26, 0);
@@ -681,7 +679,7 @@ function furnishArchive(g, def, dyn, R) {
   box(g, 0.03, 0.012, D - 0.3, splitX, 0.006, 0, trim, { cast: false });
 
   doorFrame(g, splitX, genZ, Math.PI / 2, doorW, 2.05);
-  doorSign(g, splitX - 0.12, 2.15, genZ, '普通资料库', 'GENERAL', -Math.PI / 2);
+  doorSign(g, splitX - 0.12, 2.15, genZ, '普通文件房', 'GENERAL', -Math.PI / 2);
   // Locked confidential door on the south side of the lobby.
   box(g, 0.07, 2.02, doorW - 0.1, splitX - 0.02, 0, secZ, M('#141a28', { r: .38, m: .4 }), { cast: false });
   box(g, 0.09, 2.1, 0.06, splitX - 0.02, 0, secZ - doorW / 2 + 0.02, trim, { cast: false });
@@ -694,7 +692,7 @@ function furnishArchive(g, def, dyn, R) {
   const face = -Math.PI / 2;
   namePlate(g, splitX - 0.12, 1.55, secZ + doorW / 2 + 0.38, 'ED', '连署', face);
   namePlate(g, splitX - 0.12, 1.55, secZ - doorW / 2 - 0.38, '私人助理', '连署', face);
-  doorSign(g, splitX - 0.12, 2.15, secZ, '机密资料库', 'CONFIDENTIAL', face);
+  doorSign(g, splitX - 0.12, 2.15, secZ, '机密文件房', 'CONFIDENTIAL', face);
   confidentialNotice(g, splitX - 0.14, 1.15, secZ, face);
   doorSign(g, -W / 2 + 0.2, 1.85, -1.15, '客厅', 'LOBBY', face);
 
@@ -728,22 +726,24 @@ function furnishArchive(g, def, dyn, R) {
   R.guard = guard;
   facilityTag(guard, '保安', '值守中');
 
-  bookshelf(g, (splitX + W / 2) / 2, -D / 2 + 0.45, 0, Math.min(2.2, W * 0.28), 1.7);
-  bookshelf(g, W / 2 - 0.4, D * 0.25, -Math.PI / 2, Math.min(1.6, D * 0.3), 1.7);
-  fileCabinet(g, (splitX + W / 2) / 2 - 0.8, D / 2 - 0.5, Math.PI, true);
-  fileCabinet(g, (splitX + W / 2) / 2 + 0.8, D / 2 - 0.5, Math.PI, true);
-  const rackX = splitX + (W / 2 - splitX) * 0.55;
-  const slots = [
-    { x: rackX - 0.7, z: -D / 2 + 0.85, ry: 0 },
-    { x: rackX + 0.7, z: -D / 2 + 0.85, ry: 0 },
-    { x: rackX - 0.7, z: D / 2 - 1.35, ry: Math.PI },
-    { x: rackX + 0.7, z: D / 2 - 1.35, ry: Math.PI },
-  ];
+  // 普通文件房: shelves and locked cabinets. The door aisle stays clear.
+  const shelfX = [0.05, 1.7, 3.2];
+  for (const x of shelfX) bookshelf(g, x, -D / 2 + 0.42, 0, 1.45, 1.85);
+  bookshelf(g, W / 2 - 0.38, -2.45, -Math.PI / 2, 1.25, 1.85);
+  bookshelf(g, W / 2 - 0.38, -1.05, -Math.PI / 2, 1.15, 1.85);
+  for (const x of [0.35, 1.25, 2.15, 3.05]) fileCabinet(g, x, -0.48, Math.PI, true);
+  plant(g, W / 2 - 0.55, -0.55, 0.7, 0);
+  // 机密文件房: packed server racks, with a lane in from the lobby door.
+  const slots = [];
+  for (let x = 0.15; x <= 4.15; x += 0.8) {
+    for (let z = 0.7; z <= 3.55; z += 0.95) {
+      if (z < secZ + 0.15 && x < 1.15) continue;
+      slots.push({ x: +x.toFixed(3), z: +z.toFixed(3), ry: z < secZ ? 0 : Math.PI });
+    }
+  }
   R.rackLeds = archiveRacks(g, slots);
-  const glowN = new THREE.PointLight('#7eb6d6', 0.45, 6, 1.6);
-  glowN.position.set(rackX, 2.0, -D * 0.28); g.add(glowN);
-  const glowS = new THREE.PointLight('#7eb6d6', 0.4, 6, 1.6);
-  glowS.position.set(rackX, 2.0, D * 0.28); g.add(glowS);
+  const glowS = new THREE.PointLight('#7eb6d6', 0.45, 7, 1.6);
+  glowS.position.set(2.2, 2.05, secZ); g.add(glowS);
   pendant(g, splitX - 1.4, 0);
   seed = savedSeed;
 }
@@ -890,13 +890,9 @@ let pendantGlow = null;
 function roomShell(root, def, ctx) {
   const g = new THREE.Group(); g.position.set(def.x, FLOOR_H, def.z); root.add(g);
   const { w, d } = def;
-  const slab = new THREE.Mesh(rboxG(w, FLOOR_H, d, 0.05), M(FLOOR_BLACK, { r: .9, m: .04 }));
-  slab.position.y = -FLOOR_H / 2; slab.receiveShadow = true; g.add(slab);
-  const fl = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.12, d - 0.12), M(FLOOR_BLACK, { r: .88, m: .06 }));
-  fl.rotation.x = -Math.PI / 2; fl.position.y = 0.004; fl.receiveShadow = true; g.add(fl);
-  const rail = goldFrame();
-  box(g, w, 0.025, 0.035, 0, 0, d / 2 + 0.01, rail, { cast: false });
-  box(g, 0.035, 0.025, d, w / 2 + 0.01, 0, 0, rail, { cast: false });
+  // Interior finish only, inset and flush with the campus floor. No raised slab.
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.16, d - 0.16), M(FLOOR_BLACK, { r: .88, m: .06 }));
+  fl.rotation.x = -Math.PI / 2; fl.position.y = 0.006; fl.receiveShadow = true; g.add(fl);
 
   const wallMat = smokeGlass();
   const trim = goldFrame();
@@ -981,10 +977,11 @@ function labelEl(def) {
 export const LAYOUT = {
   // North street wall stays; only the outer north wall moves.
   market:   { x: -13.5, z: -14.475, w: 10, d: 13.45, icon: '市', sign: '市场部', signSub: 'MARKETING & RESEARCH' },
-  // Old 法务部 cell, kept as an empty office. Not a department.
-  vacant:   { x: 0, z: -12, w: 11, d: 8.5, icon: '空', color: '#D0B993', minor: true, sign: '空置', signSub: 'RESERVED', label: '空置' },
+  // Former 投资部 cell. Walled office, no department.
+  vacant:   { x: -13.5, z: 0, w: 10, d: 8.5, icon: '空', color: '#D0B993', minor: true, sign: '空置', signSub: 'EMPTY OFFICE', label: '空置' },
   legal:    { x: -30.2, z: -8, w: 17.2, d: 14.0, icon: '法', sign: '法务部', signSub: 'LEGAL' },
-  invest:   { x: -13.5, z: 0,   w: 10, d: 8.5, icon: '投', sign: '投资部', signSub: 'INVESTMENT' },
+  // ED's column. South wall locked at z=-7.75. Area matches 市场部 (10×13.45), not larger.
+  invest:   { x: 0, z: -13.8636, w: 11, d: 12.2273, icon: '投', sign: '投资部', signSub: 'INVESTMENT' },
   ed:       { x: 0,     z: 0,   w: 11, d: 9,   icon: 'ED', walls: 'glass', sign: 'ED 中央指挥室', signSub: 'COMMAND CENTER' },
   // One rectangle: old 信息部 + old 策划部 cell + the E-W street in this column only.
   info:     { x: 13.5,  z: -6.025, w: 10, d: 20.45, icon: '信', sign: '信息部', signSub: 'AI NEWS & INFO' },
@@ -992,7 +989,7 @@ export const LAYOUT = {
   logistics:{ x: 0,     z: 13.875, w: 11, d: 12.25, icon: '物', sign: '物流部', signSub: 'LOGISTICS' },
   privfin:  { x: 13.5,  z: 12,  w: 10, d: 8.5, icon: '私', walls: 'glass', private: true, sign: '私人助理', signSub: 'PRIVATE · 仅 EDWARD' },
   lounge:   { x: 25.6, z: 0,   w: 9.4, d: 11, icon: '休', color: '#E87708', door: 'west', sign: '休息室', signSub: 'LOUNGE', label: '休息室' },
-  archive:  { x: 25.6, z: -12, w: 9.4, d: 8.2, icon: '档', color: '#D0B993', door: 'west', sign: '档案室', signSub: 'ARCHIVE', label: '档案室' },
+  archive:  { x: 25.6, z: -12, w: 9.4, d: 8.2, icon: '资', color: '#D0B993', door: 'west', sign: '资料库', signSub: 'RECORDS', label: '资料库' },
   // Shares 会计部's south wall. Separate room, entered from the east corridor.
   review:   { x: -13.5, z: 19.55, w: 10, d: 6.6, icon: '审', color: '#D0B993', sign: '审查部', signSub: 'REVIEW', label: '审查部' },
   meeting:  { x: -28, z: 8, w: 13.2, d: 11.8, icon: '议', color: '#D0B993', sign: '会议室', signSub: 'MEETING', label: '会议室' },
@@ -1018,11 +1015,11 @@ export function buildOffice(scene, teams) {
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), new THREE.MeshStandardMaterial({ map: ft, roughness: .9, color: '#ffffff' }));
   ground.rotation.x = -Math.PI / 2; ground.position.y = -0.08; ground.receiveShadow = true; root.add(ground);
   // One campus slab under every room and corridor. Later wings are not separate pads.
-  const campusW = 88, campusD = 54, campusX = 1.2, campusZ = 2.2;
-  const campus = new THREE.Mesh(rboxG(campusW, 0.12, campusD, 0.08), M('#161d30', { r: .7 }));
-  campus.position.set(campusX, -0.04, campusZ); campus.receiveShadow = true; campus.userData.ground = true; root.add(campus);
+  const campusW = 88, campusD = 54, campusX = 1.2, campusZ = 2.2, campusH = 0.16;
+  const campus = new THREE.Mesh(rboxG(campusW, campusH, campusD, 0.08), M('#161d30', { r: .7 }));
+  campus.position.set(campusX, FLOOR_H - campusH / 2, campusZ); campus.receiveShadow = true; campus.userData.ground = true; root.add(campus);
   const edge = B(GOLD, { op: .32 });
-  const edgeY = 0.025;
+  const edgeY = FLOOR_H + 0.012;
   for (const [w, d, x, z] of [
     [campusW, .05, campusX, campusZ + campusD / 2],
     [campusW, .05, campusX, campusZ - campusD / 2],
@@ -1034,41 +1031,44 @@ export function buildOffice(scene, teams) {
   const sky = new THREE.Mesh(new THREE.PlaneGeometry(150, 64), new THREE.MeshBasicMaterial({ map: skylineTexture() }));
   sky.position.set(0, 16, -34); root.add(sky);
   const sky2 = sky.clone(); sky2.position.set(-70, 26, 8); sky2.rotation.y = Math.PI / 2; root.add(sky2);
-  // south gate on the central axis, due south of 物流部: wordmark above the news band
+  // Entry corridor is width W = 3 south of 物流部. The sign sits on that corridor, not in the middle of it.
+  const newsFace = 23;
+  const newsWallZ = newsFace + 0.09;
   const logo = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 1.85), new THREE.MeshBasicMaterial({ map: logoTexture() }));
-  logo.position.set(0, 2.55, 23.5); root.add(logo);
-  box(staticG, 8.4, 3.7, 0.18, 0, 0, 23.25, M('#121a28', { r: .6 }), { cast: false });
-  box(staticG, 2.4, 1.05, 0.7, 0, 0, 20.7, M('#d9c7a6', { r: .55 }), { round: 0.04 });
-  box(staticG, 2.2, 0.06, 0.55, 0, 1.05, 20.7, M('#f4efe6', { r: .4 }), { cast: false });
-  cyl(staticG, 0.12, 0.1, 0.22, -0.7, 1.11, 20.7, M('#111827', { m: .4 }), 10, { cast: false });
-  plant(staticG, -4.6, 22.3, 1.25, 2); plant(staticG, 4.6, 22.3, 1.15, 0);
+  logo.position.set(0, 2.55, newsWallZ + 0.25); root.add(logo);
+  box(staticG, 8.4, 3.7, 0.18, 0, 0, newsWallZ, M('#121a28', { r: .6 }), { cast: false });
+  const plinthZ = newsFace - 0.45;
+  box(staticG, 2.4, 1.05, 0.7, 0, 0, plinthZ, M('#d9c7a6', { r: .55 }), { round: 0.04 });
+  box(staticG, 2.2, 0.06, 0.55, 0, 1.05, plinthZ, M('#f4efe6', { r: .4 }), { cast: false });
+  cyl(staticG, 0.12, 0.1, 0.22, -0.7, 1.11, plinthZ, M('#111827', { m: .4 }), 10, { cast: false });
+  plant(staticG, -4.6, newsFace - 0.85, 1.25, 2, FLOOR_H); plant(staticG, 4.6, newsFace - 0.85, 1.15, 0, FLOOR_H);
   const newsCanvas = document.createElement('canvas'); newsCanvas.width = 512; newsCanvas.height = 512;
   const newsCtx = newsCanvas.getContext('2d');
   const newsMap = new THREE.CanvasTexture(newsCanvas); newsMap.colorSpace = THREE.SRGBColorSpace; newsMap.wrapS = newsMap.wrapT = THREE.RepeatWrapping;
   const newsScreen = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.15), new THREE.MeshBasicMaterial({ map: newsMap, toneMapped: false }));
-  newsScreen.position.set(0, 1.05, 23.42); root.add(newsScreen);
-  box(staticG, 4.8, 1.35, 0.08, 0, 0.38, 23.32, M('#0b0f19'), { cast: false });
+  newsScreen.position.set(0, 1.05, newsWallZ + 0.17); root.add(newsScreen);
+  box(staticG, 4.8, 1.35, 0.08, 0, 0.38, newsWallZ + 0.07, M('#0b0f19'), { cast: false });
   const newsHit = new THREE.Mesh(new THREE.BoxGeometry(5.0, 1.6, 0.4), new THREE.MeshBasicMaterial({ visible: false }));
-  newsHit.position.set(0, 1.15, 23.45); newsHit.userData.room = 'news'; root.add(newsHit);
-  // corridors: dark aisles with dashed glowing lines
-  const aisleMat = new THREE.MeshStandardMaterial({ map: concreteTexture(), roughness: 0.86, metalness: 0.04, color: '#c5ccd4' });
-  const aisle = aisleMat;
+  newsHit.position.set(0, 1.15, newsWallZ + 0.2); newsHit.userData.room = 'news'; root.add(newsHit);
+  // One floor already covers every street. Dashes mark the core cross, continued past 审查部 and 市场部.
   const dashM = B(GOLD, { op: .28 });
   const dashG = boxG(0.5, 0.012, 0.06);
+  const dashY = FLOOR_H + 0.012;
   for (const z of [-6, 6]) {
-    // the north aisle stops before 信息部, which now fills the old 规划部 bay
-    const span = z === -6 ? 28 : 42;
-    const cx = z === -6 ? -7 : 0;
-    const a = new THREE.Mesh(boxG(span, 0.02, 2.6), aisle); a.position.set(cx, 0.012, z); a.receiveShadow = true; staticG.add(a);
     const x1 = z === -6 ? 6.5 : 18;
-    for (let x = -20; x <= x1; x += 1.2) { const dm = new THREE.Mesh(dashG, dashM); dm.position.set(x, 0.03, z); root.add(dm); }
+    for (let x = -20; x <= x1; x += 1.2) { const dm = new THREE.Mesh(dashG, dashM); dm.position.set(x, dashY, z); root.add(dm); }
   }
-  for (const x of [-6.75, 6.75]) {
-    const a = new THREE.Mesh(boxG(2.4, 0.021, 38), aisle); a.position.set(x, 0.012, 0); a.receiveShadow = true; staticG.add(a);
-    for (let z = -18; z <= 18; z += 1.2) { if (Math.abs(Math.abs(z) - 6) < 1.3) continue; const dm = new THREE.Mesh(dashG, dashM); dm.rotation.y = Math.PI / 2; dm.position.set(x, 0.03, z); root.add(dm); }
+  for (const [x, z0, z1] of [[-7, -20.4, 24.2], [7, -19.2, 16.2]]) {
+    for (let z = z0; z <= z1; z += 1.2) {
+      if (Math.abs(Math.abs(z) - 6) < 1.3) continue;
+      const dm = new THREE.Mesh(dashG, dashM); dm.rotation.y = Math.PI / 2; dm.position.set(x, dashY, z); root.add(dm);
+    }
   }
-  // corridor plants & benches
-  for (const [x, z] of [[-20.5, -6], [20.5, -6], [-20.5, 6], [20.5, 6], [-6.75, -19], [6.75, -19], [-6.75, 19], [6.75, 19]]) plant(staticG, x, z, 1.1, 2);
+  for (let z = 20.5; z <= 22.4; z += 1.2) {
+    const dm = new THREE.Mesh(dashG, dashM); dm.rotation.y = Math.PI / 2; dm.position.set(0, dashY, z); root.add(dm);
+  }
+  // corridor plants
+  for (const [x, z] of [[-20.5, -6], [20.5, -6], [-20.5, 6], [20.5, 6], [-7, -19], [7, -19], [-7, 21], [7, 19]]) plant(staticG, x, z, 1.1, 2, FLOOR_H);
   buildGreenery(staticG);
 
   /* rooms */
@@ -1091,7 +1091,6 @@ export function buildOffice(scene, teams) {
     const lo = new CSS2DObject(el);
     if (def.id === 'ed') lo.position.set(def.x - 0.2, 5.6, def.z - def.d * 0.34);
     // 法务部 sits just north of ED; lift its plate so the member line clears ED's name.
-    else if (def.id === 'vacant') lo.position.set(def.x, 3.4, def.z);
     else lo.position.set(def.x, def.minor ? 3.15 : 4.15, def.z - def.d * 0.1);
     // Meeting's status line is long; hang it toward the left edge so it misses 投资部.
     const anchorX = def.id === 'meeting' ? 0.92 : def.id === 'archive' ? 0.32 : def.x > 18 ? 0.92 : def.x < -18 ? 0.08 : 0.5;
@@ -1230,8 +1229,8 @@ export function buildOffice(scene, teams) {
   const newsLabelEl = document.createElement('div');
   newsLabelEl.className = 'rlabel'; newsLabelEl.dataset.room = 'news'; newsLabelEl.style.setProperty('--c', GOLD);
   newsLabelEl.innerHTML = `<div class="ic">讯</div><div><div class="nm">新闻墙</div><div class="st"><i class="dot idle"></i><span>点击查看</span></div></div>`;
-  const newsLabel = new CSS2DObject(newsLabelEl); newsLabel.position.set(0, 3.7, 23.7); newsLabel.center.set(0.5, 1); root.add(newsLabel);
-  rooms.news = { id: 'news', hit: newsHit, labelEl: newsLabelEl, label: newsLabel, center: new THREE.Vector3(0, 0, 23.3), def: { icon: '讯', color: GOLD } };
+  const newsLabel = new CSS2DObject(newsLabelEl); newsLabel.position.set(0, 3.7, newsWallZ + 0.55); newsLabel.center.set(0.5, 1); root.add(newsLabel);
+  rooms.news = { id: 'news', hit: newsHit, labelEl: newsLabelEl, label: newsLabel, center: new THREE.Vector3(0, 0, newsWallZ), def: { icon: '讯', color: GOLD } };
   let newsLines = ['信息部简报将在此滚动显示'];
   function drawNews(shift) {
     const ctx = newsCtx; ctx.clearRect(0, 0, 512, 512); ctx.fillStyle = '#07111f'; ctx.fillRect(0, 0, 512, 512);

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-06T17:25:00+08:00",
+  "updatedAt": "2026-11-06T17:50:00+08:00",
   "workRules": {
     "taskPoints": 1.0,
     "mistakePoints": -0.3,
@@ -51,7 +51,7 @@
     "lastMeeting": "首次例会将于 11月09日 举行"
   },
   "archive": {
-    "name": "档案室",
+    "name": "资料库",
     "folderUrl": "https://drive.google.com/drive/folders/1VdMyoUOg74lFOt0TO1NFYY4eJAbf-c98",
     "lobby": {
       "name": "客厅",
@@ -61,8 +61,8 @@
       }
     },
     "general": {
-      "name": "普通资料库",
-      "description": "调研资料与商业报告",
+      "name": "普通文件房",
+      "description": "书架与带锁文件柜，存放调研资料与商业报告",
       "categories": [
         {
           "name": "调研资料",
@@ -79,8 +79,8 @@
       ]
     },
     "confidential": {
-      "name": "机密资料库",
-      "description": "法务报告、商业机密文件、财务报表",
+      "name": "机密文件房",
+      "description": "服务器机柜，存放法务报告、商业机密与财务报表",
       "retrievalRule": "除 Edward 本人外，调取须经 ED 与私人助理连署；缺少任何一方不得放行。Edward 本人免连署，仍须登记。",
       "categories": [
         {
@@ -1356,6 +1356,16 @@
     }
   ],
   "feed": [
+    {
+      "team": "invest",
+      "time": "2026-11-06T17:50:00+08:00",
+      "text": "投资部迁至 ED 北侧，面积与市场部相同；原位空置"
+    },
+    {
+      "team": "design",
+      "time": "2026-11-06T17:50:00+08:00",
+      "text": "档案室更名为资料库：普通文件房为书架与文件柜，机密文件房为服务器"
+    },
     {
       "team": "design",
       "time": "2026-11-06T13:40:00+08:00",
