@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-06T19:05:00+08:00",
+  "updatedAt": "2026-11-06T20:19:00+08:00",
   "workRules": {
     "taskPoints": 1.0,
     "mistakePoints": -0.3,
@@ -571,9 +571,9 @@
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null,
-          "tasksDone": 0,
+          "tasksDone": 3,
           "mistakes": 0,
-          "workScore": 0,
+          "workScore": 5.5,
           "extraPenalty": 0,
           "overtimeHours": 0,
           "consecutiveFailures": 0
@@ -1356,6 +1356,11 @@
     }
   ],
   "feed": [
+    {
+      "team": "logistics",
+      "time": "2026-11-06T20:19:00+08:00",
+      "text": "空运组组长记入审查部达标 3 项，另记质量加分 +1.00，工作条基数 5.50"
+    },
     {
       "team": "invest",
       "time": "2026-11-06T19:05:00+08:00",
