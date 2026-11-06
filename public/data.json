@@ -367,7 +367,7 @@
       "color": "#D0B993",
       "status": "idle",
       "statusNote": "待命",
-      "agents": 3,
+      "agents": 5,
       "currentTask": null,
       "private": false,
       "duty": "物流协调与仓储安排",
@@ -400,10 +400,28 @@
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null
+        },
+        {
+          "id": "logistics-4",
+          "name": "信息处理员",
+          "chip": "信息处理",
+          "role": "负责物流相关的产品报告和资料处理",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
+        },
+        {
+          "id": "logistics-5",
+          "name": "技术协调员",
+          "chip": "技术协调",
+          "role": "负责提单和 HS Code 清关相关业务",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null
         }
       ],
       "score": null,
-      "note": "编制调整 · 11-05"
+      "note": "编制调整为 5 人 · 11-06"
     },
     {
       "id": "legal",

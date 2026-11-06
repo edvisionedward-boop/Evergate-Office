@@ -1580,7 +1580,12 @@ function decorate(R, dyn, teamById) {
     safeBox(g, bx + 1.15, 2.35, Math.PI / 2);
     plant(g, W / 2 - 0.7, D / 2 - 0.8, 1.05, 1); floorLamp(g, 0, D / 2 - 1.1);
   } else if (id === 'logistics') {
-    desks.push(...workstations(g, t, accentChair, W, D, 3));
+    // Second row stays south of the forklift, ship and pallet.
+    desks.push(deskSet(g, -2.05, -3, 0, t, { kinds: ['dash', 'doc'], chair: accentChair, papers: true }));
+    desks.push(deskSet(g, 0, -3, 0, t, { kinds: ['chart', 'doc'], chair: accentChair }));
+    desks.push(deskSet(g, 2.05, -3, 0, t, { kinds: ['doc', 'dash'], chair: accentChair, papers: true }));
+    desks.push(deskSet(g, -1.15, -0.85, 0, t, { kinds: ['code', 'chart'], chair: accentChair }));
+    desks.push(deskSet(g, 1.15, -0.85, 0, t, { kinds: ['dash', 'chart'], chair: accentChair, papers: true }));
     const mapW = 7.15, mapH = 1.92, mapY = 1.18, mapZ = 0.25;
     box(g, 0.05, mapH + 0.14, mapW + 0.16, bx + 0.08, mapY - (mapH + 0.14) / 2, mapZ, M('#102033'), { cast: false });
     const map = new THREE.Mesh(new THREE.PlaneGeometry(mapW, mapH), new THREE.MeshBasicMaterial({ map: routeMapTexture(), toneMapped: false }));
