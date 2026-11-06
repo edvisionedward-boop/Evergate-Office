@@ -69,7 +69,7 @@ controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
 const HOME_DIR = new THREE.Vector3(0.82, 1.05, 1).normalize();
 
 function homeDistance() {
-  const R = 40, vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+  const R = 46, vf = THREE.MathUtils.degToRad(camera.fov) / 2;
   const hf = Math.atan(Math.tan(vf) * camera.aspect);
   const d = Math.max(R * 0.78 / Math.tan(vf), R * 1.05 / Math.tan(hf));
   return camera.aspect < 0.8 ? d * 0.72 : d;
@@ -990,8 +990,8 @@ function frame() {
   }
   controls.update();
   // keep target inside the office
-  controls.target.x = THREE.MathUtils.clamp(controls.target.x, -38, 30);
-  controls.target.z = THREE.MathUtils.clamp(controls.target.z, -22, 24);
+  controls.target.x = THREE.MathUtils.clamp(controls.target.x, -40, 30);
+  controls.target.z = THREE.MathUtils.clamp(controls.target.z, -28, 24);
   controls.target.y = 0;
   office.update(t, dt, state);
   tickBubbles(dt);

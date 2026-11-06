@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-06T12:08:00+08:00",
+  "updatedAt": "2026-11-06T12:15:00+08:00",
   "workRules": {
     "taskPoints": 1.0,
     "mistakePoints": -0.3,
@@ -158,7 +158,8 @@
         "teams": [
           "corpfin",
           "legal",
-          "logistics"
+          "logistics",
+          "review"
         ]
       },
       {
@@ -616,6 +617,69 @@
       ],
       "score": null,
       "note": "编制调整为 5 人 · 11-06"
+    },
+    {
+      "id": "review",
+      "name": "审查部",
+      "short": "审查",
+      "color": "#D0B993",
+      "status": "busy",
+      "statusNote": "忙碌",
+      "agents": 3,
+      "currentTask": "设立部门并准备每日放工前任务清单",
+      "private": false,
+      "note": "新设编制 3 人 · 11-06",
+      "duty": "按 Edward 指令整理任务清单、核对任务内容、跟踪各部门进度是否跟上时间表",
+      "gradeNote": "待周一例会后首次评定",
+      "gradedAt": null,
+      "staff": [
+        {
+          "id": "review-1",
+          "name": "审查组长",
+          "chip": "审查组长",
+          "role": "每个工作日下午放工前与 ED 开会；针对 Edward 的指令逐项提供任务清单",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
+        },
+        {
+          "id": "review-2",
+          "name": "数据审查员",
+          "chip": "数据审查",
+          "role": "针对任务内容信息进行审查与核对，发现错误马上通报审查组长",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
+        },
+        {
+          "id": "review-3",
+          "name": "任务审查员",
+          "chip": "任务审查",
+          "role": "记录各部门每天的工作情况，核对接时间表的任务流程",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
+        }
+      ],
+      "score": null
     },
     {
       "id": "legal",
@@ -1249,9 +1313,22 @@
       "title": "官方 Instagram 方案已交 Edward 审批（账号尚未开通，不得开通或发帖）",
       "updatedAt": "2026-11-06T10:05:00+08:00",
       "kind": "routine"
+    },
+    {
+      "id": "t33",
+      "team": "review",
+      "kind": "routine",
+      "status": "doing",
+      "title": "每日放工前与 ED 开会并按 Edward 指令整理任务清单；数据审查与进度跟踪",
+      "updatedAt": "2026-11-06T12:15:00+08:00"
     }
   ],
   "feed": [
+    {
+      "team": "review",
+      "time": "2026-11-06T12:15:00+08:00",
+      "text": "进行中：每日放工前与 ED 开会并整理任务清单"
+    },
     {
       "team": "ed",
       "time": "2026-11-06T10:05:00+08:00",

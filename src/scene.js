@@ -823,6 +823,7 @@ export const LAYOUT = {
   privfin:  { x: 13.5,  z: 12,  w: 10, d: 8.5, icon: '私', walls: 'glass', private: true, sign: '私人助理', signSub: 'PRIVATE · 仅 EDWARD' },
   lounge:   { x: 25.6, z: 0,   w: 9.4, d: 11, icon: '休', color: '#E87708', door: 'west', sign: '休息室', signSub: 'LOUNGE', label: '休息室' },
   archive:  { x: -25.8, z: -8, w: 8.4, d: 8.2, icon: '档', color: '#D0B993', sign: '档案室', signSub: 'ARCHIVE', label: '档案室' },
+  review:   { x: -27.5, z: -21.6, w: 10.2, d: 7.4, icon: '审', color: '#D0B993', sign: '审查部', signSub: 'REVIEW', label: '审查部' },
   meeting:  { x: -28, z: 8, w: 13.2, d: 11.8, icon: '议', color: '#D0B993', sign: '会议室', signSub: 'MEETING', label: '会议室' },
   design:   { x: 25.6, z: 12,  w: 9.4, d: 8.2, icon: '设', color: '#E87708', door: 'west', sign: '设计部', signSub: 'DESIGN', label: '设计部' },
   showroom: { x: 25.6, z: -12, w: 9.4, d: 8.2, icon: '展', color: '#D0B993', door: 'west', gallery: true, sign: '品牌展厅', signSub: 'BRAND HALL', label: '品牌展厅' },
@@ -940,7 +941,7 @@ export function buildOffice(scene, teams) {
   const holoLight = new THREE.PointLight(HOLO, 0.45, 8, 1.6); holoLight.position.set(0, 3.2, 0); holo.add(holoLight);
 
   const arcs = [];
-  for (const id of ['market', 'legal', 'invest', 'info', 'corpfin', 'logistics', 'privfin', 'design']) {
+  for (const id of ['market', 'legal', 'invest', 'info', 'corpfin', 'logistics', 'privfin', 'design', 'review']) {
     const R = rooms[id]; const c = R.def;
     const a = new THREE.Vector3(c.x, 2.9, c.z - c.d * 0.1), b = new THREE.Vector3(0, 2.2 + FLOOR_H, 0);
     const m = a.clone().lerp(b, 0.5); m.y = 6.2;
@@ -955,7 +956,7 @@ export function buildOffice(scene, teams) {
 
   /* per-room soft colored lights */
   const roomLights = [];
-  for (const id of ['market', 'legal', 'corpfin', 'logistics', 'privfin', 'invest', 'info', 'design']) {
+  for (const id of ['market', 'legal', 'corpfin', 'logistics', 'privfin', 'invest', 'info', 'design', 'review']) {
     const R = rooms[id];
     const warm = R.def.color === ORANGE ? ORANGE : GOLD;
     const pl = new THREE.PointLight(warm, 0.16, 11, 1.6); pl.position.set(R.def.x + 1, 3.4, R.def.z + 1); root.add(pl);
@@ -988,6 +989,10 @@ export function buildOffice(scene, teams) {
   westPad.position.set(-28, -0.04, 0.7); westPad.receiveShadow = true; staticG.add(westPad);
   const westLinkA = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 2.1), M('#12182a', { r: .6 }));
   westLinkA.position.set(-20.6, 0.02, -8); westLinkA.receiveShadow = true; staticG.add(westLinkA);
+  const reviewPad = new THREE.Mesh(rboxG(12, 0.1, 9, 0.05), M('#161d30', { r: .7 }));
+  reviewPad.position.set(-27.5, -0.04, -21.6); reviewPad.receiveShadow = true; staticG.add(reviewPad);
+  const reviewLink = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.08, 2.2), M('#12182a', { r: .6 }));
+  reviewLink.position.set(-23.2, 0.02, -17.4); reviewLink.receiveShadow = true; staticG.add(reviewLink);
   const westLinkB = westLinkA.clone(); westLinkB.position.set(-20.6, 0.02, 8); staticG.add(westLinkB);
   const loungeLight = new THREE.PointLight(ORANGE, 0.35, 9, 1.8);
   loungeLight.position.set(lounge.def.x, 3.1, 0.4); root.add(loungeLight);
@@ -1583,6 +1588,9 @@ function decorate(R, dyn, teamById) {
     for (let i = 0; i < 4; i++) cabinet(g, bx + 0.42, -1.7 + i * 0.85, Math.PI / 2, 0.62, 1.35, i % 2 ? '#1a1a1a' : '#2a241c');
     safeBox(g, bx + 1.15, 2.35, Math.PI / 2);
     plant(g, W / 2 - 0.7, D / 2 - 0.8, 1.05, 1); floorLamp(g, 0, D / 2 - 1.1);
+  } else if (id === 'review') {
+    desks.push(...workstations(g, t, accentChair, W, D, 3));
+    plant(g, W / 2 - 0.7, D / 2 - 0.7, 1.0, 0);
   } else if (id === 'logistics') {
     // Second row stays south of the forklift, ship and pallet.
     desks.push(deskSet(g, -2.05, -3, 0, t, { kinds: ['dash', 'doc'], chair: accentChair, papers: true }));
