@@ -1672,28 +1672,51 @@ function furnishLounge(g, def) {
   rug(g, 0.25, 2.65, 2.8, 2.8, '#d6c2a4');
 }
 function furnishRestrooms(parent) {
+  // North and south walls match 休息室 (d = 11, centered at z = 0).
   const g = new THREE.Group(); g.position.set(30.34, FLOOR_H, 0); parent.add(g);
   const wall = M('#12161f', { r: .62 });
   const trim = goldFrame();
-  const xV = 1.85, xE = 5.15, zH = 2.15;
-  const span = (x0, x1, z, h = WALL_H) => {
+  const zH = 5.5;
+  const xV = 2.05, xE = 5.35;
+  const stalls = 3;
+  const span = (x0, x1, z) => {
     const len = Math.abs(x1 - x0);
-    box(g, len, h, 0.08, (x0 + x1) / 2, 0, z, wall, { cast: false });
+    if (len < 0.08) return;
+    box(g, len, WALL_H, 0.08, (x0 + x1) / 2, 0, z, wall, { cast: false });
   };
-  const post = (x, z0, z1) => box(g, 0.08, WALL_H, Math.abs(z1 - z0), x, 0, (z0 + z1) / 2, wall, { cast: false });
-  span(0.1, xE, -zH);
-  span(0.1, xE, zH);
-  span(xV, xE, 0);
+  const post = (x, z0, z1) => {
+    const len = Math.abs(z1 - z0);
+    if (len < 0.08) return;
+    box(g, 0.08, WALL_H, len, x, 0, (z0 + z1) / 2, wall, { cast: false });
+  };
+  span(0.08, xE, -zH);
+  span(0.08, xE, zH);
+  box(g, xE, 0.045, 0.08, xE / 2, WALL_H - 0.04, -zH, trim, { cast: false });
+  box(g, xE, 0.045, 0.08, xE / 2, WALL_H - 0.04, zH, trim, { cast: false });
   post(xE, -zH, zH);
-  post(xV, -zH, -0.55);
-  post(xV, 0.55, zH);
-  post(0.05, -zH, -0.6);
-  post(0.05, 0.6, zH);
-  box(g, xE, 0.05, 0.08, xE / 2, WALL_H - 0.02, -zH, trim, { cast: false });
-  box(g, xE, 0.05, 0.08, xE / 2, WALL_H - 0.02, zH, trim, { cast: false });
-  doorSign(g, xV - 0.1, 2.05, -1.15, '女洗手', 'WOMEN', -Math.PI / 2);
-  doorSign(g, xV - 0.1, 2.05, 1.15, '男洗手', 'MEN', -Math.PI / 2);
-  doorSign(g, 0.2, 2.05, 0, '前室', 'VESTIBULE', -Math.PI / 2);
+  span(xV, xE, 0);
+  const step = zH / stalls;
+  for (let i = 1; i < stalls; i++) {
+    span(xV, xE, -i * step);
+    span(xV, xE, i * step);
+  }
+  const door = 0.85;
+  for (let i = 0; i < stalls; i++) {
+    const czN = -zH + (i + 0.5) * step;
+    const czS = zH - (i + 0.5) * step;
+    post(xV, -zH + i * step, czN - door / 2);
+    post(xV, czN + door / 2, -zH + (i + 1) * step);
+    post(xV, zH - (i + 1) * step, czS - door / 2);
+    post(xV, czS + door / 2, zH - i * step);
+    const bowl = M('#e8eef2', { r: .35, m: .08 });
+    box(g, 0.42, 0.4, 0.34, xE - 0.55, 0, czN, bowl, { round: 0.06, cast: false });
+    box(g, 0.42, 0.4, 0.34, xE - 0.55, 0, czS, bowl, { round: 0.06, cast: false });
+  }
+  post(0.06, -zH, -0.62);
+  post(0.06, 0.62, zH);
+  doorSign(g, xV - 0.12, 2.05, -zH * 0.5, '女洗手', 'WOMEN', -Math.PI / 2);
+  doorSign(g, xV - 0.12, 2.05, zH * 0.5, '男洗手', 'MEN', -Math.PI / 2);
+  doorSign(g, 0.22, 2.05, 0, '前室', 'VESTIBULE', -Math.PI / 2);
 }
 let loungeTv = null;
 function loungeTvArt() {
