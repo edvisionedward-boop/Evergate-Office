@@ -408,7 +408,7 @@ function buildGreenery(parent) {
 }
 function deskSet(parent, x, z, ry, team, opt = {}) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; parent.add(g);
-  const top = M(opt.white ? '#e9e5df' : WOOD, { r: .55 }), leg = M('#1f2430', { m: .4, r: .5 });
+  const top = M(opt.top ?? (opt.white ? '#e9e5df' : WOOD), { r: opt.top ? .46 : .55 }), leg = M('#1f2430', { m: .4, r: .5 });
   box(g, 1.5, 0.05, 0.72, 0, 0.72, 0, top, { round: 0.02 });
   box(g, 0.05, 0.72, 0.62, -0.7, 0, 0, leg); box(g, 0.05, 0.72, 0.62, 0.7, 0, 0, leg);
   box(g, 1.36, 0.3, 0.03, 0, 0.42, -0.3, leg);
@@ -981,8 +981,9 @@ export const LAYOUT = {
   // Former 投资部 cell. Walled office, no department.
   vacant:   { x: -13.5, z: 0, w: 10, d: 8.5, icon: '空', color: '#D0B993', minor: true, sign: '空置', signSub: 'EMPTY OFFICE', label: '空置' },
   legal:    { x: -30.2, z: -8, w: 17.2, d: 14.0, icon: '法', sign: '法务部', signSub: 'LEGAL' },
-  // ED's column. South wall locked at z=-7.75. Area matches 市场部 (10×13.45), not larger.
-  invest:   { x: 0, z: -13.8636, w: 11, d: 12.2273, icon: '投', sign: '投资部', signSub: 'INVESTMENT' },
+  // ED's column. South wall locked at z=-7.75. North wall lines up with 市场部 (-21.2).
+  // Width stays 11 so the street width W does not change.
+  invest:   { x: 0, z: -14.475, w: 11, d: 13.45, icon: '投', sign: '投资部', signSub: 'INVESTMENT' },
   ed:       { x: 0,     z: 0,   w: 11, d: 9,   icon: 'ED', walls: 'glass', sign: 'ED 中央指挥室', signSub: 'COMMAND CENTER' },
   // One rectangle: old 信息部 + old 策划部 cell + the E-W street in this column only.
   info:     { x: 13.5,  z: -6.025, w: 10, d: 20.45, icon: '信', sign: '信息部', signSub: 'AI NEWS & INFO' },
@@ -1059,7 +1060,7 @@ export function buildOffice(scene, teams) {
     const x1 = z === -6 ? 6.5 : 18;
     for (let x = -20; x <= x1; x += 1.2) { const dm = new THREE.Mesh(dashG, dashM); dm.position.set(x, dashY, z); root.add(dm); }
   }
-  for (const [x, z0, z1] of [[-7, -20.4, 24.2], [7, -19.2, 16.2]]) {
+  for (const [x, z0, z1] of [[-7, -21.2, 24.2], [7, -21.2, 16.2]]) {
     for (let z = z0; z <= z1; z += 1.2) {
       if (Math.abs(Math.abs(z) - 6) < 1.3) continue;
       const dm = new THREE.Mesh(dashG, dashM); dm.rotation.y = Math.PI / 2; dm.position.set(x, dashY, z); root.add(dm);
@@ -1802,9 +1803,11 @@ function glassRoom(g, x0, z0, x1, z1, door, title) {
   frostBand(g, x0, z0, x0, z1);
   frostBand(g, x1, z0, x1, z1);
 }
+const DARK_WOOD = '#3a2416';
 function furnishMarket(g, t, accent, W, D) {
   const desks = [];
   const bz = -D / 2;
+  const wood = { top: DARK_WOOD };
   const screenMat = new THREE.MeshBasicMaterial({ map: signTexture('公开监测', '产品代际 · 供货 · 日程', '#94a3b8'), toneMapped: false });
   for (const x of [-3.2, -0.8, 1.6]) {
     box(g, 1.7, 0.78, 0.05, x, 1.35, bz + 0.22, M('#0b0f19'), { cast: false });
@@ -1813,23 +1816,26 @@ function furnishMarket(g, t, accent, W, D) {
     cabinet(g, x, bz + 0.55, 0, 1.55, 0.48, '#1a1f2b');
   }
   const rowZ = bz + 2.45;
-  const tech = deskSet(g, -3.45, rowZ, 0, t, { kinds: ['dash', 'doc'], monitors: 2, chair: accent, papers: true });
-  const tariff = deskSet(g, -1.55, rowZ, 0, t, { kinds: ['doc'], monitors: 1, chair: accent });
-  const energy = deskSet(g, 0.35, rowZ, 0, t, { kinds: ['chart'], monitors: 1, chair: accent, papers: true });
-  const retail = deskSet(g, 2.25, rowZ, 0, t, { kinds: ['doc'], monitors: 1, chair: accent });
+  const tech = deskSet(g, -3.45, rowZ, 0, t, { ...wood, kinds: ['dash', 'doc'], monitors: 2, chair: accent, papers: true });
+  const tariff = deskSet(g, -1.55, rowZ, 0, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent });
+  const energy = deskSet(g, 0.35, rowZ, 0, t, { ...wood, kinds: ['chart'], monitors: 1, chair: accent, papers: true });
+  const retail = deskSet(g, 2.25, rowZ, 0, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent });
   // East wall, south to north: 经理室 then 总监室. Doors face the open floor and swing in.
   glassRoom(g, 1.45, 2.45, W / 2 - 0.16, D / 2 - 1.15, 'west', '经理室');
   glassRoom(g, 1.45, -1.05, W / 2 - 0.16, 2.15, 'west', '总监室');
-  const cmo = deskSet(g, 3.35, 0.55, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true });
+  const cmo = deskSet(g, 3.35, 0.55, 0, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent, papers: true });
   cabinet(g, 2.15, 0.35, -Math.PI / 2, 0.62, 0.55, '#242018');
   notePlate(g, 1.85, 1.25, -0.35, ['书面先交 ED', '未核实标待确认', '预测须标前提'], -Math.PI / 2, 0.62, 0.46);
-  const brand = deskSet(g, 3.3, 3.85, Math.PI / 2, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true });
+  const brand = deskSet(g, 3.3, 3.85, Math.PI / 2, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent, papers: true });
   bookshelf(g, 3.35, D / 2 - 1.55, Math.PI, 1.2, 1.35);
   notePlate(g, 3.35, 1.7, D / 2 - 1.42, ['品牌规范'], Math.PI, 0.62, 0.2);
-  box(g, 1.15, 0.05, 0.62, -1.7, 0.72, -0.15, M('#c4b496', { r: .45 }), { round: 0.02, cast: false });
-  cyl(g, 0.04, 0.05, 0.72, -2.1, 0, -0.15, M('#1a1a1a'), 8, { cast: false });
-  cyl(g, 0.04, 0.05, 0.72, -1.3, 0, -0.15, M('#1a1a1a'), 8, { cast: false });
-  chair(g, -1.7, -0.7, 0, accent); chair(g, -1.7, 0.4, Math.PI, accent);
+  const dark = M(DARK_WOOD, { r: .46 });
+  box(g, 2.7, 0.06, 0.78, -2.45, 0.72, -0.15, dark, { round: 0.02, cast: false });
+  for (const lx of [-3.55, -1.35]) {
+    cyl(g, 0.045, 0.05, 0.72, lx, 0, -0.38, M('#1a1a1a'), 8, { cast: false });
+    cyl(g, 0.045, 0.05, 0.72, lx, 0, 0.08, M('#1a1a1a'), 8, { cast: false });
+  }
+  chair(g, -2.45, -0.72, 0, accent); chair(g, -2.45, 0.42, Math.PI, accent);
   bookshelf(g, -W / 2 + 0.28, -2.55, Math.PI / 2, 1.8, 1.9);
   const map = new THREE.Mesh(new THREE.PlaneGeometry(1.05, 0.72), new THREE.MeshBasicMaterial({ map: signTexture('区域图', '空白 · 无标注', '#94a3b8'), toneMapped: false }));
   map.position.set(-W / 2 + 0.18, 1.45, rowZ); map.rotation.y = Math.PI / 2; map.userData.keep = true; g.add(map);
@@ -1890,40 +1896,46 @@ function furnishLegal(g, t, accent, W, D) {
 }
 function furnishInvest(g, t, accent, W, D) {
   const desks = [];
-  const bz = -D / 2;
-  bookshelf(g, -2.6, bz + 0.4, 0, 2.15, 1.85);
-  bookshelf(g, -0.2, bz + 0.4, 0, 2.0, 1.85);
-  notePlate(g, -1.4, 2.1, bz + 0.62, ['一手来源'], 0, 0.8, 0.22);
-  box(g, 1.15, 0.05, 0.4, 1.15, 0.72, bz + 1.45, M('#c4b496', { r: .45 }), { round: 0.02, cast: false });
-  cyl(g, 0.035, 0.04, 0.72, 0.75, 0, bz + 1.45, M('#1a1a1a'), 8, { cast: false });
-  cyl(g, 0.035, 0.04, 0.72, 1.55, 0, bz + 1.45, M('#1a1a1a'), 8, { cast: false });
-  box(g, 1.65, 0.86, 0.06, 0.15, 1.2, -1.7, M('#0b0f19'), { cast: false });
+  const bz = -D / 2, zz = D / 2;
+  const wood = { top: DARK_WOOD };
+  const dark = M(DARK_WOOD, { r: .46 });
+  bookshelf(g, -2.6, bz + 0.42, 0, 2.15, 1.85);
+  bookshelf(g, -0.2, bz + 0.42, 0, 2.0, 1.85);
+  notePlate(g, -1.4, 2.1, bz + 0.64, ['一手来源'], 0, 0.8, 0.22);
+  box(g, 1.35, 0.05, 0.42, 1.2, 0.72, bz + 1.55, dark, { round: 0.02, cast: false });
+  cyl(g, 0.035, 0.04, 0.72, 0.7, 0, bz + 1.55, M('#1a1a1a'), 8, { cast: false });
+  cyl(g, 0.035, 0.04, 0.72, 1.7, 0, bz + 1.55, M('#1a1a1a'), 8, { cast: false });
+  box(g, 1.65, 0.86, 0.06, 0.15, 1.2, -2.15, M('#0b0f19'), { cast: false });
   const quote = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.68), new THREE.MeshBasicMaterial({ map: signTexture('公开行情', '指数 · 汇率 · 日程', '#94a3b8'), toneMapped: false }));
-  quote.position.set(0.15, 1.64, -1.66); quote.userData.keep = true; g.add(quote);
-  const data = deskSet(g, -3.55, -3.45, 0, t, { kinds: ['dash', 'doc'], monitors: 2, chair: accent, papers: false, privacy: true });
-  drawerBank(g, -3.55, -3.45);
-  // Leftover northeast corner. Shared, unlabeled, not an office.
-  glassRoom(g, 3.4, bz + 0.22, W / 2 - 0.16, -3.7, 'west', '');
-  chair(g, 4.45, -4.55, Math.PI / 2, accent);
-  const project = deskSet(g, -1.65, 0.05, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
-  const risk = deskSet(g, 0.15, 0.05, 0, t, { kinds: ['chart'], monitors: 1, chair: accent, papers: true, privacy: true });
-  const quant = deskSet(g, 1.95, 0.05, 0, t, { kinds: ['dash', 'doc'], monitors: 2, chair: accent, privacy: true });
-  for (const x of [-1.65, 0.15, 1.95]) drawerBank(g, x, 0.05);
-  box(g, 3.4, 0.7, 0.1, 0.7, 0, 2.05, M('#1c2433', { r: .65 }), { cast: false });
-  plant(g, -0.85, 2.05, 0.7, 1); plant(g, 2.15, 2.05, 0.62, 0);
-  const plan1 = deskSet(g, -4.65, 3.2, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
-  const plan2 = deskSet(g, -2.2, 3.2, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, privacy: true });
-  drawerBank(g, -4.65, 3.2); drawerBank(g, -2.2, 3.2);
-  box(g, 0.4, 0.05, 0.85, -3.42, 0.72, 3.2, M('#c4b496', { r: .45 }), { round: 0.02, cast: false });
-  const cio = deskSet(g, -3.75, 4.6, Math.PI, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
-  drawerBank(g, -3.75, 4.6);
-  box(g, 2.2, 0.06, 0.82, 1.45, 0.74, 4.4, M('#c4b496', { r: .45 }), { round: 0.02, cast: false });
-  cyl(g, 0.05, 0.06, 0.74, 0.55, 0, 4.4, M('#1a1a1a'), 8, { cast: false });
-  cyl(g, 0.05, 0.06, 0.74, 2.35, 0, 4.4, M('#1a1a1a'), 8, { cast: false });
-  chair(g, 0.85, 3.9, 0, accent); chair(g, 2.05, 3.9, 0, accent);
-  chair(g, 0.85, 4.9, Math.PI, accent); chair(g, 2.05, 4.9, Math.PI, accent);
-  notePlate(g, 1.45, 0.95, 4.05, ['待交 ED', '待改'], 0, 0.55, 0.26);
-  chair(g, 4.2, 4.85, -Math.PI / 2, accent); chair(g, 4.2, 5.4, -Math.PI / 2, accent);
+  quote.position.set(0.15, 1.64, -2.11); quote.userData.keep = true; g.add(quote);
+  const data = deskSet(g, -3.55, -4.05, 0, t, { ...wood, kinds: ['dash', 'doc'], monitors: 2, chair: accent, papers: false, privacy: true });
+  drawerBank(g, -3.55, -4.05);
+  plant(g, 4.35, bz + 1.15, 0.85, 1);
+  const project = deskSet(g, -1.65, -0.35, 0, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
+  const risk = deskSet(g, 0.15, -0.35, 0, t, { ...wood, kinds: ['chart'], monitors: 1, chair: accent, papers: true, privacy: true });
+  const quant = deskSet(g, 1.95, -0.35, 0, t, { ...wood, kinds: ['dash', 'doc'], monitors: 2, chair: accent, privacy: true });
+  for (const x of [-1.65, 0.15, 1.95]) drawerBank(g, x, -0.35);
+  box(g, 3.4, 0.7, 0.1, 0.7, 0, 1.7, M('#1c2433', { r: .65 }), { cast: false });
+  plant(g, -0.85, 1.7, 0.7, 1); plant(g, 2.15, 1.7, 0.62, 0);
+  const plan1 = deskSet(g, -4.65, 2.4, 0, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
+  const plan2 = deskSet(g, -2.35, 2.4, 0, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent, privacy: true });
+  drawerBank(g, -4.65, 2.4); drawerBank(g, -2.35, 2.4);
+  box(g, 0.4, 0.05, 0.85, -3.5, 0.72, 2.4, dark, { round: 0.02, cast: false });
+  const cio = deskSet(g, -3.85, zz - 1.55, Math.PI, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
+  drawerBank(g, -3.85, zz - 1.55);
+  // Long internal strategy table, east of the door aisle. No walls around it.
+  const tableZ = 4.15;
+  box(g, 5.2, 0.07, 1.05, 1.15, 0.74, tableZ, dark, { round: 0.02, cast: false });
+  for (const lx of [-1.15, 1.15, 3.45]) {
+    cyl(g, 0.05, 0.06, 0.74, lx, 0, tableZ - 0.36, M('#1a1a1a'), 8, { cast: false });
+    cyl(g, 0.05, 0.06, 0.74, lx, 0, tableZ + 0.36, M('#1a1a1a'), 8, { cast: false });
+  }
+  for (const lx of [-1.2, 1.15, 3.4]) {
+    chair(g, lx, tableZ - 0.78, 0, accent);
+    chair(g, lx, tableZ + 0.78, Math.PI, accent);
+  }
+  notePlate(g, 1.15, 0.98, tableZ - 0.2, ['待交 ED', '待改'], 0, 0.7, 0.28);
+  chair(g, 4.55, 4.55, -Math.PI / 2, accent); chair(g, 4.55, 5.35, -Math.PI / 2, accent);
   fileCabinet(g, 4.6, 1.2, -Math.PI / 2, true);
   notePlate(g, 4.32, 1.5, 1.2, ['内部归档'], -Math.PI / 2, 0.52, 0.2);
   box(g, 0.46, 0.26, 0.34, 4.45, 0.74, 2.15, M('#e7e5e4', { r: .4 }), { cast: false });
