@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-06T13:11:00+08:00",
+  "updatedAt": "2026-11-06T13:40:00+08:00",
   "workRules": {
     "taskPoints": 1.0,
     "mistakePoints": -0.3,
@@ -464,9 +464,9 @@
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null,
-          "tasksDone": 4,
+          "tasksDone": 5,
           "mistakes": 0,
-          "workScore": 5.0,
+          "workScore": 6.0,
           "extraPenalty": 0,
           "overtimeHours": 0,
           "consecutiveFailures": 0
@@ -1356,6 +1356,11 @@
     }
   ],
   "feed": [
+    {
+      "team": "design",
+      "time": "2026-11-06T13:40:00+08:00",
+      "text": "设计部 搬迁区位总图 v2（日常达标 +1.00）→ 设计总监"
+    },
     {
       "team": "design",
       "time": "2026-11-06T13:08:00+08:00",

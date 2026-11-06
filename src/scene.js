@@ -660,77 +660,66 @@ function facilityTag(agent, name, status) {
 function furnishArchive(g, def, dyn, R) {
   const savedSeed = seed;
   const W = def.w, D = def.d;
-  // Central lobby band. Inner rooms sit north and south and open only from here,
-  // so the guard faces the east door and has both library doors beside him.
-  const band = 2.05;
-  const doorX = 5.15;
-  const doorW = 1.5;
+  // West lobby inside the corridor door. The two libraries sit east of it and open only from the lobby.
+  const splitX = -W / 2 + Math.min(3.6, W * 0.4);
+  const doorW = Math.min(1.35, D * 0.28);
   const wallMat = M('#12161f', { r: .62, m: .08 });
   const trim = M(GOLD, { m: .35, r: .55, e: GOLD, ei: 0.04 });
-  const hx = -W / 2 + 0.08, ex = W / 2 - 0.08;
-  const xWall = (z, x0, x1) => {
-    const len = x1 - x0;
-    if (len < 0.15) return;
-    const cx = (x0 + x1) / 2;
-    box(g, len, WALL_H, 0.08, cx, 0, z, wallMat, { cast: false });
-    box(g, len, 0.045, 0.12, cx, WALL_H - 0.02, z, trim, { cast: false });
+  const hz = -D / 2 + 0.08, zz = D / 2 - 0.08;
+  const genZ = -D * 0.25, secZ = D * 0.25;
+  const zWall = (z0, z1) => {
+    const len = z1 - z0;
+    if (len < 0.12) return;
+    const cz = (z0 + z1) / 2;
+    box(g, 0.08, WALL_H, len, splitX, 0, cz, wallMat, { cast: false });
+    box(g, 0.1, 0.045, len, splitX, WALL_H - 0.02, cz, trim, { cast: false });
   };
-  xWall(-band, hx, doorX - doorW / 2);
-  xWall(-band, doorX + doorW / 2, ex);
-  xWall(band, hx, doorX - doorW / 2);
-  xWall(band, doorX + doorW / 2, ex);
-  box(g, W - 0.5, 0.012, 0.03, 0, 0.006, -band, trim, { cast: false });
-  box(g, W - 0.5, 0.012, 0.03, 0, 0.006, band, trim, { cast: false });
+  zWall(hz, genZ - doorW / 2);
+  zWall(genZ + doorW / 2, secZ - doorW / 2);
+  zWall(secZ + doorW / 2, zz);
+  box(g, W / 2 - splitX - 0.2, WALL_H, 0.08, (splitX + W / 2) / 2, 0, 0, wallMat, { cast: false });
+  box(g, 0.03, 0.012, D - 0.3, splitX, 0.006, 0, trim, { cast: false });
 
-  doorFrame(g, doorX, -band, 0, doorW, 2.15);
-  doorSign(g, doorX, 2.28, -band + 0.14, '普通资料库', 'GENERAL ARCHIVE', 0);
+  doorFrame(g, splitX, genZ, Math.PI / 2, doorW, 2.05);
+  doorSign(g, splitX - 0.12, 2.15, genZ, '普通资料库', 'GENERAL', -Math.PI / 2);
   // Locked confidential door on the south side of the lobby.
-  box(g, doorW - 0.12, 2.08, 0.07, doorX, 0, band - 0.02, M('#141a28', { r: .38, m: .4 }), { cast: false });
-  box(g, 0.06, 2.16, 0.09, doorX - doorW / 2 + 0.02, 0, band - 0.02, trim, { cast: false });
-  box(g, 0.06, 2.16, 0.09, doorX + doorW / 2 - 0.02, 0, band - 0.02, trim, { cast: false });
-  box(g, doorW, 0.07, 0.09, doorX, 2.08, band - 0.02, trim, { cast: false });
-  const lockMat = M(GOLD, { m: .72, r: .28, e: GOLD, ei: 0.08 });
-  box(g, 0.16, 0.16, 0.045, doorX - 0.28, 0.7, band - 0.08, lockMat, { cast: false });
-  box(g, 0.16, 0.16, 0.045, doorX + 0.28, 0.7, band - 0.08, lockMat, { cast: false });
-  const red = new THREE.Mesh(sphG(0.035, 10, 8), B('#ef4444'));
-  red.position.set(doorX + 0.48, 1.9, band - 0.1); g.add(red);
-  const padX = doorX + doorW / 2 + 0.42;
-  const pad = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.34), new THREE.MeshBasicMaterial({ map: keyTexture(), toneMapped: false }));
-  pad.position.set(padX, 1.2, band - 0.1); pad.rotation.y = Math.PI; pad.userData.keep = true; g.add(pad);
-  box(g, 0.3, 0.4, 0.02, padX, 1.0, band - 0.06, M('#0e1420', { m: .4, r: .4 }), { cast: false });
-  namePlate(g, padX, 1.78, band - 0.12, 'ED', '连署', Math.PI);
-  namePlate(g, doorX - doorW / 2 - 0.46, 1.45, band - 0.12, '私人助理', '连署', Math.PI);
-  doorSign(g, doorX, 2.28, band - 0.14, '机密资料库', 'CONFIDENTIAL', Math.PI);
-  confidentialNotice(g, doorX, 1.48, band - 0.12, Math.PI);
-  doorSign(g, W / 2 - 0.22, 1.9, -1.15, '客厅', 'LOBBY', Math.PI / 2);
+  box(g, 0.07, 2.02, doorW - 0.1, splitX - 0.02, 0, secZ, M('#141a28', { r: .38, m: .4 }), { cast: false });
+  box(g, 0.09, 2.1, 0.06, splitX - 0.02, 0, secZ - doorW / 2 + 0.02, trim, { cast: false });
+  box(g, 0.09, 2.1, 0.06, splitX - 0.02, 0, secZ + doorW / 2 - 0.02, trim, { cast: false });
+  const lockMat = M(GOLD, { m: .55, r: .4 });
+  box(g, 0.04, 0.14, 0.14, splitX - 0.08, 0.72, secZ - 0.22, lockMat, { cast: false });
+  box(g, 0.04, 0.14, 0.14, splitX - 0.08, 0.72, secZ + 0.22, lockMat, { cast: false });
+  const red = new THREE.Mesh(sphG(0.03, 8, 6), B('#ef4444'));
+  red.position.set(splitX - 0.1, 1.7, secZ); g.add(red);
+  const face = -Math.PI / 2;
+  namePlate(g, splitX - 0.12, 1.55, secZ + doorW / 2 + 0.38, 'ED', '连署', face);
+  namePlate(g, splitX - 0.12, 1.55, secZ - doorW / 2 - 0.38, '私人助理', '连署', face);
+  doorSign(g, splitX - 0.12, 2.15, secZ, '机密资料库', 'CONFIDENTIAL', face);
+  confidentialNotice(g, splitX - 0.14, 1.15, secZ, face);
+  doorSign(g, -W / 2 + 0.2, 1.85, -1.15, '客厅', 'LOBBY', face);
 
   const wood = M('#6b4f36', { r: .55 });
   const top = M('#c4a574', { r: .4, m: .06 });
-  const deskX = 3.35;
-  box(g, 0.86, 0.05, 1.7, deskX, 0.72, 0, top, { round: 0.02, cast: false });
-  box(g, 0.36, 0.72, 0.42, deskX, 0, -0.55, wood);
-  box(g, 0.36, 0.72, 0.42, deskX, 0, 0.55, wood);
-  box(g, 0.42, 0.02, 0.32, deskX - 0.02, 0.77, -0.02, M('#7f1d1d', { r: .55 }), { cast: false });
-  box(g, 0.18, 0.012, 0.26, deskX - 0.14, 0.792, -0.02, M('#f7f1e4', { r: .84 }), { cast: false });
-  box(g, 0.18, 0.012, 0.26, deskX + 0.08, 0.792, 0, M('#fffaf0', { r: .84 }), { cast: false });
-  box(g, 0.14, 0.008, 0.012, deskX + 0.08, 0.8, -0.04, M('#334155', { r: .7 }), { cast: false });
-  box(g, 0.14, 0.008, 0.012, deskX + 0.08, 0.8, 0.02, M('#334155', { r: .7 }), { cast: false });
-  box(g, 0.16, 0.012, 0.018, deskX + 0.22, 0.78, -0.28, M('#1e293b'), { cast: false });
-  box(g, 0.2, 0.012, 0.14, deskX + 0.2, 0.78, 0.32, M('#0f172a', { r: .4, m: .3 }), { cast: false });
-  box(g, 0.14, 0.008, 0.09, deskX + 0.2, 0.792, 0.32, M('#1e3a5f', { r: .35, e: '#7eb6d6', ei: 0.28 }), { cast: false });
-  chair(g, 6.55, 1.15, Math.PI / 2, '#1e293b');
-  chair(g, 6.55, -1.15, Math.PI / 2, '#1e293b');
-  plant(g, 7.7, 1.65, 0.95, 1);
-  plant(g, 7.7, -1.65, 0.9, 0);
-  plant(g, -7.4, 1.45, 1.0, 0);
-  plant(g, -7.4, -1.45, 1.05, 1);
+  const deskX = splitX - 1.7;
+  box(g, 0.72, 0.05, 1.35, deskX, 0.72, 0, top, { round: 0.02, cast: false });
+  box(g, 0.32, 0.72, 0.36, deskX, 0, -0.42, wood);
+  box(g, 0.32, 0.72, 0.36, deskX, 0, 0.42, wood);
+  box(g, 0.36, 0.02, 0.28, deskX + 0.05, 0.77, 0, M('#7f1d1d', { r: .55 }), { cast: false });
+  box(g, 0.15, 0.012, 0.22, deskX - 0.02, 0.792, -0.02, M('#f7f1e4', { r: .84 }), { cast: false });
+  box(g, 0.15, 0.012, 0.22, deskX + 0.16, 0.792, 0.02, M('#fffaf0', { r: .84 }), { cast: false });
+  box(g, 0.14, 0.012, 0.016, deskX + 0.2, 0.78, -0.22, M('#1e293b'), { cast: false });
+  box(g, 0.16, 0.01, 0.11, deskX + 0.12, 0.78, 0.28, M('#0f172a', { r: .4 }), { cast: false });
+  chair(g, -W / 2 + 1.15, 1.15, -Math.PI / 2, '#1e293b');
+  chair(g, -W / 2 + 1.15, -1.15, -Math.PI / 2, '#1e293b');
+  plant(g, -W / 2 + 0.55, D / 2 - 0.55, 0.75, 1);
+  plant(g, -W / 2 + 0.55, -D / 2 + 0.55, 0.7, 0);
 
-  const gx = 2.45;
-  chair(g, gx, 0, -Math.PI / 2, '#111827');
+  const gx = splitX - 0.95;
+  chair(g, gx, 0, Math.PI / 2, '#111827');
   const guard = makeAgent({ shirt: '#1e293b', pants: '#0f172a', tie: '#D0B993', hair: '#1f1a17', skin: '#e0ac85' });
   g.updateMatrixWorld(true);
   guard.position.set(def.x + gx, FLOOR_H + 0.05, def.z);
-  guard.rotation.y = Math.PI / 2;
+  guard.rotation.y = -Math.PI / 2;
   guard.userData.guard = true;
   guard.userData.room = 'archive';
   setSeated(guard);
@@ -739,32 +728,23 @@ function furnishArchive(g, def, dyn, R) {
   R.guard = guard;
   facilityTag(guard, '保安', '值守中');
 
-  for (const x of [-6.4, -4.4, -2.4, -0.4, 1.6, 7.15]) bookshelf(g, x, -2.48, Math.PI, 1.55, 1.85);
-  for (const z of [-6.2, -4.55, -3.15]) bookshelf(g, -8.05, z, Math.PI / 2, 1.35, 1.85);
-  for (const z of [3.15, 4.7, 6.15]) bookshelf(g, -8.05, z, Math.PI / 2, 1.3, 1.9);
-  for (const x of [-6.6, -4.9, -3.2, -1.5, 0.3, 7.2]) fileCabinet(g, x, 2.62, Math.PI, true);
-
+  bookshelf(g, (splitX + W / 2) / 2, -D / 2 + 0.45, 0, Math.min(2.2, W * 0.28), 1.7);
+  bookshelf(g, W / 2 - 0.4, D * 0.25, -Math.PI / 2, Math.min(1.6, D * 0.3), 1.7);
+  fileCabinet(g, (splitX + W / 2) / 2 - 0.8, D / 2 - 0.5, Math.PI, true);
+  fileCabinet(g, (splitX + W / 2) / 2 + 0.8, D / 2 - 0.5, Math.PI, true);
+  const rackX = splitX + (W / 2 - splitX) * 0.55;
   const slots = [
-    ...rackRow(-7.2, 7.0, 0.82, -6.4, 0),
-    ...rackRow(-7.2, 7.0, 0.82, -4.85, Math.PI),
-    ...rackRow(-7.2, 7.0, 0.82, 6.4, Math.PI),
-    ...rackRow(-7.2, 7.0, 0.82, 4.85, 0),
+    { x: rackX - 0.7, z: -D / 2 + 0.85, ry: 0 },
+    { x: rackX + 0.7, z: -D / 2 + 0.85, ry: 0 },
+    { x: rackX - 0.7, z: D / 2 - 1.35, ry: Math.PI },
+    { x: rackX + 0.7, z: D / 2 - 1.35, ry: Math.PI },
   ];
   R.rackLeds = archiveRacks(g, slots);
-  const glow = (x, z, color, intensity, dist = 9) => {
-    const pl = new THREE.PointLight(color, intensity, dist, 1.6);
-    pl.position.set(x, 2.05, z); g.add(pl);
-  };
-  glow(-1.5, -5.5, '#7eb6d6', 0.7);
-  glow(4.5, -5.5, '#7eb6d6', 0.55);
-  glow(-1.5, 5.5, '#7eb6d6', 0.7);
-  glow(4.5, 5.5, '#7eb6d6', 0.55);
-  glow(6.4, 0, '#f3e6c8', 0.22, 7);
-  pendant(g, -4.2, 0);
-  pendant(g, -2, -5.4);
-  pendant(g, 4.2, -5.4);
-  pendant(g, -2, 5.4);
-  pendant(g, 4.2, 5.4);
+  const glowN = new THREE.PointLight('#7eb6d6', 0.45, 6, 1.6);
+  glowN.position.set(rackX, 2.0, -D * 0.28); g.add(glowN);
+  const glowS = new THREE.PointLight('#7eb6d6', 0.4, 6, 1.6);
+  glowS.position.set(rackX, 2.0, D * 0.28); g.add(glowS);
+  pendant(g, splitX - 1.4, 0);
   seed = savedSeed;
 }
 function serverRack(parent, x, z, ry, leds) {
@@ -999,20 +979,27 @@ function labelEl(def) {
 
 /* ---------------- build ---------------- */
 export const LAYOUT = {
-  market:   { x: -13.5, z: -12, w: 10, d: 8.5, icon: '市', sign: '市场部', signSub: 'MARKETING & RESEARCH' },
-  legal:    { x: 0,     z: -12, w: 11, d: 8.5, icon: '法', sign: '法务部', signSub: 'LEGAL' },
+  // North street wall stays; only the outer north wall moves.
+  market:   { x: -13.5, z: -14.475, w: 10, d: 13.45, icon: '市', sign: '市场部', signSub: 'MARKETING & RESEARCH' },
+  // Old 法务部 cell, kept as an empty office. Not a department.
+  vacant:   { x: 0, z: -12, w: 11, d: 8.5, icon: '空', color: '#D0B993', minor: true, sign: '空置', signSub: 'RESERVED', label: '空置' },
+  legal:    { x: -30.2, z: -8, w: 17.2, d: 14.0, icon: '法', sign: '法务部', signSub: 'LEGAL' },
   invest:   { x: -13.5, z: 0,   w: 10, d: 8.5, icon: '投', sign: '投资部', signSub: 'INVESTMENT' },
   ed:       { x: 0,     z: 0,   w: 11, d: 9,   icon: 'ED', walls: 'glass', sign: 'ED 中央指挥室', signSub: 'COMMAND CENTER' },
-  info:     { x: 13.5,  z: -6,  w: 10, d: 20.4, icon: '信', sign: '信息部', signSub: 'AI NEWS & INFO' },
+  // One rectangle: old 信息部 + old 策划部 cell + the E-W street in this column only.
+  info:     { x: 13.5,  z: -6.025, w: 10, d: 20.45, icon: '信', sign: '信息部', signSub: 'AI NEWS & INFO' },
   corpfin:  { x: -13.5, z: 12,  w: 10, d: 8.5, icon: '会', sign: '会计部', signSub: 'ACCOUNTING' },
-  logistics:{ x: 0,     z: 12,  w: 11, d: 8.5, icon: '物', sign: '物流部', signSub: 'LOGISTICS' },
+  logistics:{ x: 0,     z: 13.875, w: 11, d: 12.25, icon: '物', sign: '物流部', signSub: 'LOGISTICS' },
   privfin:  { x: 13.5,  z: 12,  w: 10, d: 8.5, icon: '私', walls: 'glass', private: true, sign: '私人助理', signSub: 'PRIVATE · 仅 EDWARD' },
   lounge:   { x: 25.6, z: 0,   w: 9.4, d: 11, icon: '休', color: '#E87708', door: 'west', sign: '休息室', signSub: 'LOUNGE', label: '休息室' },
-  archive:  { x: -30.2, z: -8, w: 17.2, d: 14.0, icon: '档', color: '#D0B993', sign: '档案室', signSub: 'ARCHIVE', label: '档案室' },
-  review:   { x: -27.5, z: -21.6, w: 10.2, d: 7.4, icon: '审', color: '#D0B993', sign: '审查部', signSub: 'REVIEW', label: '审查部' },
+  archive:  { x: 25.6, z: -12, w: 9.4, d: 8.2, icon: '档', color: '#D0B993', door: 'west', sign: '档案室', signSub: 'ARCHIVE', label: '档案室' },
+  // Shares 会计部's south wall. Separate room, entered from the east corridor.
+  review:   { x: -13.5, z: 19.55, w: 10, d: 6.6, icon: '审', color: '#D0B993', sign: '审查部', signSub: 'REVIEW', label: '审查部' },
   meeting:  { x: -28, z: 8, w: 13.2, d: 11.8, icon: '议', color: '#D0B993', sign: '会议室', signSub: 'MEETING', label: '会议室' },
-  design:   { x: 25.6, z: 12,  w: 9.4, d: 8.2, icon: '设', color: '#E87708', door: 'west', sign: '设计部', signSub: 'DESIGN', label: '设计部' },
-  showroom: { x: 25.6, z: -12, w: 9.4, d: 8.2, icon: '展', color: '#D0B993', door: 'west', gallery: true, sign: '品牌展厅', signSub: 'BRAND HALL', label: '品牌展厅' },
+  // West and north walls stay. Growth is east, then south.
+  design:   { x: 27.25, z: 13.05, w: 12.7, d: 10.3, icon: '设', color: '#E87708', door: 'west', sign: '设计部', signSub: 'DESIGN', label: '设计部' },
+  // Immediately east of 设计部. Exhibition hall, own north door, not merged.
+  showroom: { x: 37.7, z: 11.9, w: 8.2, d: 8.0, icon: '展', color: '#D0B993', door: 'north', gallery: true, sign: '品牌展厅', signSub: 'BRAND HALL', label: '品牌展厅' },
 };
 
 export function buildOffice(scene, teams) {
@@ -1042,20 +1029,20 @@ export function buildOffice(scene, teams) {
   const sky2 = sky.clone(); sky2.position.set(-70, 26, 8); sky2.rotation.y = Math.PI / 2; root.add(sky2);
   // south gate on the central axis, due south of 物流部: wordmark above the news band
   const logo = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 1.85), new THREE.MeshBasicMaterial({ map: logoTexture() }));
-  logo.position.set(0, 2.55, 19.4); root.add(logo);
-  box(staticG, 8.4, 3.7, 0.18, 0, 0, 19.15, M('#121a28', { r: .6 }), { cast: false });
-  box(staticG, 2.4, 1.05, 0.7, 0, 0, 16.7, M('#d9c7a6', { r: .55 }), { round: 0.04 });
-  box(staticG, 2.2, 0.06, 0.55, 0, 1.05, 16.7, M('#f4efe6', { r: .4 }), { cast: false });
-  cyl(staticG, 0.12, 0.1, 0.22, -0.7, 1.11, 16.7, M('#111827', { m: .4 }), 10, { cast: false });
-  plant(staticG, -4.6, 18.2, 1.25, 2); plant(staticG, 4.6, 18.2, 1.15, 0);
+  logo.position.set(0, 2.55, 23.5); root.add(logo);
+  box(staticG, 8.4, 3.7, 0.18, 0, 0, 23.25, M('#121a28', { r: .6 }), { cast: false });
+  box(staticG, 2.4, 1.05, 0.7, 0, 0, 20.7, M('#d9c7a6', { r: .55 }), { round: 0.04 });
+  box(staticG, 2.2, 0.06, 0.55, 0, 1.05, 20.7, M('#f4efe6', { r: .4 }), { cast: false });
+  cyl(staticG, 0.12, 0.1, 0.22, -0.7, 1.11, 20.7, M('#111827', { m: .4 }), 10, { cast: false });
+  plant(staticG, -4.6, 22.3, 1.25, 2); plant(staticG, 4.6, 22.3, 1.15, 0);
   const newsCanvas = document.createElement('canvas'); newsCanvas.width = 512; newsCanvas.height = 512;
   const newsCtx = newsCanvas.getContext('2d');
   const newsMap = new THREE.CanvasTexture(newsCanvas); newsMap.colorSpace = THREE.SRGBColorSpace; newsMap.wrapS = newsMap.wrapT = THREE.RepeatWrapping;
   const newsScreen = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.15), new THREE.MeshBasicMaterial({ map: newsMap, toneMapped: false }));
-  newsScreen.position.set(0, 1.05, 19.32); root.add(newsScreen);
-  box(staticG, 4.8, 1.35, 0.08, 0, 0.38, 19.22, M('#0b0f19'), { cast: false });
+  newsScreen.position.set(0, 1.05, 23.42); root.add(newsScreen);
+  box(staticG, 4.8, 1.35, 0.08, 0, 0.38, 23.32, M('#0b0f19'), { cast: false });
   const newsHit = new THREE.Mesh(new THREE.BoxGeometry(5.0, 1.6, 0.4), new THREE.MeshBasicMaterial({ visible: false }));
-  newsHit.position.set(0, 1.15, 19.35); newsHit.userData.room = 'news'; root.add(newsHit);
+  newsHit.position.set(0, 1.15, 23.45); newsHit.userData.room = 'news'; root.add(newsHit);
   // corridors: dark aisles with dashed glowing lines
   const aisleMat = new THREE.MeshStandardMaterial({ map: concreteTexture(), roughness: 0.86, metalness: 0.04, color: '#c5ccd4' });
   const aisle = aisleMat;
@@ -1097,7 +1084,7 @@ export function buildOffice(scene, teams) {
     const lo = new CSS2DObject(el);
     if (def.id === 'ed') lo.position.set(def.x - 0.2, 5.6, def.z - def.d * 0.34);
     // 法务部 sits just north of ED; lift its plate so the member line clears ED's name.
-    else if (def.id === 'legal') lo.position.set(def.x, 6.55, def.z - def.d * 0.1);
+    else if (def.id === 'vacant') lo.position.set(def.x, 3.4, def.z);
     else lo.position.set(def.x, def.minor ? 3.15 : 4.15, def.z - def.d * 0.1);
     // Meeting's status line is long; hang it toward the left edge so it misses 投资部.
     const anchorX = def.id === 'meeting' ? 0.92 : def.id === 'archive' ? 0.32 : def.x > 18 ? 0.92 : def.x < -18 ? 0.08 : 0.5;
@@ -1160,7 +1147,7 @@ export function buildOffice(scene, teams) {
   /* walkers carrying documents to ED */
   const walkers = [];
   const walkerDefs = [
-    { from: 'legal', path: [[1.4, -9.4], [1.8, -7.7], [1.8, -6], [-0.4, -6], [-0.4, -4.7], [-2.3, -4.4], [-2.6, -1.9]] },
+    { from: 'legal', path: [[-22.2, -8], [-16.5, -8], [-10.2, -6], [-6.75, -6], [-6.75, -1.2], [-4.2, -0.4]] },
     { from: 'info', path: [[12.2, 2.4], [13.2, 4.2], [13.2, 6], [6.75, 6], [6.75, -0.3], [5.2, -0.3], [3.6, -0.3]] },
     { from: 'market', path: [[-10.6, -9.2], [-10.4, -7.7], [-10.4, -6], [-6.75, -6], [-6.75, 0.3], [-5.2, 0.3], [-4.2, 0.3]] },
   ];
@@ -1183,10 +1170,11 @@ export function buildOffice(scene, teams) {
   westPad.position.set(-29.75, -0.04, -0.05); westPad.receiveShadow = true; staticG.add(westPad);
   const westLinkA = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 2.1), M('#12182a', { r: .6 }));
   westLinkA.position.set(-20.6, 0.02, -8); westLinkA.receiveShadow = true; staticG.add(westLinkA);
-  const reviewPad = new THREE.Mesh(rboxG(12, 0.1, 9, 0.05), M('#161d30', { r: .7 }));
-  reviewPad.position.set(-27.5, -0.04, -21.6); reviewPad.receiveShadow = true; staticG.add(reviewPad);
-  const reviewLink = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.08, 2.2), M('#12182a', { r: .6 }));
-  reviewLink.position.set(-23.2, 0.02, -17.4); reviewLink.receiveShadow = true; staticG.add(reviewLink);
+  const reviewPad = new THREE.Mesh(rboxG(12, 0.1, 8, 0.05), M('#161d30', { r: .7 }));
+  reviewPad.position.set(-13.5, -0.04, 19.6); reviewPad.receiveShadow = true; staticG.add(reviewPad);
+  const eastPad = new THREE.Mesh(rboxG(28, 0.1, 40, 0.05), M('#161d30', { r: .7 }));
+  eastPad.position.set(33, -0.04, 1); eastPad.receiveShadow = true; staticG.add(eastPad);
+  furnishRestrooms(staticG);
   const westLinkB = westLinkA.clone(); westLinkB.position.set(-20.6, 0.02, 8); staticG.add(westLinkB);
   const loungeLight = new THREE.PointLight(ORANGE, 0.35, 9, 1.8);
   loungeLight.position.set(lounge.def.x, 3.1, 0.4); root.add(loungeLight);
@@ -1196,8 +1184,8 @@ export function buildOffice(scene, teams) {
   lounge.occupancy = 0;
 
   const lingerSpots = [
-    { pos: new THREE.Vector3(lounge.def.x - 1.15, FLOOR_H, lounge.def.z + 1.45), ry: Math.PI },
-    { pos: new THREE.Vector3(lounge.def.x + 1.15, FLOOR_H, lounge.def.z + 3.1), ry: 0 },
+    { pos: new THREE.Vector3(lounge.def.x - 1.4, FLOOR_H, lounge.def.z + 0.15), ry: Math.PI / 2 },
+    { pos: new THREE.Vector3(lounge.def.x + 0.2, FLOOR_H, lounge.def.z - 0.2), ry: 0 },
   ];
   function loungePath(room) {
     const c = room.def, y = FLOOR_H;
@@ -1255,8 +1243,8 @@ export function buildOffice(scene, teams) {
   const newsLabelEl = document.createElement('div');
   newsLabelEl.className = 'rlabel'; newsLabelEl.dataset.room = 'news'; newsLabelEl.style.setProperty('--c', GOLD);
   newsLabelEl.innerHTML = `<div class="ic">讯</div><div><div class="nm">新闻墙</div><div class="st"><i class="dot idle"></i><span>点击查看</span></div></div>`;
-  const newsLabel = new CSS2DObject(newsLabelEl); newsLabel.position.set(0, 3.7, 19.2); newsLabel.center.set(0.5, 1); root.add(newsLabel);
-  rooms.news = { id: 'news', hit: newsHit, labelEl: newsLabelEl, label: newsLabel, center: new THREE.Vector3(0, 0, 18.2), def: { icon: '讯', color: GOLD } };
+  const newsLabel = new CSS2DObject(newsLabelEl); newsLabel.position.set(0, 3.7, 23.7); newsLabel.center.set(0.5, 1); root.add(newsLabel);
+  rooms.news = { id: 'news', hit: newsHit, labelEl: newsLabelEl, label: newsLabel, center: new THREE.Vector3(0, 0, 23.3), def: { icon: '讯', color: GOLD } };
   let newsLines = ['信息部简报将在此滚动显示'];
   function drawNews(shift) {
     const ctx = newsCtx; ctx.clearRect(0, 0, 512, 512); ctx.fillStyle = '#07111f'; ctx.fillRect(0, 0, 512, 512);
@@ -1612,14 +1600,14 @@ function furnishLounge(g, def) {
     box(s, 0.18, 0.42, 0.78, -0.96, 0.36, 0, sofaM, { round: 0.05 });
     box(s, 0.18, 0.42, 0.78, 0.96, 0.36, 0, sofaM, { round: 0.05 });
   };
-  sofa(-1.15, 2.15, Math.PI);
-  sofa(-1.15, -0.35, 0);
-  // existing coffee table between the sofas
-  cyl(g, 0.55, 0.55, 0.06, -1.15, 0.42, 0.9, M(WOOD, { r: .45 }), 20);
-  cyl(g, 0.06, 0.08, 0.42, -1.15, 0, 0.9, M('#1f2937'), 8);
-  chair(g, -0.35, 0.9, -Math.PI / 2, '#92400e');
-  // dining table, set south of the sofa zone so people can walk between them
-  const dineX = 1.15, dineZ = 4.15;
+  sofa(0.2, -3.9, 0);
+  sofa(-2.3, -2.55, Math.PI / 2);
+  // existing coffee table inside the sofa L, north rest zone
+  cyl(g, 0.55, 0.55, 0.06, -0.55, 0.42, -2.7, M(WOOD, { r: .45 }), 20);
+  cyl(g, 0.06, 0.08, 0.42, -0.55, 0, -2.7, M('#1f2937'), 8);
+  chair(g, 0.85, -3.35, Math.PI, '#92400e');
+  // dining table in the south zone, clear of the central aisle
+  const dineX = 0.25, dineZ = 2.65;
   cyl(g, 0.72, 0.72, 0.06, dineX, 0.72, dineZ, M('#c4a574', { r: .42 }), 22);
   cyl(g, 0.08, 0.1, 0.72, dineX, 0, dineZ, M('#1f2937'), 8);
   chair(g, dineX, dineZ - 1.05, Math.PI, '#44403c');
@@ -1628,23 +1616,23 @@ function furnishLounge(g, def) {
   chair(g, dineX + 1.05, dineZ, -Math.PI / 2, '#44403c');
   // coffee bar along the east wall
   const bar = M('#1f2937', { r: .45, m: .35 });
-  box(g, 0.7, 1.05, 2.6, W / 2 - 0.55, 0, -1.35, bar, { round: 0.03 });
-  box(g, 0.74, 0.06, 2.65, W / 2 - 0.55, 1.05, -1.35, M('#d6d3d1', { r: .35 }), { round: 0.02 });
-  const machine = new THREE.Group(); machine.position.set(W / 2 - 0.55, 1.11, -1.85); g.add(machine);
+  box(g, 0.7, 1.05, 2.2, W / 2 - 0.55, 0, 2.15, bar, { round: 0.03 });
+  box(g, 0.74, 0.06, 2.25, W / 2 - 0.55, 1.05, 2.15, M('#d6d3d1', { r: .35 }), { round: 0.02 });
+  const machine = new THREE.Group(); machine.position.set(W / 2 - 0.55, 1.11, 1.35); g.add(machine);
   box(machine, 0.46, 0.42, 0.38, 0, 0.21, 0, M('#1c1917', { m: .72, r: .28 }), { round: 0.03 });
   box(machine, 0.16, 0.1, 0.03, 0.02, 0.38, 0.19, M('#f59e0b', { e: '#fbbf24', ei: 0.9 }), { cast: false });
   cyl(machine, 0.045, 0.05, 0.07, -0.12, 0, 0.18, M('#f8fafc', { r: .35 }), 8);
   cyl(machine, 0.045, 0.05, 0.07, 0.08, 0, 0.2, M('#e7e5e4', { r: .35 }), 8);
-  cyl(g, 0.055, 0.05, 0.07, W / 2 - 0.78, 1.11, -0.85, M('#f8fafc', { r: .35 }), 8);
-  cyl(g, 0.055, 0.05, 0.07, W / 2 - 0.42, 1.11, -0.7, M('#44403c', { r: .4 }), 8);
+  cyl(g, 0.055, 0.05, 0.07, W / 2 - 0.78, 1.11, 2.7, M('#f8fafc', { r: .35 }), 8);
+  cyl(g, 0.055, 0.05, 0.07, W / 2 - 0.42, 1.11, 2.85, M('#44403c', { r: .4 }), 8);
   // tall two-door fridge
   const steel = M('#d7dde6', { m: .82, r: .22 });
-  box(g, 0.72, 1.85, 0.68, W / 2 - 0.5, 0, 1.15, steel, { round: 0.03 });
-  box(g, 0.02, 1.7, 0.02, W / 2 - 0.5, 0.08, 1.48, M('#94a3b8', { m: .7, r: .3 }), { cast: false });
-  box(g, 0.03, 0.55, 0.03, W / 2 - 0.22, 1.15, 1.48, M('#334155', { m: .6 }), { cast: false });
-  box(g, 0.03, 0.55, 0.03, W / 2 - 0.78, 1.15, 1.48, M('#334155', { m: .6 }), { cast: false });
+  box(g, 0.72, 1.85, 0.68, W / 2 - 0.5, 0, 4.15, steel, { round: 0.03 });
+  box(g, 0.02, 1.7, 0.02, W / 2 - 0.5, 0.08, 4.48, M('#94a3b8', { m: .7, r: .3 }), { cast: false });
+  box(g, 0.03, 0.55, 0.03, W / 2 - 0.22, 1.15, 4.48, M('#334155', { m: .6 }), { cast: false });
+  box(g, 0.03, 0.55, 0.03, W / 2 - 0.78, 1.15, 4.48, M('#334155', { m: .6 }), { cast: false });
   // standing water cooler against the east wall, between the bar and the fridge
-  const coolX = W / 2 - 0.48, coolZ = 0.15;
+  const coolX = W / 2 - 0.48, coolZ = 3.35;
   box(g, 0.4, 1.02, 0.4, coolX, 0, coolZ, M('#eef2f6', { m: .45, r: .3 }), { round: 0.04 });
   cyl(g, 0.14, 0.14, 0.46, coolX, 1.02, coolZ, M('#3b82f6', { m: .12, r: .22, op: 0.82 }), 12);
   box(g, 0.07, 0.04, 0.05, coolX - 0.18, 0.78, coolZ, M('#334155', { m: .4 }), { cast: false });
@@ -1652,7 +1640,10 @@ function furnishLounge(g, def) {
   // east + south walls, door stays on the west
   const wallMat = smokeGlass();
   const gold = goldFrame();
-  box(g, 0.04, WALL_H, D, W / 2 - 0.02, 0, 0, wallMat, { cast: false });
+  const loungeDoor = 1.2;
+  const loungeSeg = (D - loungeDoor) / 2;
+  box(g, 0.04, WALL_H, loungeSeg, W / 2 - 0.02, 0, -(loungeDoor + loungeSeg) / 2, wallMat, { cast: false });
+  box(g, 0.04, WALL_H, loungeSeg, W / 2 - 0.02, 0, (loungeDoor + loungeSeg) / 2, wallMat, { cast: false });
   box(g, W, WALL_H, 0.04, 0, 0, D / 2 - 0.02, wallMat, { cast: false });
   box(g, 0.045, 0.04, D, W / 2, WALL_H - 0.02, 0, gold, { cast: false });
   box(g, W, 0.04, 0.045, 0, WALL_H - 0.02, D / 2, gold, { cast: false });
@@ -1676,9 +1667,33 @@ function furnishLounge(g, def) {
   plant(g, W / 2 - 1.3, D / 2 - 0.7, 1.05, 0);
   plant(g, -W / 2 + 0.6, D / 2 - 0.65, 0.9, 1);
   plant(g, W / 2 - 0.72, -0.35, 0.34, 1, 1.12);
-  floorLamp(g, W / 2 - 1.15, -D / 2 + 0.8, '#fdba74');
-  rug(g, -1.15, 0.9, 3.1, 3.2, '#e7d3b0');
-  rug(g, 1.15, 4.15, 2.6, 2.6, '#d6c2a4');
+  floorLamp(g, 2.15, -4.15, '#fdba74');
+  rug(g, -0.7, -3.1, 3.4, 2.8, '#e7d3b0');
+  rug(g, 0.25, 2.65, 2.8, 2.8, '#d6c2a4');
+}
+function furnishRestrooms(parent) {
+  const g = new THREE.Group(); g.position.set(30.34, FLOOR_H, 0); parent.add(g);
+  const wall = M('#12161f', { r: .62 });
+  const trim = goldFrame();
+  const xV = 1.85, xE = 5.15, zH = 2.15;
+  const span = (x0, x1, z, h = WALL_H) => {
+    const len = Math.abs(x1 - x0);
+    box(g, len, h, 0.08, (x0 + x1) / 2, 0, z, wall, { cast: false });
+  };
+  const post = (x, z0, z1) => box(g, 0.08, WALL_H, Math.abs(z1 - z0), x, 0, (z0 + z1) / 2, wall, { cast: false });
+  span(0.1, xE, -zH);
+  span(0.1, xE, zH);
+  span(xV, xE, 0);
+  post(xE, -zH, zH);
+  post(xV, -zH, -0.55);
+  post(xV, 0.55, zH);
+  post(0.05, -zH, -0.6);
+  post(0.05, 0.6, zH);
+  box(g, xE, 0.05, 0.08, xE / 2, WALL_H - 0.02, -zH, trim, { cast: false });
+  box(g, xE, 0.05, 0.08, xE / 2, WALL_H - 0.02, zH, trim, { cast: false });
+  doorSign(g, xV - 0.1, 2.05, -1.15, '女洗手', 'WOMEN', -Math.PI / 2);
+  doorSign(g, xV - 0.1, 2.05, 1.15, '男洗手', 'MEN', -Math.PI / 2);
+  doorSign(g, 0.2, 2.05, 0, '前室', 'VESTIBULE', -Math.PI / 2);
 }
 let loungeTv = null;
 function loungeTvArt() {
@@ -1855,6 +1870,8 @@ function decorate(R, dyn, teamById) {
     R.lock = lk;
   } else if (id === 'lounge') {
     furnishLounge(g, def);
+  } else if (id === 'vacant') {
+    // Reserved office cell. Walls only, no department and no furniture.
   } else if (id === 'archive') {
     furnishArchive(g, def, dyn, R);
   } else if (id === 'design') {
@@ -1886,25 +1903,27 @@ function decorate(R, dyn, teamById) {
   // front glass partitions for open team rooms
   if (def.walls !== 'glass' && id !== 'lounge') {
     const doorFrac = id === 'market' ? [[0.74, 0.88]] : id === 'legal' ? [[0.60, 0.73]] : [[0.4, 0.54]];
-    const wing = id === 'design' || id === 'showroom';
-    const sideDoor = id === 'archive' || id === 'meeting';
+    const wing = id === 'design' || id === 'archive';
+    const sideDoor = id === 'meeting';
     const meetDoor = 2.3;
-    const archiveDoor = 2.2;
+    const eastOffice = id === 'legal' || id === 'review';
     const eastGap = id === 'meeting'
       ? [[0.5 - meetDoor / (2 * D), 0.5 + meetDoor / (2 * D)]]
-      : id === 'archive'
-        ? [[0.5 - archiveDoor / (2 * D), 0.5 + archiveDoor / (2 * D)]]
+      : eastOffice
+        ? [[0.36, 0.64]]
         : (sideDoor ? [[0.34, 0.62]] : (!wing && def.z > 0 ? [[0.1, 0.26]] : []));
-    // Inner archive rooms open only from the lobby, so the outer north wall stays closed.
-    const northGap = (wing || id === 'archive') ? [] : doorFrac;
+    // South glass. North-row offices, including the empty reserved cell, keep a street door.
+    const northGap = (wing || id === 'legal' || id === 'review' || id === 'showroom') ? [] : doorFrac;
     glassRun(g, -W / 2, D / 2, W / 2, D / 2, 2.2, northGap);
     glassRun(g, W / 2, -D / 2, W / 2, D / 2, 2.2, eastGap);
     if (northGap.length) {
       const [a, b] = northGap[0];
       doorFrame(g, -W / 2 + ((a + b) / 2) * W, D / 2, 0, (b - a) * W, 2.2);
     }
-    if (sideDoor) doorFrame(g, W / 2, 0, Math.PI / 2, id === 'meeting' ? meetDoor : id === 'archive' ? archiveDoor : 0.28 * D, 2.2);
-    if (wing) doorFrame(g, -W / 2, 0, Math.PI / 2, 1.8, 2.2);
+    if (sideDoor) doorFrame(g, W / 2, 0, Math.PI / 2, id === 'meeting' ? meetDoor : 0.28 * D, 2.2);
+    if (eastOffice) doorFrame(g, W / 2, 0, Math.PI / 2, 0.28 * D, 2.2);
+    if (wing) doorFrame(g, -W / 2, 0, Math.PI / 2, 1.6, 2.2);
+    if (def.door === 'north') doorFrame(g, 0, -D / 2, 0, 1.7, 2.2);
   }
   if (id === 'meeting') pendant(g, 4.7, -3.9);
   else if (id !== 'lounge' && id !== 'archive') pendant(g, id === 'ed' ? -1.4 : 0, 0.2);
