@@ -300,16 +300,9 @@ function failureDeduction(staff, task) {
   return failureBase(task) * factor;
 }
 function workRuleLine() {
-  const r = workRules();
-  const base = Number(r.taskPoints) || 1;
-  const totals = [1, 2, 3, 4, 5].map(n => {
-    const total = taskAward({ kind: 'special', stars: n });
-    return `${n}☆+${total.toFixed(2)}`;
-  }).join('，');
-  const fails = [1, 2, 3, 4, 5].map(n => `${n}☆−${failureBase({ stars: n }).toFixed(2)}`).join('，');
-  const mult = Number(r.consecutiveFailureMultiplier) || 2;
-  const miss = Math.abs(Number(r.mistakePoints) || 0.3).toFixed(2);
-  return `日常任务：完成 +${base.toFixed(2)}，失败 −${miss}，不影响特殊任务连败。特殊任务完成 = +${base.toFixed(2)} 再加星级：${totals}（未标按 1☆）。特殊任务失败只按星级表，不再另扣 ${miss}：${fails}；连续失败的特殊任务从第 2 次起 ×${mult}，完成一项特殊任务后连败清零。上班 +${Number(r.hourPoints).toFixed(2)}/小时 · 加班（交代并完成）+${Number(r.overtimePoints).toFixed(2)}/小时`;
+  const saved = workRules().summary;
+  if (saved) return saved;
+  return '部门完成任务后须交审查部判定达标或敷衍，由 ED 记分。部门自行标完成不加分。私人助理不参与。';
 }
 function klParts(date) {
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
