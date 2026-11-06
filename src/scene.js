@@ -587,22 +587,26 @@ function rackRow(x0, x1, step, z, ry) {
   for (let x = x0; x <= x1 + 0.001; x += step) out.push({ x: +x.toFixed(3), z, ry });
   return out;
 }
-function confidentialNotice(parent, x, y, z) {
-  const c = document.createElement('canvas'); c.width = 512; c.height = 320;
+function confidentialNotice(parent, x, y, z, ry = Math.PI) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 384;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#10151f'; ctx.fillRect(0, 0, 512, 320);
-  ctx.strokeStyle = '#D0B993'; ctx.lineWidth = 10; ctx.strokeRect(8, 8, 496, 304);
-  ctx.fillStyle = '#D0B993'; ctx.font = '700 42px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('双锁', 256, 58);
-  ctx.fillStyle = '#f8f4ec'; ctx.font = '700 40px sans-serif';
-  ctx.fillText('ED 连署', 256, 140);
-  ctx.fillText('私人助理 连署', 256, 200);
-  ctx.fillStyle = '#f0c9a0'; ctx.font = '600 28px sans-serif';
-  ctx.fillText('缺一不得放行', 256, 262);
+  ctx.fillStyle = '#10151f'; ctx.fillRect(0, 0, 512, 384);
+  ctx.strokeStyle = '#D0B993'; ctx.lineWidth = 10; ctx.strokeRect(8, 8, 496, 368);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#D0B993'; ctx.font = '700 40px sans-serif';
+  ctx.fillText('双锁', 256, 52);
+  ctx.fillStyle = '#f8f4ec'; ctx.font = '700 36px sans-serif';
+  ctx.fillText('ED 连署', 256, 122);
+  ctx.fillText('私人助理 连署', 256, 178);
+  ctx.fillStyle = '#f0c9a0'; ctx.font = '600 26px sans-serif';
+  ctx.fillText('缺一不得放行', 256, 242);
+  ctx.fillStyle = '#d9c7a6'; ctx.font = '500 22px sans-serif';
+  ctx.fillText('Edward 本人除外', 256, 312);
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
-  const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.45), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
-  plate.position.set(x, y, z); plate.rotation.y = Math.PI / 2; plate.userData.keep = true; parent.add(plate);
-  box(parent, 0.02, 0.5, 0.78, x - 0.02, y - 0.25, z, M('#0c1018', { m: .4, r: .35 }), { cast: false });
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; parent.add(g);
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.58), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+  plate.position.z = 0.02; plate.userData.keep = true; g.add(plate);
+  box(g, 0.84, 0.64, 0.02, 0, -0.32, 0, M('#0c1018', { m: .4, r: .35 }), { cast: false });
 }
 function doorSign(parent, x, y, z, title, sub, ry = Math.PI / 2) {
   const mat = new THREE.MeshBasicMaterial({ map: signTexture(title, sub, GOLD), toneMapped: false });
@@ -613,7 +617,7 @@ function doorSign(parent, x, y, z, title, sub, ry = Math.PI / 2) {
   parent.add(sp);
   return sp;
 }
-function namePlate(parent, x, y, z, title, sub) {
+function namePlate(parent, x, y, z, title, sub, ry = Math.PI / 2) {
   const c = document.createElement('canvas'); c.width = 256; c.height = 128;
   const ctx = c.getContext('2d');
   ctx.fillStyle = '#141820'; ctx.fillRect(0, 0, 256, 128);
@@ -623,9 +627,10 @@ function namePlate(parent, x, y, z, title, sub) {
   ctx.fillStyle = '#f8f4ec'; ctx.font = '600 26px sans-serif';
   ctx.fillText(sub, 128, 90);
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
-  const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.48, 0.24), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
-  plate.position.set(x, y, z); plate.rotation.y = Math.PI / 2; plate.userData.keep = true; parent.add(plate);
-  box(parent, 0.02, 0.28, 0.52, x - 0.015, y - 0.14, z, M('#0c0f16', { m: .45, r: .35 }), { cast: false });
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; parent.add(g);
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.25), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+  plate.position.z = 0.02; plate.userData.keep = true; g.add(plate);
+  box(g, 0.54, 0.29, 0.02, 0, -0.145, 0, M('#0c0f16', { m: .45, r: .35 }), { cast: false });
   return plate;
 }
 function fileCabinet(parent, x, z, ry, locked) {
@@ -652,76 +657,72 @@ function facilityTag(agent, name, status) {
 function furnishArchive(g, def, dyn, R) {
   const savedSeed = seed;
   const W = def.w, D = def.d;
-  const splitX = 2.35;
-  const doorW = 1.52;
-  const genZ = -D / 4;
-  const secZ = D / 4;
+  // Central lobby band. Inner rooms sit north and south and open only from here,
+  // so the guard faces the east door and has both library doors beside him.
+  const band = 2.05;
+  const doorX = 5.15;
+  const doorW = 1.5;
   const wallMat = M('#12161f', { r: .62, m: .08 });
   const trim = M(GOLD, { m: .72, r: .28, e: GOLD, ei: 0.16 });
-  const hx = -W / 2;
-  const zWall = (z0, z1) => {
-    const len = z1 - z0;
+  const hx = -W / 2 + 0.08, ex = W / 2 - 0.08;
+  const xWall = (z, x0, x1) => {
+    const len = x1 - x0;
     if (len < 0.15) return;
-    const cz = (z0 + z1) / 2;
-    box(g, 0.08, WALL_H, len, splitX, 0, cz, wallMat, { cast: false });
-    box(g, 0.12, 0.045, len, splitX, WALL_H - 0.02, cz, trim, { cast: false });
+    const cx = (x0 + x1) / 2;
+    box(g, len, WALL_H, 0.08, cx, 0, z, wallMat, { cast: false });
+    box(g, len, 0.045, 0.12, cx, WALL_H - 0.02, z, trim, { cast: false });
   };
-  zWall(-D / 2 + 0.06, genZ - doorW / 2);
-  zWall(genZ + doorW / 2, secZ - doorW / 2);
-  zWall(secZ + doorW / 2, D / 2 - 0.06);
-  const divLen = splitX - hx - 0.12;
-  const divCx = (splitX + hx) / 2;
-  box(g, divLen, WALL_H, 0.08, divCx, 0, 0, wallMat, { cast: false });
-  box(g, divLen, 0.045, 0.12, divCx, WALL_H - 0.02, 0, trim, { cast: false });
-  box(g, 0.03, 0.012, D - 0.4, splitX, 0.006, 0, trim, { cast: false });
-  box(g, divLen, 0.012, 0.03, divCx, 0.006, 0, trim, { cast: false });
+  xWall(-band, hx, doorX - doorW / 2);
+  xWall(-band, doorX + doorW / 2, ex);
+  xWall(band, hx, doorX - doorW / 2);
+  xWall(band, doorX + doorW / 2, ex);
+  box(g, W - 0.5, 0.012, 0.03, 0, 0.006, -band, trim, { cast: false });
+  box(g, W - 0.5, 0.012, 0.03, 0, 0.006, band, trim, { cast: false });
 
-  doorFrame(g, splitX, genZ, Math.PI / 2, doorW, 2.15);
-  doorSign(g, splitX + 0.12, 2.28, genZ, '普通资料库', 'GENERAL ARCHIVE');
-  // Closed confidential door: keypad, two locks, ED and 私人助理 plates.
-  box(g, 0.07, 2.08, doorW - 0.12, splitX + 0.02, 0, secZ, M('#141a28', { r: .38, m: .4 }), { cast: false });
-  box(g, 0.09, 2.16, 0.06, splitX + 0.02, 0, secZ - doorW / 2 + 0.02, trim, { cast: false });
-  box(g, 0.09, 2.16, 0.06, splitX + 0.02, 0, secZ + doorW / 2 - 0.02, trim, { cast: false });
-  box(g, 0.09, 0.07, doorW, splitX + 0.02, 2.08, secZ, trim, { cast: false });
-  const lockMat = M(GOLD, { m: .82, r: .2, e: GOLD, ei: 0.25 });
-  box(g, 0.05, 0.16, 0.16, splitX + 0.08, 0.72, secZ - 0.24, lockMat, { cast: false });
-  box(g, 0.05, 0.16, 0.16, splitX + 0.08, 0.72, secZ + 0.24, lockMat, { cast: false });
+  doorFrame(g, doorX, -band, 0, doorW, 2.15);
+  doorSign(g, doorX, 2.28, -band + 0.14, '普通资料库', 'GENERAL ARCHIVE', 0);
+  // Locked confidential door on the south side of the lobby.
+  box(g, doorW - 0.12, 2.08, 0.07, doorX, 0, band - 0.02, M('#141a28', { r: .38, m: .4 }), { cast: false });
+  box(g, 0.06, 2.16, 0.09, doorX - doorW / 2 + 0.02, 0, band - 0.02, trim, { cast: false });
+  box(g, 0.06, 2.16, 0.09, doorX + doorW / 2 - 0.02, 0, band - 0.02, trim, { cast: false });
+  box(g, doorW, 0.07, 0.09, doorX, 2.08, band - 0.02, trim, { cast: false });
+  const lockMat = M(GOLD, { m: .72, r: .28, e: GOLD, ei: 0.08 });
+  box(g, 0.16, 0.16, 0.045, doorX - 0.28, 0.7, band - 0.08, lockMat, { cast: false });
+  box(g, 0.16, 0.16, 0.045, doorX + 0.28, 0.7, band - 0.08, lockMat, { cast: false });
   const red = new THREE.Mesh(sphG(0.035, 10, 8), B('#ef4444'));
-  red.position.set(splitX + 0.1, 1.92, secZ + 0.42); g.add(red);
-  const padZ = secZ + doorW / 2 + 0.46;
+  red.position.set(doorX + 0.48, 1.9, band - 0.1); g.add(red);
+  const padX = doorX + doorW / 2 + 0.42;
   const pad = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.34), new THREE.MeshBasicMaterial({ map: keyTexture(), toneMapped: false }));
-  pad.position.set(splitX + 0.11, 1.22, padZ);
-  pad.rotation.y = Math.PI / 2; pad.userData.keep = true; g.add(pad);
-  box(g, 0.02, 0.4, 0.3, splitX + 0.06, 1.02, padZ, M('#0e1420', { m: .4, r: .4 }), { cast: false });
-  namePlate(g, splitX + 0.11, 1.78, padZ, 'ED', '连署');
-  namePlate(g, splitX + 0.11, 1.45, secZ - doorW / 2 - 0.48, '私人助理', '连署');
-  doorSign(g, splitX + 0.12, 2.28, secZ, '机密资料库', 'CONFIDENTIAL');
-  confidentialNotice(g, splitX + 0.09, 1.55, secZ);
-  doorSign(g, W / 2 - 0.2, 1.9, -2.7, '客厅', 'LOBBY');
-  doorSign(g, 5.8, 2.2, -1.15, '客厅', 'LOBBY', 0.55);
+  pad.position.set(padX, 1.2, band - 0.1); pad.rotation.y = Math.PI; pad.userData.keep = true; g.add(pad);
+  box(g, 0.3, 0.4, 0.02, padX, 1.0, band - 0.06, M('#0e1420', { m: .4, r: .4 }), { cast: false });
+  namePlate(g, padX, 1.78, band - 0.12, 'ED', '连署', Math.PI);
+  namePlate(g, doorX - doorW / 2 - 0.46, 1.45, band - 0.12, '私人助理', '连署', Math.PI);
+  doorSign(g, doorX, 2.28, band - 0.14, '机密资料库', 'CONFIDENTIAL', Math.PI);
+  confidentialNotice(g, doorX, 1.48, band - 0.12, Math.PI);
+  doorSign(g, W / 2 - 0.22, 1.9, -1.15, '客厅', 'LOBBY', Math.PI / 2);
 
   const wood = M('#6b4f36', { r: .55 });
   const top = M('#c4a574', { r: .4, m: .06 });
-  const deskX = 5.05;
-  box(g, 0.86, 0.05, 1.95, deskX, 0.72, 0, top, { round: 0.02, cast: false });
-  box(g, 0.36, 0.72, 0.48, deskX, 0, -0.68, wood);
-  box(g, 0.36, 0.72, 0.48, deskX, 0, 0.68, wood);
-  box(g, 0.5, 0.02, 0.36, deskX - 0.04, 0.77, 0.02, M('#7f1d1d', { r: .55 }), { cast: false });
-  box(g, 0.22, 0.012, 0.3, deskX - 0.16, 0.792, 0.02, M('#f7f1e4', { r: .84 }), { ry: 0.04, cast: false });
-  box(g, 0.22, 0.012, 0.3, deskX + 0.08, 0.792, 0.03, M('#fffaf0', { r: .84 }), { ry: -0.05, cast: false });
-  box(g, 0.16, 0.008, 0.012, deskX + 0.08, 0.8, -0.02, M('#334155', { r: .7 }), { cast: false });
-  box(g, 0.16, 0.008, 0.012, deskX + 0.08, 0.8, 0.04, M('#334155', { r: .7 }), { cast: false });
-  box(g, 0.18, 0.012, 0.018, deskX + 0.22, 0.78, -0.28, M('#1e293b'), { cast: false });
-  box(g, 0.22, 0.012, 0.16, deskX + 0.18, 0.78, 0.28, M('#0f172a', { r: .4, m: .3 }), { cast: false });
-  box(g, 0.16, 0.008, 0.11, deskX + 0.18, 0.792, 0.28, M('#1e3a5f', { r: .35, e: '#7eb6d6', ei: 0.35 }), { cast: false });
-  chair(g, 6.7, 2.25, Math.PI / 2, '#1e293b');
-  chair(g, 6.7, -2.25, Math.PI / 2, '#1e293b');
-  plant(g, 7.85, 6.2, 1.12, 1);
-  plant(g, 7.85, -6.2, 1.05, 0);
-  plant(g, 3.2, 6.15, 0.92, 0);
-  plant(g, 3.2, -6.15, 0.96, 1);
+  const deskX = 3.35;
+  box(g, 0.86, 0.05, 1.7, deskX, 0.72, 0, top, { round: 0.02, cast: false });
+  box(g, 0.36, 0.72, 0.42, deskX, 0, -0.55, wood);
+  box(g, 0.36, 0.72, 0.42, deskX, 0, 0.55, wood);
+  box(g, 0.42, 0.02, 0.32, deskX - 0.02, 0.77, -0.02, M('#7f1d1d', { r: .55 }), { cast: false });
+  box(g, 0.18, 0.012, 0.26, deskX - 0.14, 0.792, -0.02, M('#f7f1e4', { r: .84 }), { cast: false });
+  box(g, 0.18, 0.012, 0.26, deskX + 0.08, 0.792, 0, M('#fffaf0', { r: .84 }), { cast: false });
+  box(g, 0.14, 0.008, 0.012, deskX + 0.08, 0.8, -0.04, M('#334155', { r: .7 }), { cast: false });
+  box(g, 0.14, 0.008, 0.012, deskX + 0.08, 0.8, 0.02, M('#334155', { r: .7 }), { cast: false });
+  box(g, 0.16, 0.012, 0.018, deskX + 0.22, 0.78, -0.28, M('#1e293b'), { cast: false });
+  box(g, 0.2, 0.012, 0.14, deskX + 0.2, 0.78, 0.32, M('#0f172a', { r: .4, m: .3 }), { cast: false });
+  box(g, 0.14, 0.008, 0.09, deskX + 0.2, 0.792, 0.32, M('#1e3a5f', { r: .35, e: '#7eb6d6', ei: 0.28 }), { cast: false });
+  chair(g, 6.55, 1.15, Math.PI / 2, '#1e293b');
+  chair(g, 6.55, -1.15, Math.PI / 2, '#1e293b');
+  plant(g, 7.7, 1.65, 0.95, 1);
+  plant(g, 7.7, -1.65, 0.9, 0);
+  plant(g, -7.4, 1.45, 1.0, 0);
+  plant(g, -7.4, -1.45, 1.05, 1);
 
-  const gx = 4.15;
+  const gx = 2.45;
   chair(g, gx, 0, -Math.PI / 2, '#111827');
   const guard = makeAgent({ shirt: '#1e293b', pants: '#0f172a', tie: '#D0B993', hair: '#1f1a17', skin: '#e0ac85' });
   g.updateMatrixWorld(true);
@@ -735,30 +736,32 @@ function furnishArchive(g, def, dyn, R) {
   R.guard = guard;
   facilityTag(guard, '保安', '值守中');
 
-  for (const x of [-6.7, -4.85, -3.0, -1.15]) bookshelf(g, x, -0.55, Math.PI, 1.65, 1.85);
-  for (const z of [-6.15, -3.55]) bookshelf(g, -7.95, z, Math.PI / 2, 1.4, 1.85);
-  for (const z of [1.05, 2.45, 3.7]) bookshelf(g, -7.95, z, Math.PI / 2, 1.25, 1.9);
-  for (const x of [-6.3, -4.9, -3.5, -2.1, -0.7]) fileCabinet(g, x, 0.72, 0, true);
-  for (const x of [-5.4, -3.6, -1.8]) fileCabinet(g, x, -1.55, Math.PI, false);
+  for (const x of [-6.4, -4.4, -2.4, -0.4, 1.6, 7.15]) bookshelf(g, x, -2.48, Math.PI, 1.55, 1.85);
+  for (const z of [-6.2, -4.55, -3.15]) bookshelf(g, -8.05, z, Math.PI / 2, 1.35, 1.85);
+  for (const z of [3.15, 4.7, 6.15]) bookshelf(g, -8.05, z, Math.PI / 2, 1.3, 1.9);
+  for (const x of [-6.6, -4.9, -3.2, -1.5, 0.3, 7.2]) fileCabinet(g, x, 2.62, Math.PI, true);
 
   const slots = [
-    ...rackRow(-5.7, 1.05, 0.75, -6.45, 0),
-    ...rackRow(-5.7, 1.05, 0.75, -4.85, Math.PI),
-    ...rackRow(-5.7, 1.05, 0.75, 6.45, Math.PI),
-    ...rackRow(-5.7, 1.05, 0.75, 4.85, 0),
+    ...rackRow(-7.2, 7.0, 0.82, -6.4, 0),
+    ...rackRow(-7.2, 7.0, 0.82, -4.85, Math.PI),
+    ...rackRow(-7.2, 7.0, 0.82, 6.4, Math.PI),
+    ...rackRow(-7.2, 7.0, 0.82, 4.85, 0),
   ];
   R.rackLeds = archiveRacks(g, slots);
-  const glow = (x, z, color, intensity) => {
-    const pl = new THREE.PointLight(color, intensity, 9, 1.6);
+  const glow = (x, z, color, intensity, dist = 9) => {
+    const pl = new THREE.PointLight(color, intensity, dist, 1.6);
     pl.position.set(x, 2.05, z); g.add(pl);
   };
-  glow(-3.4, -5.6, '#7eb6d6', 0.75);
-  glow(-3.4, 5.6, '#7eb6d6', 0.75);
-  glow(5.6, 3.4, '#f3e6c8', 0.28);
-  pendant(g, 6.6, -4.6);
-  pendant(g, 6.6, 4.4);
-  pendant(g, -3.6, -5.5);
-  pendant(g, -3.6, 5.5);
+  glow(-1.5, -5.5, '#7eb6d6', 0.7);
+  glow(4.5, -5.5, '#7eb6d6', 0.55);
+  glow(-1.5, 5.5, '#7eb6d6', 0.7);
+  glow(4.5, 5.5, '#7eb6d6', 0.55);
+  glow(6.4, 0, '#f3e6c8', 0.22, 7);
+  pendant(g, -4.2, 0);
+  pendant(g, -2, -5.4);
+  pendant(g, 4.2, -5.4);
+  pendant(g, -2, 5.4);
+  pendant(g, 4.2, 5.4);
   seed = savedSeed;
 }
 function serverRack(parent, x, z, ry, leds) {

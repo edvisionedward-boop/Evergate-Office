@@ -1,5 +1,4 @@
 node_modules/
 dist/
-screens/
 .DS_Store
 *.log
