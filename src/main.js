@@ -93,7 +93,7 @@ function setupComposer() {
   if (!useBloom) return;
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.7, 0.45, 1.0);
+  bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.28, 0.45, 1.3);
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
 }

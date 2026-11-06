@@ -196,7 +196,7 @@ function keyTexture() {
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; return tex;
 }
 function pendant(parent, x, z) {
-  if (!pendantGlow) pendantGlow = M('#f7f1e4', { e: '#fff1d2', ei: 0.55, r: .45 });
+  if (!pendantGlow) pendantGlow = M('#f7f1e4', { e: '#fff1d2', ei: 0.22, r: .45 });
   const g = new THREE.Group(); g.position.set(x, 0, z); parent.add(g);
   cyl(g, 0.012, 0.012, 0.85, 0, 2.45, 0, M('#9aa3b2', { m: .65, r: .3 }), 6, { cast: false });
   cyl(g, 0.34, 0.18, 0.14, 0, 2.0, 0, pendantGlow, 14, { cast: false });
@@ -666,7 +666,7 @@ function furnishArchive(g, def, dyn, R) {
   const doorX = 5.15;
   const doorW = 1.5;
   const wallMat = M('#12161f', { r: .62, m: .08 });
-  const trim = M(GOLD, { m: .72, r: .28, e: GOLD, ei: 0.16 });
+  const trim = M(GOLD, { m: .35, r: .55, e: GOLD, ei: 0.04 });
   const hx = -W / 2 + 0.08, ex = W / 2 - 0.08;
   const xWall = (z, x0, x1) => {
     const len = x1 - x0;
@@ -904,8 +904,8 @@ const WALL_H = 2.4, FLOOR_H = 0.14;
 const GOLD = '#D0B993', ORANGE = '#E87708', FLOOR_BLACK = '#060606', HOLO = '#7eb6d6';
 const floorPools = [];
 const windowPane = new THREE.MeshBasicMaterial({ color: 0x9ec3e0, toneMapped: false });
-const smokeGlass = () => M('#9aa3ad', { r: .06, m: .28, op: 0.3, side: THREE.DoubleSide });
-const goldFrame = () => M(GOLD, { m: .86, r: .24 });
+const smokeGlass = () => M('#9aa3ad', { r: .28, m: .16, op: 0.3, side: THREE.DoubleSide });
+const goldFrame = () => M(GOLD, { m: .35, r: .55 });
 let pendantGlow = null;
 function roomShell(root, def, ctx) {
   const g = new THREE.Group(); g.position.set(def.x, FLOOR_H, def.z); root.add(g);
@@ -953,8 +953,8 @@ function roomShell(root, def, ctx) {
 }
 function glassRun(g, x0, z0, x1, z1, h, gaps = [], tint = '#9aa3ad', op = 0.28) {
   // glass panels from (x0,z0) to (x1,z1) with door gaps given as [t0,t1] fractions
-  const glass = M(tint, { r: .06, m: .28, op, side: THREE.DoubleSide });
-  const frame = M(GOLD, { m: .86, r: .24 });
+  const glass = M(tint, { r: .28, m: .16, op, side: THREE.DoubleSide });
+  const frame = goldFrame();
   const len = Math.hypot(x1 - x0, z1 - z0), ang = Math.atan2(z1 - z0, x1 - x0);
   const segs = []; let t = 0;
   for (const [a, b] of gaps) { segs.push([t, a]); t = b; } segs.push([t, 1]);
@@ -1033,7 +1033,7 @@ export function buildOffice(scene, teams) {
   // building base platform
   const base = new THREE.Mesh(rboxG(43.5, 0.1, 40, 0.05), M('#161d30', { r: .7 }));
   base.position.y = -0.04; base.receiveShadow = true; root.add(base);
-  const edge = B(GOLD, { op: .55, boost: 1.2 });
+  const edge = B(GOLD, { op: .32 });
   for (const [w, d, x, z] of [[43.5, .05, 0, 20], [43.5, .05, 0, -20], [.05, 40, 21.75, 0], [.05, 40, -21.75, 0]]) {
     const e = new THREE.Mesh(boxG(w, .04, d), edge); e.position.set(x, 0.02, z); root.add(e);
   }
@@ -1059,7 +1059,7 @@ export function buildOffice(scene, teams) {
   // corridors: dark aisles with dashed glowing lines
   const aisleMat = new THREE.MeshStandardMaterial({ map: concreteTexture(), roughness: 0.86, metalness: 0.04, color: '#c5ccd4' });
   const aisle = aisleMat;
-  const dashM = B(GOLD, { op: .55, boost: 1.15 });
+  const dashM = B(GOLD, { op: .28 });
   const dashG = boxG(0.5, 0.012, 0.06);
   for (const z of [-6, 6]) {
     // the north aisle stops before 信息部, which now fills the old 规划部 bay
@@ -1497,14 +1497,14 @@ export function buildOffice(scene, teams) {
     const night = 1 - d;
     sky.material.color.setRGB(0.07 + d * 0.9, 0.1 + d * 0.82, 0.16 + d * 0.78);
     windowPane.color.setHex(d > 0.45 ? 0xb7c9d6 : 0xffc98a);
-    if (pendantGlow) pendantGlow.emissiveIntensity = 0.22 + night * 1.55;
+    if (pendantGlow) pendantGlow.emissiveIntensity = Math.min(0.7, 0.18 + night * 0.42);
     const glass = smokeGlass();
-    glass.roughness = 0.08 - night * 0.035;
+    glass.roughness = 0.28;
     const trim = goldFrame();
     trim.emissive.set(GOLD);
-    trim.emissiveIntensity = night * 0.26;
+    trim.emissiveIntensity = night * 0.06;
     dashM.color.set(d > 0.55 ? '#e7d7b8' : '#d5dbe3');
-    dashM.opacity = 0.26 + night * 0.55;
+    dashM.opacity = 0.22 + night * 0.16;
     holoLight.intensity = 0.4 + night * 0.9;
     ico.material.opacity = 0.62 + night * 0.28;
     coreS.material.opacity = 0.42 + night * 0.28;
