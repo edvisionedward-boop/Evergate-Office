@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-06T12:55:00+08:00",
+  "updatedAt": "2026-11-06T12:59:00+08:00",
   "workRules": {
     "taskPoints": 1.0,
     "mistakePoints": -0.3,
@@ -36,7 +36,8 @@
     "consecutiveFailureFrom": 2,
     "starRulesApplyTo": "special",
     "specialCompletion": "taskPoints + starPoints",
-    "specialFailure": "failurePointsByStar only"
+    "specialFailure": "failurePointsByStar only",
+    "noWorkBarTeams": ["ed"]
   },
   "office": {
     "title": "Evergate AI Office",
@@ -206,6 +207,7 @@
       "color": "#D0B993",
       "status": "busy",
       "statusNote": "忙碌",
+      "noWorkBar": true,
       "agents": 1,
       "currentTask": "协调各部门在办事项与办公室工作条",
       "private": false,
@@ -216,15 +218,10 @@
         {
           "id": "ed-1",
           "name": "ED 1",
+          "noWorkBar": true,
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null,
-          "tasksDone": 0,
-          "mistakes": 0,
-          "workScore": 0,
-          "extraPenalty": 0,
-          "overtimeHours": 0,
-          "consecutiveFailures": 0
+          "score": null
         }
       ],
       "score": null

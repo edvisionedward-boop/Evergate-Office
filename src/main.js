@@ -344,7 +344,19 @@ function fmtScore(n) {
   const v = Math.round((Number(n) || 0) * 100) / 100;
   return v.toFixed(2);
 }
+function workBarOff(s, team) {
+  if (s?.noWorkBar || team?.noWorkBar) return true;
+  const blocked = workRules().noWorkBarTeams || [];
+  if (team?.id && blocked.includes(team.id)) return true;
+  if (s?.id && blocked.includes(s.id)) return true;
+  if (s && !team) {
+    const home = (DATA.teams || []).find(t => (t.staff || []).some(x => x.id === s.id));
+    if (home && (home.noWorkBar || blocked.includes(home.id))) return true;
+  }
+  return false;
+}
 function displayedScore(s) {
+  if (workBarOff(s)) return null;
   const rules = workRules();
   const base = Number(s?.workScore) || 0;
   const extra = Number(s?.extraPenalty) || 0;
@@ -361,16 +373,18 @@ function fillPct(score) {
   return 100 * s / (s + k);
 }
 function workBarHtml(s) {
+  if (workBarOff(s)) return '';
   const sc = displayedScore(s);
   return `<span class="wbar" data-staff="${esc(s.id)}"><span class="wtrack"><i class="wfill" style="width:${fillPct(sc)}%"></i></span><b class="wscore">${fmtScore(sc)}</b></span>`;
 }
 function workFactsHtml(s) {
+  if (workBarOff(s)) return '';
   const extra = Number(s.extraPenalty) || 0;
   const penalty = extra !== 0 ? `<span>重大失职额外扣分 ${fmtScore(extra)}</span>` : '';
   return `<span class="wfacts"><span>已完成任务 ${s.tasksDone || 0}</span><span>失误 ${s.mistakes || 0}</span>${penalty}</span>`;
 }
 function paintWorkBar(el, s) {
-  if (!el || !s) return;
+  if (!el || !s || workBarOff(s)) return;
   const sc = displayedScore(s);
   const fill = el.querySelector('.wfill');
   const num = el.querySelector('.wscore');
@@ -386,7 +400,7 @@ function refreshWorkBars() {
   indexStaff();
   for (const el of document.querySelectorAll('.wbar[data-staff]')) {
     const s = staffById.get(el.dataset.staff);
-    if (s) paintWorkBar(el, s);
+    if (s && !workBarOff(s)) paintWorkBar(el, s);
   }
 }
 function teamUpdatedAt(t) {

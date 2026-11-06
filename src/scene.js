@@ -266,6 +266,7 @@ export function makeAgent(o = {}) {
   root.userData = { legs, arms, headG, dot, doc, hips, bubbleAnchor, phase: rnd() * 10, mode: 'stand' };
   return root;
 }
+const noWorkBarRooms = new Set();
 function nameTag(agent, staff, roomId, slot = 0) {
   if (!agent || !staff) return agent;
   agent.userData.room = roomId;
@@ -276,11 +277,13 @@ function nameTag(agent, staff, roomId, slot = 0) {
   el.dataset.staff = staff.id;
   el.textContent = '';
   const pn = document.createElement('span'); pn.className = 'pn'; pn.textContent = staff.chip || staff.name; el.appendChild(pn);
-  const bar = document.createElement('span');
-  bar.className = 'wbar';
-  bar.dataset.staff = staff.id;
-  bar.innerHTML = '<span class="wtrack"><i class="wfill"></i></span><b class="wscore">0.00</b>';
-  el.appendChild(bar);
+  if (!staff.noWorkBar && !noWorkBarRooms.has(roomId)) {
+    const bar = document.createElement('span');
+    bar.className = 'wbar';
+    bar.dataset.staff = staff.id;
+    bar.innerHTML = '<span class="wtrack"><i class="wfill"></i></span><b class="wscore">0.00</b>';
+    el.appendChild(bar);
+  }
   const o = new CSS2DObject(el);
   // Five name plates in one room stack on screen; stagger this room only.
   o.position.set(0.85, 0.42, 0.2);
@@ -1014,6 +1017,8 @@ export const LAYOUT = {
 
 export function buildOffice(scene, teams) {
   seed = 11;
+  noWorkBarRooms.clear();
+  for (const t of teams) if (t.noWorkBar) noWorkBarRooms.add(t.id);
   const root = new THREE.Group(); scene.add(root);
   const staticG = new THREE.Group(); root.add(staticG);
   const dyn = new THREE.Group(); root.add(dyn);
