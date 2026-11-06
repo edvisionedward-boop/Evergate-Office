@@ -168,7 +168,18 @@ $('#labels').addEventListener('click', e => {
 const teamOf = (id) => DATA.teams.find(t => t.id === id);
 const MINOR = {};
 
+function reflectDoingStatus() {
+  for (const t of DATA.teams || []) {
+    if (t.private) continue;
+    const doing = (DATA.tasks || []).filter(x => x.team === t.id && x.status === 'doing');
+    if (!doing.length) continue;
+    t.status = 'busy';
+    t.statusNote = '忙碌';
+    if (!t.currentTask) t.currentTask = doing[0].title;
+  }
+}
 function applyData() {
+  reflectDoingStatus();
   for (const t of DATA.teams) state.status[t.id] = t.status;
   // labels
   for (const R of Object.values(office.rooms)) {

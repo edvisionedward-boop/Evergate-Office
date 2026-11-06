@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-06T09:56:00+08:00",
+  "updatedAt": "2026-11-06T10:05:00+08:00",
   "workRules": {
     "taskPoints": 1.0,
     "mistakePoints": -0.3,
@@ -160,7 +160,7 @@
       "status": "busy",
       "statusNote": "忙碌",
       "agents": 1,
-      "currentTask": "修复标签跑位 + 部门总览",
+      "currentTask": "协调各部门在办事项与办公室工作条",
       "private": false,
       "duty": "统筹各部门进度、例会与待确认事项",
       "gradeNote": "待周一例会后首次评定",
@@ -186,10 +186,10 @@
       "name": "市场部",
       "short": "市场",
       "color": "#D0B993",
-      "status": "idle",
-      "statusNote": "空闲",
+      "status": "busy",
+      "statusNote": "忙碌",
       "agents": 6,
-      "currentTask": null,
+      "currentTask": "持续监测全球 AI 服务器是否有新产品取代 B300 / GB300",
       "private": false,
       "duty": "市场研究与对外资料整理",
       "gradeNote": "待周一例会后首次评定",
@@ -288,10 +288,10 @@
       "name": "会计部",
       "short": "会计",
       "color": "#D0B993",
-      "status": "idle",
-      "statusNote": "空闲",
+      "status": "busy",
+      "statusNote": "忙碌",
       "agents": 4,
-      "currentTask": null,
+      "currentTask": "工作日 AI 用量日报",
       "private": false,
       "duty": "会计报表与费用核对",
       "gradeNote": "待周一例会后首次评定",
@@ -390,8 +390,8 @@
       "name": "设计部",
       "short": "设计",
       "color": "#E87708",
-      "status": "idle",
-      "statusNote": "待命",
+      "status": "busy",
+      "statusNote": "忙碌",
       "agents": 6,
       "currentTask": "品牌视觉规范",
       "private": false,
@@ -492,10 +492,10 @@
       "name": "物流部",
       "short": "物流",
       "color": "#D0B993",
-      "status": "idle",
-      "statusNote": "待命",
+      "status": "busy",
+      "statusNote": "忙碌",
       "agents": 5,
-      "currentTask": null,
+      "currentTask": "KUL 至中国大陆航班时刻表（一周任务）",
       "private": false,
       "duty": "物流协调与仓储安排",
       "gradeNote": "待周一例会后首次评定",
@@ -696,8 +696,8 @@
       "name": "投资部",
       "short": "投资",
       "color": "#D0B993",
-      "status": "idle",
-      "statusNote": "待命",
+      "status": "busy",
+      "statusNote": "忙碌",
       "agents": 7,
       "currentTask": "三年发展战略大纲·框架 v0.3（ED 已审，内部工作稿）",
       "private": false,
@@ -1027,8 +1027,8 @@
       "id": "t14",
       "team": "ed",
       "status": "doing",
-      "title": "修复标签跑位 + 部门总览",
-      "updatedAt": "2026-11-05T11:36:00+08:00"
+      "title": "协调各部门在办事项与办公室工作条",
+      "updatedAt": "2026-11-06T10:05:00+08:00"
     },
     {
       "id": "t15",
@@ -1085,9 +1085,139 @@
       "status": "doing",
       "title": "双语公司网站视觉设计",
       "updatedAt": "2026-11-05T23:50:00+08:00"
+    },
+    {
+      "id": "t23",
+      "team": "market",
+      "status": "doing",
+      "title": "持续监测全球是否有新 AI 服务器取代 B300 或 GB300（若有则立刻成立专项；若仍领先则准备说明分析，报告先经 ED 再交投资部）",
+      "updatedAt": "2026-11-06T10:05:00+08:00"
+    },
+    {
+      "id": "t24",
+      "team": "market",
+      "status": "doing",
+      "title": "周一 AI 服务器周报（下次提交 2026-11-09；现在就在准备）",
+      "updatedAt": "2026-11-06T10:05:00+08:00"
+    },
+    {
+      "id": "t25",
+      "team": "market",
+      "status": "doing",
+      "title": "跟踪 NVIDIA Vera Rubin 最新一代服务器的产品与市场（市场部牵头，配合投资部）",
+      "updatedAt": "2026-11-06T10:05:00+08:00"
+    },
+    {
+      "id": "t26",
+      "team": "invest",
+      "status": "doing",
+      "title": "Vera Rubin 商业评估（标【预测】，书面先经 ED）",
+      "updatedAt": "2026-11-06T10:05:00+08:00"
+    },
+    {
+      "id": "t27",
+      "team": "invest",
+      "status": "doing",
+      "title": "本周五路线图进度周报（约 17:00 提交）",
+      "updatedAt": "2026-11-06T10:05:00+08:00"
+    },
+    {
+      "id": "t28",
+      "team": "invest",
+      "status": "doing",
+      "title": "下周一 8:00 前本周改进建议（首次 11-09，现在准备）",
+      "updatedAt": "2026-11-06T10:05:00+08:00"
+    },
+    {
+      "id": "t29",
+      "team": "logistics",
+      "status": "doing",
+      "title": "编制 KUL 至中国大陆航班时刻表（不含香港、澳门；允许第三地中转；一周内完成，准确优先，机型为必核字段；同时关注油价波动是否导致廉航取消、减班或换机型，以航司官方通知为准）",
+      "updatedAt": "2026-11-06T10:05:00+08:00"
+    },
+    {
+      "id": "t30",
+      "team": "corpfin",
+      "status": "doing",
+      "title": "工作日 AI 用量日报（先经 ED 再交 Edward）",
+      "updatedAt": "2026-11-06T10:05:00+08:00"
+    },
+    {
+      "id": "t31",
+      "team": "corpfin",
+      "status": "doing",
+      "title": "按权责发生制（MFRS 15）重述收入并处理应收账款账龄（Edward 已要求优先）",
+      "updatedAt": "2026-11-06T10:05:00+08:00"
+    },
+    {
+      "id": "t32",
+      "team": "design",
+      "status": "confirm",
+      "title": "官方 Instagram 方案已交 Edward 审批（账号尚未开通，不得开通或发帖）",
+      "updatedAt": "2026-11-06T10:05:00+08:00"
     }
   ],
   "feed": [
+    {
+      "team": "ed",
+      "time": "2026-11-06T10:05:00+08:00",
+      "text": "进行中：协调各部门在办事项与办公室工作条"
+    },
+    {
+      "team": "design",
+      "time": "2026-11-06T10:05:00+08:00",
+      "text": "等你确认：官方 Instagram 方案（账号尚未开通）"
+    },
+    {
+      "team": "design",
+      "time": "2026-11-06T10:05:00+08:00",
+      "text": "进行中：品牌视觉规范"
+    },
+    {
+      "team": "corpfin",
+      "time": "2026-11-06T10:05:00+08:00",
+      "text": "进行中：按权责发生制重述收入并处理应收账款账龄"
+    },
+    {
+      "team": "corpfin",
+      "time": "2026-11-06T10:05:00+08:00",
+      "text": "进行中：工作日 AI 用量日报"
+    },
+    {
+      "team": "logistics",
+      "time": "2026-11-06T10:05:00+08:00",
+      "text": "进行中：KUL 至中国大陆航班时刻表（一周任务）"
+    },
+    {
+      "team": "invest",
+      "time": "2026-11-06T10:05:00+08:00",
+      "text": "进行中：下周一前本周改进建议（11-09，现在准备）"
+    },
+    {
+      "team": "invest",
+      "time": "2026-11-06T10:05:00+08:00",
+      "text": "进行中：本周五路线图进度周报"
+    },
+    {
+      "team": "invest",
+      "time": "2026-11-06T10:05:00+08:00",
+      "text": "进行中：Vera Rubin 商业评估（预测，书面先经 ED）"
+    },
+    {
+      "team": "market",
+      "time": "2026-11-06T10:05:00+08:00",
+      "text": "进行中：跟踪 Vera Rubin 最新一代服务器的产品与市场"
+    },
+    {
+      "team": "market",
+      "time": "2026-11-06T10:05:00+08:00",
+      "text": "进行中：周一 AI 服务器周报（11-09 提交，现在准备）"
+    },
+    {
+      "team": "market",
+      "time": "2026-11-06T10:05:00+08:00",
+      "text": "进行中：持续监测是否有新 AI 服务器取代 B300 / GB300"
+    },
     {
       "team": "invest",
       "time": "2026-11-05T23:50:00+08:00",
@@ -1101,7 +1231,7 @@
     {
       "team": "design",
       "time": "2026-11-05T14:00:00+08:00",
-      "text": "设计部已设立，待命中"
+      "text": "设计部已设立"
     },
     {
       "team": "info",
@@ -1136,7 +1266,7 @@
     {
       "team": "invest",
       "time": "2026-11-05T10:04:00+08:00",
-      "text": "投资部已设立，待命中"
+      "text": "投资部已设立"
     },
     {
       "team": "ed",
