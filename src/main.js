@@ -148,6 +148,8 @@ canvas.addEventListener('pointerup', e => {
   }
   const person = ray.intersectObjects(people, true)[0];
   const roomHit = ray.intersectObjects(hits, false)[0];
+  const groundHit = office.ground ? ray.intersectObjects([office.ground], false)[0] : null;
+  const roomInFront = roomHit && (!groundHit || roomHit.distance < groundHit.distance - 0.05);
   let who = null;
   if (person && (!roomHit || person.distance <= roomHit.distance + 0.35)) {
     let o = person.object;
@@ -155,7 +157,7 @@ canvas.addEventListener('pointerup', e => {
     who = o?.userData;
   }
   if (who?.room) selectRoom(who.room, null, who.staffId);
-  else if (roomHit) selectRoom(roomHit.object.userData.room);
+  else if (roomInFront) selectRoom(roomHit.object.userData.room);
   else closePanel();
 });
 $('#labels').addEventListener('click', e => {
@@ -466,6 +468,10 @@ function renderPanel(id) {
       `<div class="sec"><h4>例会</h4><div class="card"><div class="cur">${esc(L.meeting || '每周一 9:00 跨部门例会')}</div></div></div>` +
       note +
       `<div class="sec"><div class="card empty">当前 ${n} 人在休息室</div></div>`;
+    return;
+  }
+  if (id === 'vacant') {
+    body.innerHTML = `<div class="ph" style="--c:#D0B993"><div class="ic">空</div><div><h3>空置</h3><div class="sub">预留办公室 · 暂不设部门</div></div></div><div class="sec"><div class="card empty">这间房留着，还没有分配部门。</div></div>`;
     return;
   }
   if (!t) {

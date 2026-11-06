@@ -1015,14 +1015,21 @@ export function buildOffice(scene, teams) {
 
   /* ground */
   const ft = floorTexture(); ft.repeat.set(28, 28);
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(110, 110), new THREE.MeshStandardMaterial({ map: ft, roughness: .9, color: '#ffffff' }));
-  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; root.add(ground);
-  // building base platform
-  const base = new THREE.Mesh(rboxG(43.5, 0.1, 40, 0.05), M('#161d30', { r: .7 }));
-  base.position.y = -0.04; base.receiveShadow = true; root.add(base);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), new THREE.MeshStandardMaterial({ map: ft, roughness: .9, color: '#ffffff' }));
+  ground.rotation.x = -Math.PI / 2; ground.position.y = -0.08; ground.receiveShadow = true; root.add(ground);
+  // One campus slab under every room and corridor. Later wings are not separate pads.
+  const campusW = 88, campusD = 54, campusX = 1.2, campusZ = 2.2;
+  const campus = new THREE.Mesh(rboxG(campusW, 0.12, campusD, 0.08), M('#161d30', { r: .7 }));
+  campus.position.set(campusX, -0.04, campusZ); campus.receiveShadow = true; campus.userData.ground = true; root.add(campus);
   const edge = B(GOLD, { op: .32 });
-  for (const [w, d, x, z] of [[43.5, .05, 0, 20], [43.5, .05, 0, -20], [.05, 40, 21.75, 0], [.05, 40, -21.75, 0]]) {
-    const e = new THREE.Mesh(boxG(w, .04, d), edge); e.position.set(x, 0.02, z); root.add(e);
+  const edgeY = 0.025;
+  for (const [w, d, x, z] of [
+    [campusW, .05, campusX, campusZ + campusD / 2],
+    [campusW, .05, campusX, campusZ - campusD / 2],
+    [.05, campusD, campusX + campusW / 2, campusZ],
+    [.05, campusD, campusX - campusW / 2, campusZ],
+  ]) {
+    const e = new THREE.Mesh(boxG(w, .04, d), edge); e.position.set(x, edgeY, z); root.add(e);
   }
   const sky = new THREE.Mesh(new THREE.PlaneGeometry(150, 64), new THREE.MeshBasicMaterial({ map: skylineTexture() }));
   sky.position.set(0, 16, -34); root.add(sky);
@@ -1053,7 +1060,7 @@ export function buildOffice(scene, teams) {
     const span = z === -6 ? 28 : 42;
     const cx = z === -6 ? -7 : 0;
     const a = new THREE.Mesh(boxG(span, 0.02, 2.6), aisle); a.position.set(cx, 0.012, z); a.receiveShadow = true; staticG.add(a);
-    const x1 = z === -6 ? 6.5 : 20;
+    const x1 = z === -6 ? 6.5 : 18;
     for (let x = -20; x <= x1; x += 1.2) { const dm = new THREE.Mesh(dashG, dashM); dm.position.set(x, 0.03, z); root.add(dm); }
   }
   for (const x of [-6.75, 6.75]) {
@@ -1160,22 +1167,8 @@ export function buildOffice(scene, teams) {
     rooms[wd.from].walkers.push(a);
   }
 
-  /* lounge annex: short bridge from the east corridor, two visitors max */
   const lounge = rooms.lounge;
-  const annex = new THREE.Mesh(rboxG(11.2, 0.1, 13.2, 0.06), M('#161d30', { r: .7 }));
-  annex.position.set(lounge.def.x, -0.04, 0); annex.receiveShadow = true; staticG.add(annex);
-  const bridge = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 2.3), M('#12182a', { r: .6 }));
-  bridge.position.set(20.2, 0.02, 0.15); bridge.receiveShadow = true; staticG.add(bridge);
-  const westPad = new THREE.Mesh(rboxG(19.4, 0.1, 31.0, 0.05), M('#161d30', { r: .7 }));
-  westPad.position.set(-29.75, -0.04, -0.05); westPad.receiveShadow = true; staticG.add(westPad);
-  const westLinkA = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 2.1), M('#12182a', { r: .6 }));
-  westLinkA.position.set(-20.6, 0.02, -8); westLinkA.receiveShadow = true; staticG.add(westLinkA);
-  const reviewPad = new THREE.Mesh(rboxG(12, 0.1, 8, 0.05), M('#161d30', { r: .7 }));
-  reviewPad.position.set(-13.5, -0.04, 19.6); reviewPad.receiveShadow = true; staticG.add(reviewPad);
-  const eastPad = new THREE.Mesh(rboxG(28, 0.1, 40, 0.05), M('#161d30', { r: .7 }));
-  eastPad.position.set(33, -0.04, 1); eastPad.receiveShadow = true; staticG.add(eastPad);
   furnishRestrooms(staticG);
-  const westLinkB = westLinkA.clone(); westLinkB.position.set(-20.6, 0.02, 8); staticG.add(westLinkB);
   const loungeLight = new THREE.PointLight(ORANGE, 0.35, 9, 1.8);
   loungeLight.position.set(lounge.def.x, 3.1, 0.4); root.add(loungeLight);
   roomLights.push(loungeLight);
@@ -1225,12 +1218,6 @@ export function buildOffice(scene, teams) {
   }
   const designRoom = rooms.design;
   const showRoom = rooms.showroom;
-  for (const R of [designRoom, showRoom]) {
-    const pad = new THREE.Mesh(rboxG(R.def.w + 1.6, 0.1, R.def.d + 1.4, 0.05), M('#161d30', { r: .7 }));
-    pad.position.set(R.def.x, -0.04, R.def.z); pad.receiveShadow = true; staticG.add(pad);
-    const link = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 2.2), M('#12182a', { r: .6 }));
-    link.position.set(20.2, 0.02, R.def.z); link.receiveShadow = true; staticG.add(link);
-  }
   const designLight = new THREE.PointLight(ORANGE, 0.2, 9, 1.8);
   designLight.position.set(designRoom.def.x, 3.1, designRoom.def.z); root.add(designLight);
   roomLights.push(designLight);
@@ -1505,7 +1492,7 @@ export function buildOffice(scene, teams) {
     const lines = (items || []).map(n => n && n.title).filter(Boolean);
     if (lines.length) newsLines = lines;
   }
-  return { rooms, update, walkers, root, applyAmbience, setNews };
+  return { rooms, update, walkers, root, ground: campus, applyAmbience, setNews };
 }
 
 function furnishMeeting(g, def) {
