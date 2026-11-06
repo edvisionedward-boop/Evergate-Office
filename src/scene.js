@@ -1791,11 +1791,11 @@ function glassRoom(g, x0, z0, x1, z1, door, title) {
   if (door === 'west') {
     const z = z1 + (z0 - z1) * 0.5;
     doorFrame(g, x0, z, Math.PI / 2, Math.abs(z1 - z0) * 0.28, 2.05);
-    notePlate(g, x0 + 0.42, 2.02, z0 + 0.28, [title], Math.PI / 2, 0.72, 0.22);
+    if (title) notePlate(g, x0 + 0.42, 2.02, z0 + 0.28, [title], Math.PI / 2, 0.72, 0.22);
   } else {
     const x = x0 + (x1 - x0) * 0.44;
     doorFrame(g, x, z0, 0, Math.abs(x1 - x0) * 0.28, 2.05);
-    notePlate(g, x + 0.85, 2.02, z0 + 0.08, [title], 0, 0.72, 0.22);
+    if (title) notePlate(g, x + 0.85, 2.02, z0 + 0.08, [title], 0, 0.72, 0.22);
   }
   frostBand(g, x0, z0, x1, z0);
   frostBand(g, x0, z1, x1, z1);
@@ -1888,6 +1888,54 @@ function furnishLegal(g, t, accent, W, D) {
   desks.push(clo, contract, ip, myLaw, myAi, overseas, maritime);
   return desks;
 }
+function furnishInvest(g, t, accent, W, D) {
+  const desks = [];
+  const bz = -D / 2;
+  bookshelf(g, -2.6, bz + 0.4, 0, 2.15, 1.85);
+  bookshelf(g, -0.2, bz + 0.4, 0, 2.0, 1.85);
+  notePlate(g, -1.4, 2.1, bz + 0.62, ['一手来源'], 0, 0.8, 0.22);
+  box(g, 1.15, 0.05, 0.4, 1.15, 0.72, bz + 1.45, M('#c4b496', { r: .45 }), { round: 0.02, cast: false });
+  cyl(g, 0.035, 0.04, 0.72, 0.75, 0, bz + 1.45, M('#1a1a1a'), 8, { cast: false });
+  cyl(g, 0.035, 0.04, 0.72, 1.55, 0, bz + 1.45, M('#1a1a1a'), 8, { cast: false });
+  box(g, 1.65, 0.86, 0.06, 0.15, 1.2, -1.7, M('#0b0f19'), { cast: false });
+  const quote = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.68), new THREE.MeshBasicMaterial({ map: signTexture('公开行情', '指数 · 汇率 · 日程', '#94a3b8'), toneMapped: false }));
+  quote.position.set(0.15, 1.64, -1.66); quote.userData.keep = true; g.add(quote);
+  const data = deskSet(g, -3.55, -3.45, 0, t, { kinds: ['dash', 'doc'], monitors: 2, chair: accent, papers: false, privacy: true });
+  drawerBank(g, -3.55, -3.45);
+  // Leftover northeast corner. Shared, unlabeled, not an office.
+  glassRoom(g, 3.4, bz + 0.22, W / 2 - 0.16, -3.7, 'west', '');
+  chair(g, 4.45, -4.55, Math.PI / 2, accent);
+  const project = deskSet(g, -1.65, 0.05, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
+  const risk = deskSet(g, 0.15, 0.05, 0, t, { kinds: ['chart'], monitors: 1, chair: accent, papers: true, privacy: true });
+  const quant = deskSet(g, 1.95, 0.05, 0, t, { kinds: ['dash', 'doc'], monitors: 2, chair: accent, privacy: true });
+  for (const x of [-1.65, 0.15, 1.95]) drawerBank(g, x, 0.05);
+  box(g, 3.4, 0.7, 0.1, 0.7, 0, 2.05, M('#1c2433', { r: .65 }), { cast: false });
+  plant(g, -0.85, 2.05, 0.7, 1); plant(g, 2.15, 2.05, 0.62, 0);
+  const plan1 = deskSet(g, -4.65, 3.2, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
+  const plan2 = deskSet(g, -2.2, 3.2, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, privacy: true });
+  drawerBank(g, -4.65, 3.2); drawerBank(g, -2.2, 3.2);
+  box(g, 0.4, 0.05, 0.85, -3.42, 0.72, 3.2, M('#c4b496', { r: .45 }), { round: 0.02, cast: false });
+  const cio = deskSet(g, -3.75, 4.6, Math.PI, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
+  drawerBank(g, -3.75, 4.6);
+  box(g, 2.2, 0.06, 0.82, 1.45, 0.74, 4.4, M('#c4b496', { r: .45 }), { round: 0.02, cast: false });
+  cyl(g, 0.05, 0.06, 0.74, 0.55, 0, 4.4, M('#1a1a1a'), 8, { cast: false });
+  cyl(g, 0.05, 0.06, 0.74, 2.35, 0, 4.4, M('#1a1a1a'), 8, { cast: false });
+  chair(g, 0.85, 3.9, 0, accent); chair(g, 2.05, 3.9, 0, accent);
+  chair(g, 0.85, 4.9, Math.PI, accent); chair(g, 2.05, 4.9, Math.PI, accent);
+  notePlate(g, 1.45, 0.95, 4.05, ['待交 ED', '待改'], 0, 0.55, 0.26);
+  chair(g, 4.2, 4.85, -Math.PI / 2, accent); chair(g, 4.2, 5.4, -Math.PI / 2, accent);
+  fileCabinet(g, 4.6, 1.2, -Math.PI / 2, true);
+  notePlate(g, 4.32, 1.5, 1.2, ['内部归档'], -Math.PI / 2, 0.52, 0.2);
+  box(g, 0.46, 0.26, 0.34, 4.45, 0.74, 2.15, M('#e7e5e4', { r: .4 }), { cast: false });
+  box(g, 0.34, 0.05, 0.26, 4.2, 1.0, 2.15, M('#111827'), { cast: false });
+  box(g, 0.3, 0.66, 0.26, 4.55, 0, 0.4, M('#1c1917', { r: .5 }), { cast: false });
+  notePlate(g, -W / 2 + 0.14, 1.35, 0.5, ['A轨 / B轨', '预测须写假设', '待确认非事实'], Math.PI / 2, 0.72, 0.55);
+  notePlate(g, -W / 2 + 0.14, 1.75, -2.3, ['吉隆坡时间'], Math.PI / 2, 0.55, 0.24);
+  floorLamp(g, -4.85, 4.9); floorLamp(g, 3.1, -0.2); floorLamp(g, -1.0, -3.1);
+  plant(g, -1.1, 5.15, 0.72, 0); plant(g, -4.7, -2.4, 0.68, 1); plant(g, 2.6, -3.2, 0.6, 0);
+  desks.push(cio, project, data, risk, quant, plan1, plan2);
+  return desks;
+}
 
 /* ---------------- per-room decoration ---------------- */
 function decorate(R, dyn, teamById) {
@@ -1975,9 +2023,7 @@ function decorate(R, dyn, teamById) {
     planeModel(g, 0.95, 3.15, -0.55);
     plant(g, bx + 0.7, D / 2 - 0.8, 1.05, 2);
   } else if (id === 'invest') {
-    desks.push(...workstations(g, t, accentChair, W, D, 7));
-    for (let i = 0; i < 3; i++) wallScreen(g, bx + 0.16, 1.55, -2.15 + i * 1.7, Math.PI / 2, 1.35, 0.78);
-    plant(g, W / 2 - 0.7, D / 2 - 0.8, 1.05, 0); floorLamp(g, W / 2 - 0.85, 1.2);
+    desks.push(...furnishInvest(g, t, accentChair, W, D));
   } else if (id === 'info') {
     desks.push(...workstations(g, t, accentChair, W, D, 9));
     const tableZ = 5.4;
@@ -2073,6 +2119,7 @@ function decorate(R, dyn, teamById) {
   if (id === 'meeting') pendant(g, 4.7, -3.9);
   else if (id === 'market') pendant(g, -3.2, 1.1);
   else if (id === 'legal') pendant(g, -1.2, 2.6);
+  else if (id === 'invest') pendant(g, -4.7, -0.4);
   else if (id !== 'lounge' && id !== 'archive') pendant(g, id === 'ed' ? -1.4 : 0, 0.2);
   if (id === 'ed') pendant(g, 1.4, 0.2);
   const shirts = [shirtA, shirtB, '#e2e8f0'];
