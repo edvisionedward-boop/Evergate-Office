@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-06T12:18:00+08:00",
+  "updatedAt": "2026-11-06T12:23:00+08:00",
   "workRules": {
     "taskPoints": 1.0,
     "mistakePoints": -0.3,
@@ -440,9 +440,9 @@
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null,
-          "tasksDone": 0,
+          "tasksDone": 1,
           "mistakes": 0,
-          "workScore": 0,
+          "workScore": 1.0,
           "extraPenalty": 0,
           "overtimeHours": 0,
           "consecutiveFailures": 0
@@ -515,9 +515,9 @@
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null,
-          "tasksDone": 0,
+          "tasksDone": 1,
           "mistakes": 0,
-          "workScore": 0,
+          "workScore": 1.0,
           "extraPenalty": 0,
           "overtimeHours": 0,
           "consecutiveFailures": 0
@@ -592,9 +592,9 @@
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null,
-          "tasksDone": 0,
+          "tasksDone": 2,
           "mistakes": 0,
-          "workScore": 0,
+          "workScore": 2.0,
           "extraPenalty": 0,
           "overtimeHours": 0,
           "consecutiveFailures": 0
@@ -1332,6 +1332,26 @@
     }
   ],
   "feed": [
+    {
+      "team": "design",
+      "time": "2026-11-06T12:23:00+08:00",
+      "text": "设计部 Instagram 方案写入只做照片（日常达标 +1.00）→ 媒体运营师"
+    },
+    {
+      "team": "design",
+      "time": "2026-11-06T12:23:00+08:00",
+      "text": "设计部 增编媒体运营师（日常达标 +1.00）→ 设计总监"
+    },
+    {
+      "team": "logistics",
+      "time": "2026-11-06T12:23:00+08:00",
+      "text": "物流部 B300 产品摘录入库（日常达标 +1.00）→ 信息处理员"
+    },
+    {
+      "team": "logistics",
+      "time": "2026-11-06T12:23:00+08:00",
+      "text": "物流部 物流服务免责声明定稿归档（日常达标 +1.00）→ 信息处理员"
+    },
     {
       "team": "review",
       "time": "2026-11-06T12:18:00+08:00",
