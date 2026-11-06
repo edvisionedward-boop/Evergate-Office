@@ -1780,47 +1780,64 @@ function drawerBank(parent, x, z) {
   box(parent, 0.4, 0.36, 0.42, x, 0, z, M('#1c2433', { r: .45, m: .28 }), { cast: false });
   box(parent, 0.05, 0.045, 0.02, x + 0.1, 0.2, z + 0.22, M(GOLD, { m: .45, r: .4 }), { cast: false });
 }
+function glassRoom(g, x0, z0, x1, z1, door, title) {
+  const h = 2.15;
+  const westGaps = door === 'west' ? [[0.36, 0.64]] : [];
+  const northGaps = door === 'north' ? [[0.3, 0.58]] : [];
+  glassRun(g, x0, z1, x0, z0, h, westGaps);
+  glassRun(g, x0, z0, x1, z0, h, northGaps);
+  glassRun(g, x1, z0, x1, z1, h, []);
+  glassRun(g, x1, z1, x0, z1, h, []);
+  if (door === 'west') {
+    const z = z1 + (z0 - z1) * 0.5;
+    doorFrame(g, x0, z, Math.PI / 2, Math.abs(z1 - z0) * 0.28, 2.05);
+    notePlate(g, x0 + 0.42, 2.02, z0 + 0.28, [title], Math.PI / 2, 0.72, 0.22);
+  } else {
+    const x = x0 + (x1 - x0) * 0.44;
+    doorFrame(g, x, z0, 0, Math.abs(x1 - x0) * 0.28, 2.05);
+    notePlate(g, x + 0.85, 2.02, z0 + 0.08, [title], 0, 0.72, 0.22);
+  }
+  frostBand(g, x0, z0, x1, z0);
+  frostBand(g, x0, z1, x1, z1);
+  frostBand(g, x0, z0, x0, z1);
+  frostBand(g, x1, z0, x1, z1);
+}
 function furnishMarket(g, t, accent, W, D) {
   const desks = [];
   const bz = -D / 2;
-  // North monitor wall, then four analysts facing it. No closed office.
   const screenMat = new THREE.MeshBasicMaterial({ map: signTexture('公开监测', '产品代际 · 供货 · 日程', '#94a3b8'), toneMapped: false });
-  for (const x of [-2.5, 0, 2.5]) {
+  for (const x of [-3.2, -0.8, 1.6]) {
     box(g, 1.7, 0.78, 0.05, x, 1.35, bz + 0.22, M('#0b0f19'), { cast: false });
     const s = new THREE.Mesh(new THREE.PlaneGeometry(1.55, 0.62), screenMat);
     s.position.set(x, 1.72, bz + 0.26); s.userData.keep = true; g.add(s);
     cabinet(g, x, bz + 0.55, 0, 1.55, 0.48, '#1a1f2b');
   }
-  const rowZ = bz + 2.55;
-  const analysts = [
-    [-3.15, ['dash', 'doc'], 2],
-    [-1.05, ['doc'], 1],
-    [1.05, ['chart'], 1],
-    [3.15, ['doc'], 1],
-  ];
-  const tech = deskSet(g, analysts[0][0], rowZ, 0, t, { kinds: analysts[0][1], monitors: 2, chair: accent, papers: true });
-  const tariff = deskSet(g, analysts[1][0], rowZ, 0, t, { kinds: analysts[1][1], monitors: 1, chair: accent });
-  const energy = deskSet(g, analysts[2][0], rowZ, 0, t, { kinds: analysts[2][1], monitors: 1, chair: accent, papers: true });
-  const retail = deskSet(g, analysts[3][0], rowZ, 0, t, { kinds: analysts[3][1], monitors: 1, chair: accent });
-  const cmo = deskSet(g, 0, -0.85, 0, t, { kinds: ['dash'], monitors: 1, chair: accent, papers: true });
-  cabinet(g, -1.45, -0.85, Math.PI, 0.62, 0.55, '#242018');
-  notePlate(g, -1.15, 1.2, -0.2, ['书面先交 ED', '未核实标待确认', '预测须标前提'], Math.PI / 2, 0.62, 0.48);
-  const brand = deskSet(g, -2.55, 4.3, Math.PI / 2, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true });
-  bookshelf(g, -W / 2 + 0.32, 4.3, Math.PI / 2, 1.15, 1.45);
-  notePlate(g, -W / 2 + 0.2, 1.85, 4.3, ['品牌规范'], Math.PI / 2, 0.7, 0.22);
-  box(g, 1.15, 0.05, 0.62, 0.55, 0.72, 4.85, M('#c4b496', { r: .45 }), { round: 0.02, cast: false });
-  cyl(g, 0.04, 0.05, 0.72, 0.2, 0, 4.85, M('#1a1a1a'), 8, { cast: false });
-  cyl(g, 0.04, 0.05, 0.72, 0.9, 0, 4.85, M('#1a1a1a'), 8, { cast: false });
-  chair(g, 0.55, 4.35, 0, accent); chair(g, 0.55, 5.35, Math.PI, accent);
-  bookshelf(g, -W / 2 + 0.28, -2.4, Math.PI / 2, 1.7, 1.9);
-  const map = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.8), new THREE.MeshBasicMaterial({ map: signTexture('区域图', '空白 · 无标注', '#94a3b8'), toneMapped: false }));
-  map.position.set(W / 2 - 0.16, 1.45, rowZ); map.rotation.y = -Math.PI / 2; map.userData.keep = true; g.add(map);
-  floorLamp(g, W / 2 - 0.7, bz + 1.35);
-  floorLamp(g, -W / 2 + 0.75, 2.3);
-  coatHooks(g, 1.55, D / 2 - 0.18, 0);
-  plant(g, -W / 2 + 0.7, bz + 0.7, 0.9, 1); plant(g, W / 2 - 0.7, bz + 0.7, 0.85, 0);
-  plant(g, -W / 2 + 0.7, D / 2 - 1.3, 0.9, 0); plant(g, W / 2 - 0.7, D / 2 - 1.6, 0.85, 1);
-  // Staff order: CMO, 品牌经理, 科技, 零售, 能源, 国别与关税.
+  const rowZ = bz + 2.45;
+  const tech = deskSet(g, -3.45, rowZ, 0, t, { kinds: ['dash', 'doc'], monitors: 2, chair: accent, papers: true });
+  const tariff = deskSet(g, -1.55, rowZ, 0, t, { kinds: ['doc'], monitors: 1, chair: accent });
+  const energy = deskSet(g, 0.35, rowZ, 0, t, { kinds: ['chart'], monitors: 1, chair: accent, papers: true });
+  const retail = deskSet(g, 2.25, rowZ, 0, t, { kinds: ['doc'], monitors: 1, chair: accent });
+  // East wall, south to north: 经理室 then 总监室. Doors face the open floor and swing in.
+  glassRoom(g, 1.45, 2.45, W / 2 - 0.16, D / 2 - 1.15, 'west', '经理室');
+  glassRoom(g, 1.45, -1.05, W / 2 - 0.16, 2.15, 'west', '总监室');
+  const cmo = deskSet(g, 3.35, 0.55, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true });
+  cabinet(g, 2.15, 0.35, -Math.PI / 2, 0.62, 0.55, '#242018');
+  notePlate(g, 1.85, 1.25, -0.35, ['书面先交 ED', '未核实标待确认', '预测须标前提'], -Math.PI / 2, 0.62, 0.46);
+  const brand = deskSet(g, 3.3, 3.85, Math.PI / 2, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true });
+  bookshelf(g, 3.35, D / 2 - 1.55, Math.PI, 1.2, 1.35);
+  notePlate(g, 3.35, 1.7, D / 2 - 1.42, ['品牌规范'], Math.PI, 0.62, 0.2);
+  box(g, 1.15, 0.05, 0.62, -1.7, 0.72, -0.15, M('#c4b496', { r: .45 }), { round: 0.02, cast: false });
+  cyl(g, 0.04, 0.05, 0.72, -2.1, 0, -0.15, M('#1a1a1a'), 8, { cast: false });
+  cyl(g, 0.04, 0.05, 0.72, -1.3, 0, -0.15, M('#1a1a1a'), 8, { cast: false });
+  chair(g, -1.7, -0.7, 0, accent); chair(g, -1.7, 0.4, Math.PI, accent);
+  bookshelf(g, -W / 2 + 0.28, -2.55, Math.PI / 2, 1.8, 1.9);
+  const map = new THREE.Mesh(new THREE.PlaneGeometry(1.05, 0.72), new THREE.MeshBasicMaterial({ map: signTexture('区域图', '空白 · 无标注', '#94a3b8'), toneMapped: false }));
+  map.position.set(-W / 2 + 0.18, 1.45, rowZ); map.rotation.y = Math.PI / 2; map.userData.keep = true; g.add(map);
+  floorLamp(g, -W / 2 + 0.7, bz + 1.4);
+  floorLamp(g, -3.6, 1.4);
+  coatHooks(g, -4.15, D / 2 - 0.18, 0);
+  plant(g, -W / 2 + 0.65, bz + 0.65, 0.85, 1); plant(g, W / 2 - 0.6, bz + 0.65, 0.8, 0);
+  plant(g, 2.3, 0.9, 0.55, 1); plant(g, 2.3, 4.1, 0.55, 0);
   desks.push(cmo, brand, tech, retail, energy, tariff);
   return desks;
 }
@@ -1849,22 +1866,17 @@ function furnishLegal(g, t, accent, W, D) {
   box(g, 0.52, 0.32, 0.4, -5.5, 0.72, 2.35, M('#e7e5e4', { r: .4 }), { cast: false });
   box(g, 0.42, 0.08, 0.32, -5.5, 1.04, 2.35, M('#111827'), { cast: false });
   box(g, 0.34, 0.72, 0.3, -4.7, 0, 2.35, M('#1c1917', { r: .5 }), { cast: false });
-  notePlate(g, -5.7, 1.15, 1.55, ['待核实', '审核中', '已交 ED'], Math.PI, 0.7, 0.42);
-  // Southeast glass closet. Open area still holds both desk groups, the long table and the shelf aisle.
-  const x0 = 5.35, x1 = ex - 0.12, z0 = 3.55, z1 = zz - 0.28;
-  glassRun(g, x0, z1, x0, z0, 2.15, [[0.52, 0.82]]);
-  glassRun(g, x0, z0, x1, z0, 2.15, []);
-  glassRun(g, x1, z0, x1, z1, 2.15, []);
-  glassRun(g, x1, z1, x0, z1, 2.15, []);
-  doorFrame(g, x0, z0 + (z1 - z0) * 0.33, Math.PI / 2, 0.85, 2.05);
-  frostBand(g, x0, z1, x0, z0 + (z1 - z0) * 0.82);
-  frostBand(g, x0, z0 + (z1 - z0) * 0.52, x0, z0);
-  frostBand(g, x0, z0, x1, z0);
-  const clo = deskSet(g, 7.15, 5.35, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
-  drawerBank(g, 7.15, 5.35);
-  chair(g, 6.05, 4.85, -Math.PI / 2, accent);
-  cyl(g, 0.34, 0.34, 0.04, 6.15, 0.7, 4.45, M('#d7c4a3', { r: .45 }), 16, { cast: false });
-  cyl(g, 0.05, 0.06, 0.7, 6.15, 0, 4.45, M('#1a1a1a'), 8, { cast: false });
+  notePlate(g, -5.7, 1.15, 1.15, ['待核实', '审核中', '已交 ED'], Math.PI, 0.7, 0.42);
+  // South band: 总监室 nearer the east door, 经理室 beside it. Doors open north into the room.
+  glassRoom(g, 4.55, 3.65, ex - 0.18, zz - 0.22, 'north', '总监室');
+  glassRoom(g, 0.7, 3.65, 4.3, zz - 0.22, 'north', '经理室');
+  const clo = deskSet(g, 6.7, 5.55, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
+  drawerBank(g, 6.7, 5.55);
+  chair(g, 5.7, 4.55, Math.PI / 2, accent);
+  cyl(g, 0.32, 0.32, 0.04, 6.15, 0.7, 4.35, M('#d7c4a3', { r: .45 }), 16, { cast: false });
+  cyl(g, 0.045, 0.05, 0.7, 6.15, 0, 4.35, M('#1a1a1a'), 8, { cast: false });
+  deskSet(g, 2.5, 5.45, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, privacy: true, mug: false, plant: false });
+  chair(g, 1.55, 4.7, Math.PI / 2, accent);
   frostBand(g, ex - 0.05, -1.9, ex - 0.05, bz + 0.2);
   frostBand(g, ex - 0.05, 2.05, ex - 0.05, zz - 0.15);
   frostBand(g, bx + 0.2, zz - 0.05, ex - 0.2, zz - 0.05);
@@ -2035,7 +2047,7 @@ function decorate(R, dyn, teamById) {
   }
   // front glass partitions for open team rooms
   if (def.walls !== 'glass' && id !== 'lounge') {
-    const doorFrac = id === 'market' ? [[0.74, 0.88]] : id === 'legal' ? [[0.60, 0.73]] : [[0.4, 0.54]];
+    const doorFrac = id === 'market' ? [[0.14, 0.3]] : id === 'legal' ? [[0.60, 0.73]] : [[0.4, 0.54]];
     const wing = id === 'design' || id === 'archive';
     const sideDoor = id === 'meeting';
     const meetDoor = 2.3;
@@ -2059,7 +2071,7 @@ function decorate(R, dyn, teamById) {
     if (def.door === 'north') doorFrame(g, 0, -D / 2, 0, 1.7, 2.2);
   }
   if (id === 'meeting') pendant(g, 4.7, -3.9);
-  else if (id === 'market') pendant(g, 3.4, 1.6);
+  else if (id === 'market') pendant(g, -3.2, 1.1);
   else if (id === 'legal') pendant(g, -1.2, 2.6);
   else if (id !== 'lounge' && id !== 'archive') pendant(g, id === 'ed' ? -1.4 : 0, 0.2);
   if (id === 'ed') pendant(g, 1.4, 0.2);

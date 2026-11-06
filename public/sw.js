@@ -1,5 +1,5 @@
 /* Bump this name to drop previously cached builds on the next visit. */
-const CACHE = 'evergate-office-v46';
+const CACHE = 'evergate-office-v47';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
