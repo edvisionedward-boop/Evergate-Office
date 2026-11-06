@@ -276,7 +276,11 @@ function nameTag(agent, staff, roomId, slot = 0) {
   el.dataset.staff = staff.id;
   el.textContent = '';
   const pn = document.createElement('span'); pn.className = 'pn'; pn.textContent = staff.chip || staff.name; el.appendChild(pn);
-  const badge = document.createElement('i'); badge.className = 'gbadge'; el.appendChild(badge);
+  const bar = document.createElement('span');
+  bar.className = 'wbar';
+  bar.dataset.staff = staff.id;
+  bar.innerHTML = '<span class="wtrack"><i class="wfill"></i></span><b class="wscore">0.00</b>';
+  el.appendChild(bar);
   const o = new CSS2DObject(el);
   // Five name plates in one room stack on screen; stagger this room only.
   o.position.set(0.85, 0.42, 0.2);
@@ -1644,7 +1648,10 @@ function decorate(R, dyn, teamById) {
   } else if (id === 'archive') {
     R.rackLeds = archiveRackHall(g);
   } else if (id === 'design') {
-    desks.push(...workstations(g, t, accentChair, W, D, 5));
+    // Six desks in two rows, south of the easel and colour swatches.
+    const seats = [[-2.15, -2.85], [0, -2.85], [2.0, -2.85], [-2.15, -0.5], [0, -0.5], [1.45, -0.5]];
+    const kinds = [['dash', 'doc'], ['chart', 'doc'], ['doc', 'dash'], ['code', 'chart'], ['dash', 'chart'], ['doc', 'chart']];
+    seats.forEach(([x, z], i) => desks.push(deskSet(g, x, z, 0, t, { kinds: kinds[i], chair: accentChair, papers: i % 2 === 0 })));
     const easel = new THREE.Group(); easel.position.set(2.7, 0, 2.35); g.add(easel);
     box(easel, 0.06, 1.35, 0.06, -0.28, 0, 0.15, M('#6b5a40', { r: .6 }), { cast: false });
     box(easel, 0.06, 1.35, 0.06, 0.28, 0, 0.15, M('#6b5a40', { r: .6 }), { cast: false });
@@ -1691,7 +1698,7 @@ function decorate(R, dyn, teamById) {
   if (id === 'ed') pendant(g, 1.4, 0.2);
   const shirts = [shirtA, shirtB, '#e2e8f0'];
   const n = Math.min(desks.length, t.agents ?? desks.length);
-  const staff = t.private ? [] : (t.staff || []);
+  const staff = t.staff || [];
   for (let i = 0; i < desks.length; i++) {
     if (i < n) nameTag(seat(desks[i], id === 'design' ? t.color : shirts[i % 3]), staff[i], id, i);
   }

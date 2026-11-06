@@ -183,10 +183,10 @@ function applyData() {
     }
     for (const a of [R.boss, ...(R.agents || [])].filter(Boolean)) {
       const s = (t.staff || []).find(x => x.id === a.userData.staffId);
-      const b = a.userData.badgeEl?.querySelector('.gbadge');
       const nm = a.userData.badgeEl?.querySelector('.pn');
-      if (nm && s) nm.textContent = s.chip || s.name;
-      if (b && s && !t.private) paintScoreEl(b, s.score);
+      const bar = a.userData.badgeEl?.querySelector('.wbar');
+      if (nm && s) nm.textContent = t.private ? '私密' : (s.chip || s.name);
+      if (bar && s) paintWorkBar(bar, s);
     }
     const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
     const st = el.querySelector('.st');
@@ -239,6 +239,97 @@ function barHtml(score) {
   const pct = scorePct(score);
   const label = tone === 'pending' ? '待评' : `${pct}%`;
   return `<span class="pbar r-${tone}"><i style="width:${pct}%"></i></span><b class="rpct">${esc(label)}</b>`;
+}
+function workRules() {
+  return DATA.workRules || {
+    taskPoints: 1, mistakePoints: -0.3, hourPoints: 0.5, overtimePoints: 0.8,
+    workStart: '09:00', workEnd: '18:00', workDays: [1, 2, 3, 4, 5], asymptote: 8,
+    trackingStartedAt: DATA.updatedAt,
+  };
+}
+function klParts(date) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', weekday: 'short', hourCycle: 'h23',
+  }).formatToParts(date).map(p => [p.type, p.value]));
+  return {
+    year: Number(parts.year), month: Number(parts.month), day: Number(parts.day),
+    hour: Number(parts.hour), minute: Number(parts.minute),
+    dow: DOW[parts.weekday] ?? 0,
+  };
+}
+function klToMs(y, m, d, h, min) {
+  return Date.UTC(y, m - 1, d, h - 8, min, 0);
+}
+function regularHoursBetween(startMs, endMs) {
+  if (!(endMs > startMs)) return 0;
+  const rules = workRules();
+  const days = new Set(rules.workDays || [1, 2, 3, 4, 5]);
+  const openM = hm(rules.workStart || '09:00');
+  const closeM = hm(rules.workEnd || '18:00');
+  let total = 0;
+  let dayMs = klToMs(klParts(new Date(startMs)).year, klParts(new Date(startMs)).month, klParts(new Date(startMs)).day, 0, 0);
+  for (let i = 0; i < 800 && dayMs < endMs + 86400000; i++) {
+    const p = klParts(new Date(dayMs + 12 * 3600000));
+    if (days.has(p.dow)) {
+      const win0 = klToMs(p.year, p.month, p.day, Math.floor(openM / 60), openM % 60);
+      const win1 = klToMs(p.year, p.month, p.day, Math.floor(closeM / 60), closeM % 60);
+      const a = Math.max(win0, startMs);
+      const b = Math.min(win1, endMs);
+      if (b > a) total += (b - a) / 3600000;
+    }
+    dayMs += 86400000;
+  }
+  return total;
+}
+function fmtScore(n) {
+  const v = Math.round((Number(n) || 0) * 100) / 100;
+  return v.toFixed(2);
+}
+function displayedScore(s) {
+  const rules = workRules();
+  const base = Number(s?.workScore) || 0;
+  const extra = Number(s?.extraPenalty) || 0;
+  const ot = Number(s?.overtimeHours) || 0;
+  const started = Date.parse(rules.trackingStartedAt || DATA.updatedAt || '');
+  const hours = Number.isFinite(started) ? regularHoursBetween(started, Date.now()) : 0;
+  const raw = base - extra + hours * (Number(rules.hourPoints) || 0) + ot * (Number(rules.overtimePoints) || 0);
+  return Math.round(raw * 100) / 100;
+}
+function fillPct(score) {
+  const s = Number(score) || 0;
+  if (s <= 0) return 0;
+  const k = Number(workRules().asymptote) || 8;
+  return 100 * s / (s + k);
+}
+function workBarHtml(s) {
+  const sc = displayedScore(s);
+  return `<span class="wbar" data-staff="${esc(s.id)}"><span class="wtrack"><i class="wfill" style="width:${fillPct(sc)}%"></i></span><b class="wscore">${fmtScore(sc)}</b></span>`;
+}
+function workFactsHtml(s) {
+  const extra = Number(s.extraPenalty) || 0;
+  const penalty = extra !== 0 ? `<span>重大失职额外扣分 ${fmtScore(extra)}</span>` : '';
+  return `<span class="wfacts"><span>已完成任务 ${s.tasksDone || 0}</span><span>失误 ${s.mistakes || 0}</span>${penalty}</span>`;
+}
+function paintWorkBar(el, s) {
+  if (!el || !s) return;
+  const sc = displayedScore(s);
+  const fill = el.querySelector('.wfill');
+  const num = el.querySelector('.wscore');
+  if (fill) fill.style.width = `${fillPct(sc)}%`;
+  if (num) num.textContent = fmtScore(sc);
+}
+const staffById = new Map();
+function indexStaff() {
+  staffById.clear();
+  for (const t of DATA.teams || []) for (const s of t.staff || []) staffById.set(s.id, s);
+}
+function refreshWorkBars() {
+  indexStaff();
+  for (const el of document.querySelectorAll('.wbar[data-staff]')) {
+    const s = staffById.get(el.dataset.staff);
+    if (s) paintWorkBar(el, s);
+  }
 }
 function teamUpdatedAt(t) {
   const times = (DATA.tasks || []).filter(x => x.team === t.id).map(x => x.updatedAt).filter(Boolean);
@@ -293,14 +384,14 @@ function renderPanel(id) {
   const doing = DATA.tasks.filter(x => x.team === id && x.status === 'doing');
   const doingItems = doing.length ? doing : (t.currentTask ? [{ status: 'doing', title: t.currentTask }] : []);
   const done = DATA.tasks.filter(x => x.team === id && x.status === 'done').sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 3);
-  const staff = (t.staff || []).map(s => `<li class="srow${state.staffId === s.id ? ' on' : ''}"><span class="sn">${esc(s.name)}${s.role ? `<span class="srole">${esc(s.role)}</span>` : ''}</span><span class="scorebit">${ringHtml(s.score)}</span><span class="grow">${barHtml(s.score)}<span class="snote">${esc(s.gradeNote || '')}</span></span></li>`).join('');
+  const staff = (t.staff || []).map(s => `<li class="srow${state.staffId === s.id ? ' on' : ''}"><span class="sn">${esc(s.name)}${s.role ? `<span class="srole">${esc(s.role)}</span>` : ''}</span><span class="grow">${workBarHtml(s)}${workFactsHtml(s)}</span></li>`).join('');
   const head = `<div class="ph" style="--c:${esc(t.color)}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '')}</div><div><h3>${esc(t.name)}</h3>
     <div class="sub"><span class="chip ${esc(t.status)}"><i class="dot ${esc(t.status)}"></i>${esc(lbl)}</span><span class="scorebit">${ringHtml(t.score)}</span></div></div></div>`;
   body.innerHTML = head +
     `<div class="sec"><h4>职责</h4><div class="card"><div class="cur">${esc(t.duty || '—')}</div></div></div>` +
     `<div class="sec"><h4>本周在做</h4>${doingItems.length ? `<div class="card tlist">${doingItems.map(x => `<div class="titem">${chip(x.status)}<div>${esc(x.title)}</div></div>`).join('')}</div>` : '<div class="card empty">—</div>'}</div>` +
     `<div class="sec"><h4>最近完成</h4>${done.length ? `<div class="card tlist">${done.map(x => `<div class="titem">${chip(x.status)}<div>${esc(x.title)}</div></div>`).join('')}</div>` : '<div class="card empty">—</div>'}</div>` +
-    `<div class="sec"><h4>考核</h4><div class="card gradebox"><span class="scorebit">${ringHtml(t.score)}</span><div class="grow">${barHtml(t.score)}<div class="cur">${esc(t.gradeNote || '')}</div>${t.gradedAt ? `<div class="gdate">${esc(fmtTime(t.gradedAt))}</div>` : ''}</div></div>${staff ? `<ul class="staff">${staff}</ul>` : ''}</div>` +
+    `<div class="sec"><h4>考核</h4><div class="card"><div class="snote">完成任务 +1.00 · 失误 −0.30 · 上班 +0.50/小时 · 加班（交代并完成）+0.80/小时</div></div>${staff ? `<ul class="staff">${staff}</ul>` : ''}</div>` +
     `<div class="sec"><h4>最后更新</h4><div class="card"><div class="cur">${esc(fmtTime(teamUpdatedAt(t)))} (UTC+8)</div></div></div>`;
 }
 function selectRoom(id, source, staffId) {
@@ -840,6 +931,7 @@ function frame() {
   controls.target.y = 0;
   office.update(t, dt, state);
   tickBubbles(dt);
+  if ((T % 1) < dt) refreshWorkBars();
   if (composer) composer.render(); else renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
   separateLabels();

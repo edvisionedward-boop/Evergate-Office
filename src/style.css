@@ -248,6 +248,16 @@ button{font:inherit;color:inherit}
 .ptag.s1{margin-left:8px;margin-top:-58px}
 .ptag.s2{margin-left:8px;margin-top:-94px}
 .ptag .pn{font-size:11px;font-weight:700;color:#f8f4ec}
+.wbar{display:inline-flex;align-items:center;gap:4px;flex:none}
+.wtrack{position:relative;width:46px;height:7px;border-radius:99px;background:#121a14;box-shadow:inset 0 1px 2px rgba(0,0,0,.65),inset 0 0 0 1px rgba(74,222,128,.4);overflow:hidden}
+.wfill{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(180deg,#eaffea 0%,#4ade80 46%,#15803d 100%)}
+.wscore{font-size:10px;font-weight:800;color:#bbf7d0;font-variant-numeric:tabular-nums;min-width:2.6em}
+.wfacts{display:flex;flex-wrap:wrap;gap:3px 8px;font-size:11px;color:var(--mut);line-height:1.35}
+@media (max-width:760px){
+  .ptag .pn{font-size:10px}
+  .wtrack{width:36px;height:6px}
+  .wscore{font-size:9px}
+}
 .grade-col{max-width:720px}
 .gcard{display:block;width:100%;text-align:left;color:inherit;cursor:pointer;border:1px solid var(--line);border-left:3px solid var(--c);background:rgba(255,255,255,.04);border-radius:12px;padding:12px;margin:0 0 10px}
 .gcard .top{display:flex;gap:10px;align-items:center}

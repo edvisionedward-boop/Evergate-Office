@@ -1,6 +1,24 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-06T00:40:00+08:00",
+  "updatedAt": "2026-11-06T09:56:00+08:00",
+  "workRules": {
+    "taskPoints": 1.0,
+    "mistakePoints": -0.3,
+    "hourPoints": 0.5,
+    "overtimePoints": 0.8,
+    "workStart": "09:00",
+    "workEnd": "18:00",
+    "workDays": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "asymptote": 8,
+    "trackingStartedAt": "2026-11-06T09:56:00+08:00",
+    "summary": "完成指派任务 +1.00；记录失误 −0.30；周一至周五 09:00–18:00（吉隆坡）+0.50/小时，从 trackingStartedAt 起按钟点计入，不回补上线前的工时。加班 +0.80/小时只记 Edward 交代且已完成的非上班时段工作，记在 overtimeHours，不因傍晚、周末或房间还亮着而自动增加。重大失职由 ED 按情节另扣，记在 extraPenalty。分数可略为负数。进度条不封顶、不升级。"
+  },
   "office": {
     "title": "Evergate AI Office",
     "company": "EVERGATE HOLDING SDN BHD",
@@ -153,7 +171,12 @@
           "name": "ED 1",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         }
       ],
       "score": null
@@ -179,7 +202,12 @@
           "role": "市场战略与年度预算",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "market-2",
@@ -188,7 +216,12 @@
           "role": "品牌形象、定位与声誉",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "market-3",
@@ -197,7 +230,12 @@
           "role": "科技行业市场研究",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "market-4",
@@ -206,7 +244,12 @@
           "role": "零售行业市场研究",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "market-5",
@@ -215,7 +258,12 @@
           "role": "能源行业市场研究",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "market-6",
@@ -224,7 +272,12 @@
           "role": "国别与关税研究",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         }
       ],
       "score": null,
@@ -251,7 +304,12 @@
           "role": "财务战略与资金筹措",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "corpfin-2",
@@ -260,7 +318,12 @@
           "role": "报表审核与审计协调",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "corpfin-3",
@@ -269,7 +332,12 @@
           "role": "盈亏图表分析",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "corpfin-4",
@@ -278,7 +346,12 @@
           "role": "AI 用量与项目预算对比",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         }
       ],
       "score": null,
@@ -295,7 +368,22 @@
       "currentTask": null,
       "private": true,
       "privateNote": "私密内容，仅 Edward 可见",
-      "privateLabel": "私密"
+      "privateLabel": "私密",
+      "staff": [
+        {
+          "id": "privfin-1",
+          "name": "私密",
+          "chip": "私密",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
+        }
+      ]
     },
     {
       "id": "design",
@@ -304,10 +392,10 @@
       "color": "#E87708",
       "status": "idle",
       "statusNote": "待命",
-      "agents": 5,
+      "agents": 6,
       "currentTask": "品牌视觉规范",
       "private": false,
-      "note": "编制调整 · 11-05",
+      "note": "编制调整为 6 人 · 11-06",
       "duty": "品牌视觉规范与双语网站视觉",
       "gradeNote": "待周一例会后首次评定",
       "gradedAt": null,
@@ -319,7 +407,12 @@
           "role": "视觉风格与品牌规范",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "design-2",
@@ -328,7 +421,12 @@
           "role": "需求对接与排期",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "design-3",
@@ -337,7 +435,12 @@
           "role": "演示文稿",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "design-4",
@@ -346,7 +449,12 @@
           "role": "画册、白皮书与印刷物",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "design-5",
@@ -355,7 +463,26 @@
           "role": "商业信息图表",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
+        },
+        {
+          "id": "design-6",
+          "name": "媒体运营师",
+          "chip": "媒体运营",
+          "role": "公司网络平台的日常运营，包括官方 Instagram，以及之后的网站",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         }
       ],
       "score": null
@@ -381,7 +508,12 @@
           "role": "空运组",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "logistics-2",
@@ -390,7 +522,12 @@
           "role": "海运组",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "logistics-3",
@@ -399,7 +536,12 @@
           "role": "仓库与库存",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "logistics-4",
@@ -408,7 +550,12 @@
           "role": "负责物流相关的产品报告和资料处理",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "logistics-5",
@@ -417,7 +564,12 @@
           "role": "负责提单和 HS Code 清关相关业务",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         }
       ],
       "score": null,
@@ -444,7 +596,12 @@
           "role": "法律风险战略，直接向 Edward 汇报",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "legal-2",
@@ -453,7 +610,12 @@
           "role": "MSA、SOW 等咨询合同",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "legal-3",
@@ -462,7 +624,12 @@
           "role": "核心资产与数据安全",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "legal-4",
@@ -471,7 +638,12 @@
           "role": "马来西亚法规",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "legal-5",
@@ -480,7 +652,12 @@
           "role": "马来西亚 AI 法规",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "legal-6",
@@ -489,7 +666,12 @@
           "role": "海外 AI 法规",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "legal-7",
@@ -498,7 +680,12 @@
           "role": "海事与物流法",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         }
       ],
       "score": null,
@@ -526,7 +713,12 @@
           "role": "团队负责人，向 Edward 或 ED 汇报",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "invest-2",
@@ -535,7 +727,12 @@
           "role": "寻找具备战略价值的项目",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "invest-3",
@@ -544,7 +741,12 @@
           "role": "搭建内部数据分析模型",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "invest-4",
@@ -553,7 +755,12 @@
           "role": "预测评估项目风险等级",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "invest-5",
@@ -562,7 +769,12 @@
           "role": "搭建试用模型测试项目反应",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "invest-6",
@@ -571,7 +783,12 @@
           "role": "策划撰写文案草稿",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "invest-7",
@@ -580,7 +797,12 @@
           "role": "策划撰写文案草稿",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         }
       ],
       "score": null
@@ -607,7 +829,12 @@
           "role": "研究方向与公司数据库，直接向 Edward 汇报",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "info-2",
@@ -616,7 +843,12 @@
           "role": "数据中心行业研究",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "info-3",
@@ -625,7 +857,12 @@
           "role": "AI 服务器行业研究",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "info-4",
@@ -634,7 +871,12 @@
           "role": "芯片大厂行业研究",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "info-5",
@@ -643,7 +885,12 @@
           "role": "能源与原材料行业研究",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "info-6",
@@ -652,7 +899,12 @@
           "role": "医疗与医美行业研究",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "info-7",
@@ -661,7 +913,12 @@
           "role": "科技产品行业研究",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "info-8",
@@ -670,7 +927,12 @@
           "role": "咨询项目市场测试与量化模型",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         },
         {
           "id": "info-9",
@@ -679,7 +941,12 @@
           "role": "案例脱敏归档与方法论工具包",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0
         }
       ],
       "score": null
