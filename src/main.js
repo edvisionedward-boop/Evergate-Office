@@ -569,7 +569,7 @@ function renderBoard() {
   if (mode === 'bars') {
     const teams = DATA.teams.slice();
     const people = teams.reduce((n, t) => n + (t.private || workBarOff(null, t) ? 0 : (t.staff || []).filter(s => !workBarOff(s, t)).length), 0);
-    $('#boardStats').innerHTML = `<div class="bstotal">血条分数 <b>与头顶绿条同一实时分数</b> · ${people} 人</div>`;
+    $('#boardStats').innerHTML = `<div class="bstotal">分数 <b>与头顶绿条同一实时分数</b> · ${people} 人</div>`;
     $('#boardCols').innerHTML = `<div class="col grade-col">${teams.map(t => {
       const rows = t.private
         ? `<span class="smini"><b>私密</b></span>`
