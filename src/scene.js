@@ -341,6 +341,16 @@ function chair(parent, x, z, ry, accent) {
   box(g, 0.46, 0.55, 0.08, 0, 0.6, 0.24, seat, { round: 0.04 }).rotation.x = -0.12;
   return g;
 }
+function barStool(parent, x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); parent.add(g);
+  const metal = M('#1f2937', { m: .55, r: .35 });
+  const seat = M('#b45309', { r: .62 });
+  cyl(g, 0.03, 0.04, 0.68, 0, 0, 0, metal, 8);
+  cyl(g, 0.16, 0.16, 0.06, 0, 0.68, 0, seat, 16);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.012, 6, 18), metal);
+  ring.rotation.x = Math.PI / 2; ring.position.y = 0.26; g.add(ring);
+  return g;
+}
 function plant(parent, x, z, s = 1, kind = 0, y = 0) {
   const g = new THREE.Group(); g.position.set(x, y, z); g.scale.setScalar(s); parent.add(g);
   const gold = kind % 2 === 1;
@@ -1578,6 +1588,100 @@ function loungeBoardTexture() {
   g.fillStyle = '#8b97b0'; g.font = '500 24px sans-serif'; g.fillText('周一  9:00', 256, 196);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
+function furnishPantry(g, W) {
+  // 茶水间 sits on the east wall, south of the restroom door. Local room axes.
+  const wallInner = W / 2 - 0.04;
+  const bodyD = 0.5;
+  const bodyX = wallInner - 0.04 - bodyD / 2;
+  const topD = 0.64;
+  const topX = wallInner - 0.03 - topD / 2;
+  const topY = 0.98;
+  const z0 = 1.02;
+  const len = 2.32;
+  const zc = z0 + len / 2;
+  const cabinet = M('#1c1917', { r: .48, m: .32 });
+  const stone = M('#d6d3d1', { r: .34, m: .06 });
+  const steel = M('#d7dde6', { m: .78, r: .24 });
+  const dark = M('#1c1917', { m: .55, r: .3 });
+  box(g, bodyD, 0.98, len, bodyX, 0, zc, cabinet, { round: 0.03 });
+  box(g, topD, 0.045, len + 0.02, topX, topY, zc, stone, { round: 0.02 });
+  box(g, 0.018, 0.03, len - 0.24, bodyX - bodyD / 2 - 0.004, 0.7, zc, M(GOLD, { m: .5, r: .35 }), { cast: false });
+  box(g, 0.03, 0.42, len, wallInner - 0.02, topY + 0.045, zc, M('#44403c', { r: .55 }), { cast: false });
+
+  const sinkZ = z0 + 0.36;
+  cyl(g, 0.115, 0.105, 0.03, topX + 0.02, topY + 0.03, sinkZ, steel, 18, { cast: false });
+  cyl(g, 0.078, 0.07, 0.018, topX + 0.02, topY + 0.045, sinkZ, M('#1e293b', { m: .35, r: .18 }), 16, { cast: false });
+  cyl(g, 0.012, 0.012, 0.15, topX + 0.16, topY + 0.045, sinkZ, steel, 8, { cast: false });
+  const spout = cyl(g, 0.01, 0.01, 0.1, topX + 0.09, topY + 0.18, sinkZ, steel, 8, { cast: false });
+  spout.rotation.z = Math.PI / 2;
+
+  const kettle = new THREE.Group();
+  kettle.position.set(topX + 0.01, topY + 0.045, z0 + 0.9);
+  g.add(kettle);
+  cyl(kettle, 0.09, 0.075, 0.16, 0, 0, 0, steel, 14);
+  cyl(kettle, 0.042, 0.05, 0.03, 0, 0.16, 0, dark, 10, { cast: false });
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.011, 6, 14, Math.PI), dark);
+  handle.rotation.y = Math.PI / 2;
+  handle.position.set(0, 0.09, -0.09);
+  kettle.add(handle);
+  const snout = cyl(kettle, 0.016, 0.026, 0.07, -0.09, 0.1, 0, steel, 8, { cast: false });
+  snout.rotation.z = Math.PI / 2.5;
+  box(kettle, 0.022, 0.022, 0.01, 0.02, 0.08, 0.085, M(ORANGE, { e: ORANGE, ei: 0.9 }), { cast: false });
+
+  const machine = new THREE.Group();
+  machine.position.set(topX + 0.02, topY + 0.045, z0 + 1.52);
+  machine.rotation.y = -Math.PI / 2;
+  g.add(machine);
+  box(machine, 0.4, 0.38, 0.34, 0, 0, 0, dark, { round: 0.03 });
+  box(machine, 0.16, 0.07, 0.018, 0, 0.24, 0.175, M('#f59e0b', { e: '#fbbf24', ei: 0.9 }), { cast: false });
+  box(machine, 0.26, 0.018, 0.08, 0, 0, 0.2, M('#292524', { m: .4, r: .4 }), { cast: false });
+  cyl(machine, 0.038, 0.032, 0.055, -0.07, 0.018, 0.2, M('#f8fafc', { r: .35 }), 8, { cast: false });
+  cyl(machine, 0.038, 0.032, 0.055, 0.07, 0.018, 0.21, M('#e7e5e4', { r: .35 }), 8, { cast: false });
+
+  const cupY = topY + 0.045;
+  const cupZ = z0 + 2.02;
+  cyl(g, 0.062, 0.062, 0.012, topX - 0.06, cupY, cupZ, M(GOLD, { m: .45, r: .4 }), 12, { cast: false });
+  cyl(g, 0.045, 0.038, 0.065, topX - 0.06, cupY + 0.01, cupZ, M('#f8fafc', { r: .32 }), 10, { cast: false });
+  cyl(g, 0.045, 0.038, 0.065, topX + 0.08, cupY, cupZ + 0.1, M('#44403c', { r: .4 }), 10, { cast: false });
+  cyl(g, 0.04, 0.034, 0.06, topX + 0.16, cupY, cupZ - 0.06, M('#f8fafc', { r: .32 }), 10, { cast: false });
+
+  const frD = 0.56, frW = 0.54;
+  const frZ = z0 + len + 0.1 + frD / 2;
+  const frX = wallInner - 0.03 - frW / 2;
+  box(g, frW, 1.28, frD, frX, 0, frZ, steel, { round: 0.03 });
+  const faceX = frX - frW / 2 - 0.004;
+  box(g, 0.012, 1.1, 0.012, faceX, 0.08, frZ, M('#94a3b8', { m: .65, r: .3 }), { cast: false });
+  box(g, 0.012, 0.01, 0.46, faceX, 0.86, frZ, M('#94a3b8', { m: .5, r: .3 }), { cast: false });
+  box(g, 0.018, 0.26, 0.028, faceX, 0.5, frZ - 0.1, M('#334155', { m: .55 }), { cast: false });
+  box(g, 0.018, 0.22, 0.028, faceX, 0.98, frZ + 0.08, M('#334155', { m: .55 }), { cast: false });
+
+  const stoolX = topX - topD / 2 - 0.22;
+  for (const z of [z0 + 0.38, z0 + 1.12, z0 + 1.9]) barStool(g, stoolX, z);
+
+  const sign = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.36, 0.34),
+    new THREE.MeshBasicMaterial({ map: signTexture('茶水间', 'PANTRY', ORANGE), toneMapped: false }),
+  );
+  sign.position.set(wallInner - 0.1, 1.7, zc);
+  sign.rotation.y = -Math.PI / 2;
+  sign.userData.keep = true;
+  g.add(sign);
+
+  const el = document.createElement('div');
+  el.className = 'rlabel minor';
+  el.style.setProperty('--c', ORANGE);
+  el.dataset.room = 'lounge';
+  el.innerHTML = '<div class="nm">茶水间</div>';
+  const label = new CSS2DObject(el);
+  label.position.set(topX - 0.05, 2.15, z0 + 0.28);
+  label.center.set(0.5, 1);
+  g.add(label);
+
+  pendant(g, stoolX - 0.05, zc);
+  const warm = new THREE.PointLight('#fff1d6', 0.32, 4.8, 1.6);
+  warm.position.set(topX - 0.15, 1.85, zc);
+  g.add(warm);
+}
 function furnishLounge(g, def) {
   const W = def.w, D = def.d;
   const sofaM = M('#b45309', { r: .82 });
@@ -1602,29 +1706,7 @@ function furnishLounge(g, def) {
   chair(g, dineX, dineZ + 1.05, 0, '#44403c');
   chair(g, dineX - 1.05, dineZ, Math.PI / 2, '#44403c');
   chair(g, dineX + 1.05, dineZ, -Math.PI / 2, '#44403c');
-  // coffee bar along the east wall
-  const bar = M('#1f2937', { r: .45, m: .35 });
-  box(g, 0.7, 1.05, 2.2, W / 2 - 0.55, 0, 2.15, bar, { round: 0.03 });
-  box(g, 0.74, 0.06, 2.25, W / 2 - 0.55, 1.05, 2.15, M('#d6d3d1', { r: .35 }), { round: 0.02 });
-  const machine = new THREE.Group(); machine.position.set(W / 2 - 0.55, 1.11, 1.35); g.add(machine);
-  box(machine, 0.46, 0.42, 0.38, 0, 0.21, 0, M('#1c1917', { m: .72, r: .28 }), { round: 0.03 });
-  box(machine, 0.16, 0.1, 0.03, 0.02, 0.38, 0.19, M('#f59e0b', { e: '#fbbf24', ei: 0.9 }), { cast: false });
-  cyl(machine, 0.045, 0.05, 0.07, -0.12, 0, 0.18, M('#f8fafc', { r: .35 }), 8);
-  cyl(machine, 0.045, 0.05, 0.07, 0.08, 0, 0.2, M('#e7e5e4', { r: .35 }), 8);
-  cyl(g, 0.055, 0.05, 0.07, W / 2 - 0.78, 1.11, 2.7, M('#f8fafc', { r: .35 }), 8);
-  cyl(g, 0.055, 0.05, 0.07, W / 2 - 0.42, 1.11, 2.85, M('#44403c', { r: .4 }), 8);
-  // tall two-door fridge
-  const steel = M('#d7dde6', { m: .82, r: .22 });
-  box(g, 0.72, 1.85, 0.68, W / 2 - 0.5, 0, 4.15, steel, { round: 0.03 });
-  box(g, 0.02, 1.7, 0.02, W / 2 - 0.5, 0.08, 4.48, M('#94a3b8', { m: .7, r: .3 }), { cast: false });
-  box(g, 0.03, 0.55, 0.03, W / 2 - 0.22, 1.15, 4.48, M('#334155', { m: .6 }), { cast: false });
-  box(g, 0.03, 0.55, 0.03, W / 2 - 0.78, 1.15, 4.48, M('#334155', { m: .6 }), { cast: false });
-  // standing water cooler against the east wall, between the bar and the fridge
-  const coolX = W / 2 - 0.48, coolZ = 3.35;
-  box(g, 0.4, 1.02, 0.4, coolX, 0, coolZ, M('#eef2f6', { m: .45, r: .3 }), { round: 0.04 });
-  cyl(g, 0.14, 0.14, 0.46, coolX, 1.02, coolZ, M('#3b82f6', { m: .12, r: .22, op: 0.82 }), 12);
-  box(g, 0.07, 0.04, 0.05, coolX - 0.18, 0.78, coolZ, M('#334155', { m: .4 }), { cast: false });
-  cyl(g, 0.045, 0.04, 0.06, coolX - 0.22, 0.62, coolZ, M('#f8fafc', { r: .35 }), 8);
+  furnishPantry(g, W);
   // east + south walls, door stays on the west
   const wallMat = smokeGlass();
   const gold = goldFrame();

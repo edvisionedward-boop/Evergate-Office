@@ -48,7 +48,8 @@
   "lounge": {
     "name": "休息室",
     "meeting": "每周一 9:00 跨部门例会",
-    "lastMeeting": "首次例会将于 11月09日 举行"
+    "lastMeeting": "首次例会将于 11月09日 举行",
+    "pantry": "内含茶水间，各部门在此闲聊、互学技能"
   },
   "archive": {
     "name": "资料库",
