@@ -464,7 +464,9 @@ function renderPanel(id) {
     const L = DATA.lounge || {};
     const n = office.rooms.lounge?.occupancy ?? 0;
     const note = L.lastMeeting ? `<div class="sec"><h4>最新纪要</h4><div class="card"><div class="cur">${esc(L.lastMeeting)}</div></div></div>` : '';
+    const pantry = L.pantry ? `<div class="sec"><div class="card"><div class="cur">${esc(L.pantry)}</div></div></div>` : '';
     body.innerHTML = `<div class="ph" style="--c:#E87708"><div class="ic">休</div><div><h3>${esc(L.name || '休息室')}</h3><div class="sub">跨部门交流区 · 每周一 9:00 例会</div></div></div>` +
+      pantry +
       `<div class="sec"><h4>例会</h4><div class="card"><div class="cur">${esc(L.meeting || '每周一 9:00 跨部门例会')}</div></div></div>` +
       note +
       `<div class="sec"><div class="card empty">当前 ${n} 人在休息室</div></div>`;
@@ -732,7 +734,7 @@ function sharedSpaceCard() {
   const L = DATA.lounge || {};
   const n = office.rooms.lounge?.occupancy ?? 0;
   const sel = (id) => state.selected === id ? ' sel' : '';
-  const extra = [L.meeting, L.lastMeeting].filter(Boolean).map(s => `<div class="dnone">${esc(s)}</div>`).join('');
+  const extra = [L.pantry, L.meeting, L.lastMeeting].filter(Boolean).map(s => `<div class="dnone">${esc(s)}</div>`).join('');
   const lounge = `<button type="button" class="dcard${sel('lounge')}" data-team="lounge" style="--c:#E87708"><div class="dtop"><span class="ic">休</span><div><div class="nm">${esc(L.name || '休息室')}</div><div class="sub">共享空间 · ${n} 人在此</div></div></div>${extra}</button>`;
   const archive = `<button type="button" class="dcard${sel('archive')}" data-team="archive" style="--c:#D0B993"><div class="dtop"><span class="ic">资</span><div><div class="nm">${esc(DATA.archive?.name || '资料库')}</div><div class="sub">客厅 · 普通文件房 · 机密文件房</div></div></div></button>`;
   const showroom = `<button type="button" class="dcard${sel('showroom')}" data-team="showroom" style="--c:#D0B993"><div class="dtop"><span class="ic">展</span><div><div class="nm">品牌展厅</div><div class="sub">展陈占位 · 非部门</div></div></div></button>`;
