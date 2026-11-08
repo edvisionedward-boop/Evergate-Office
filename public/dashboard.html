@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>EVERGATE 公司 Dashboard</title>
+<meta name="description" content="EVERGATE 公司 Dashboard：分数与工时、任务、用量、考核与客户进度。" />
+<meta name="theme-color" content="#102033" />
+<meta name="color-scheme" content="dark" />
+<meta name="format-detection" content="telephone=no" />
+<link rel="icon" href="icons/favicon.png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="stylesheet" href="dashboard/app.css" />
+</head>
+<body>
+<!-- Background photo: original generated lounge interior at dashboard/bg.jpg. Not hotlinked. -->
+<div class="bg" aria-hidden="true"></div>
+<div class="shade" aria-hidden="true"></div>
+
+<div class="shell">
+  <header class="top">
+    <div class="toprow">
+      <a class="back" href="index.html">返回 3D 办公室</a>
+      <p class="updated" id="updated">数据更新 — (UTC+8)</p>
+    </div>
+    <h1>EVERGATE 公司 Dashboard</h1>
+    <p class="hello" id="hello">您好，Edward</p>
+    <nav class="pills" aria-label="栏目">
+      <a href="#scores">分数与工时</a>
+      <a href="#tasks">任务进度</a>
+      <a href="#usage">用量</a>
+      <a href="#exams">考核</a>
+      <a href="#pipeline">客户</a>
+    </nav>
+  </header>
+
+  <aside class="side" aria-label="栏目">
+    <a href="#scores" aria-label="分数与工时" title="分数与工时"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg></a>
+    <a href="#tasks" aria-label="任务进度与完成报告" title="任务进度"><svg viewBox="0 0 24 24"><path d="M8 6h11M8 12h11M8 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg></a>
+    <a href="#usage" aria-label="成本与 Token 用量" title="用量"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-2"/></svg></a>
+    <a href="#exams" aria-label="考核成绩与技能成长" title="考核"><svg viewBox="0 0 24 24"><path d="M4 16l5-5 3 3 8-8"/><path d="M14 6h6v6"/></svg></a>
+    <a href="#pipeline" aria-label="客户开发进度" title="客户"><svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="2.2"/><circle cx="16" cy="9" r="2.2"/><path d="M4.5 18c.6-2.2 2.2-3.3 3.5-3.3S11 15.8 11.5 18M12.5 18c.6-2.2 2.2-3.3 3.5-3.3s2.9 1.1 3.5 3.3"/></svg></a>
+  </aside>
+
+  <main>
+    <section id="scores" class="block" aria-labelledby="scoresTitle">
+      <div class="block-h">
+        <h2 id="scoresTitle">分数与工时</h2>
+      </div>
+      <div id="scoreBody" class="slot" aria-live="polite">正在读取办公室数据…</div>
+    </section>
+
+    <section id="tasks" class="block" aria-labelledby="tasksTitle">
+      <div class="block-h">
+        <h2 id="tasksTitle">任务进度与完成报告</h2>
+      </div>
+      <div id="taskBody" class="slot" aria-live="polite">正在读取任务板…</div>
+    </section>
+
+    <section id="usage" class="block" aria-labelledby="usageTitle">
+      <div class="block-h">
+        <h2 id="usageTitle">成本与 Token 用量</h2>
+      </div>
+      <div id="usageBody" class="slot" aria-live="polite">正在读取用量日报…</div>
+    </section>
+
+    <section id="exams" class="block" aria-labelledby="examsTitle">
+      <div class="block-h">
+        <h2 id="examsTitle">考核成绩与技能成长</h2>
+      </div>
+      <div id="examBody" class="slot" aria-live="polite">正在读取考核档案…</div>
+    </section>
+
+    <section id="pipeline" class="block" aria-labelledby="pipeTitle">
+      <div class="block-h">
+        <h2 id="pipeTitle">客户开发进度</h2>
+      </div>
+      <div id="pipeBody" class="slot" aria-live="polite">正在读取客户进度…</div>
+    </section>
+
+    <p class="foot"><a href="index.html">返回 3D 办公室</a></p>
+  </main>
+</div>
+<noscript><p class="noscript">需要打开 JavaScript 才能读取办公室数据。本页不会自己编造数字。</p></noscript>
+<script type="module" src="dashboard/app.js"></script>
+</body>
+</html>

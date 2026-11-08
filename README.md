@@ -9,5 +9,6 @@
   - `directory.groups` / `directory.statusGroups` drive the 部门总览 tab (按类别 / 按状态). Tasks shown there come from `tasks`.
 - Build: `npm ci && npm run build` → `dist/index.html` (single file, all JS/CSS inlined, data.json embedded as fallback) + standalone `dist/data.json`, `dist/manifest.webmanifest`, `dist/icons/`
 - Host: GitHub Actions deploys `dist/` to GitHub Pages at https://edvisionedward-boop.github.io/Evergate-Office/ (Vite `base` is `/Evergate-Office/`). On iPhone Safari → Share → 添加到主屏幕.
+- Dashboard: `public/dashboard.html` → https://edvisionedward-boop.github.io/Evergate-Office/dashboard.html. It reads the same `public/data.json` for scores and tasks. Usage, exams, and the client pipeline are `public/data/usage.json`, `public/data/exams.json`, and `public/data/pipeline.json`. Do not commit client names; the pipeline page only shows counts by stage.
 - Update data without code changes: edit `public/data.json` and push to `main`. The workflow republishes that file as `/Evergate-Office/data.json`. The app fetches it on load and again every 60 seconds.
 - Screenshots: `node scripts/shot.mjs http://127.0.0.1:4173/Evergate-Office/ screens desk,phone`

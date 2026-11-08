@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "principle": "少而对的客户",
+  "privacy": "本仓库公开在 GitHub Pages。客户名称、联系人、下一步和谈判内容不得写入此文件。页面只按阶段计数，不显示任何客户身份。",
+  "stages": ["候选", "已验证需求", "已接触", "洽谈中", "签约"],
+  "records": [],
+  "recordShape": {
+    "company": "留空。真实客户名不要提交到 GitHub",
+    "stage": "候选 | 已验证需求 | 已接触 | 洽谈中 | 签约",
+    "fitScore": "数字或 null",
+    "nextStep": "不要写可识别客户的细节",
+    "ownerDept": "部门 id",
+    "updated": "ISO 8601"
+  }
+}
