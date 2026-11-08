@@ -9,7 +9,9 @@
   const PHASE = { done: '已完成', upcoming: '即将到来', today: '今天', overdue: '已到期，结果尚未回写' };
   const COLS = [['todo', '待开始'], ['doing', '进行中'], ['done', '已完成']];
   const charts = {};
-  const state = { dept: 'all' };
+  const state = { dept: 'all', showAll: false };
+  const phoneQuery = '(max-width: 800px)';
+  function isPhone() { return matchMedia(phoneQuery).matches; }
 
   if (window.Chart) {
     Chart.defaults.font.family = FONT;
@@ -58,8 +60,14 @@
   function emptyBlock(title, detail) {
     return `<div class="empty"><p class="empty-k">${esc(title)}</p>${detail ? `<p>${esc(detail)}</p>` : ''}</div>`;
   }
-  function sourceLine(text) {
-    return `<p class="src">${esc(text)}</p>`;
+  function infoTip(text) {
+    return `<span class="tip"><button type="button" class="info" aria-label="说明" aria-expanded="false">ⓘ</button><span class="tipbox" hidden>${esc(text)}</span></span>`;
+  }
+  function fillPct(total, rules) {
+    const s = Number(total) || 0;
+    if (s <= 0) return 0;
+    const k = Number(rules?.asymptote) || 8;
+    return Math.max(0, Math.min(100, Math.round((100 * s) / (s + k))));
   }
   function axis() {
     return {
@@ -93,6 +101,12 @@
     const iso = state.data?.updatedAt;
     const ms = Date.parse(iso || '');
     $('#updated').textContent = Number.isFinite(ms) ? `数据更新 ${M.fmtKL(ms)}（UTC+8）` : '数据更新 暂无';
+    const meta = $('#metaLine');
+    if (meta) {
+      const short = (s) => String(s).slice(5);
+      const upd = Number.isFinite(ms) ? short(M.fmtKL(ms)) : '暂无';
+      meta.textContent = `${preview ? '预览' : '吉隆坡'} ${short(kl)} · 数据更新 ${upd}`;
+    }
     return { date, preview, nowMs: date.getTime() };
   }
 
@@ -107,15 +121,15 @@
     $('#overviewBody').innerHTML = `
       <div class="stats">
         <article class="glass stat">
-          <p class="k">公司总分</p>
+          <p class="k"><span class="k-long">公司总分</span><span class="k-short">总分</span></p>
           <p class="v" id="statScore">${esc(M.fmtScore(live.total))}</p>
           <div class="spark"><canvas id="sparkScore"></canvas></div>
           <p class="sub">计分 ${live.people} 人 · 不含 ED / 私密</p>
         </article>
         <article class="glass stat">
-          <p class="k">在册人数</p>
+          <p class="k"><span class="k-long">在册人数</span><span class="k-short">在册</span></p>
           <p class="v" id="statStaff">${M.staffCount(state.data.teams)}</p>
-          <p class="sub">来自 data.json 的员工名单</p>
+          <p class="sub">当前在册</p>
         </article>
         <article class="glass stat">
           <p class="k">任务</p>
@@ -124,18 +138,18 @@
           <p class="sub">已完成 / 进行中</p>
         </article>
         <article class="glass stat">
-          <p class="k">等 Edward</p>
+          <p class="k"><span class="k-long">等 Edward</span><span class="k-short">待确认</span></p>
           <p class="v" id="statWait">${counts.confirm}</p>
-          <p class="sub">任务板状态为等你确认</p>
+          <p class="sub">等你确认</p>
         </article>
         <article class="glass stat">
-          <p class="k">本周 Token 额度</p>
+          <p class="k"><span class="k-long">本周 Token 额度</span><span class="k-short">本周额度</span></p>
           <p class="v" id="statToken">${esc(token)}</p>
           <div class="meter" role="img" aria-label="本周已用 ${esc(token)}"><i id="tokenMeter" style="width:${meter}%"></i></div>
-          <p class="sub">${usage ? '与套餐内其他应用共用' : '用量日报尚未写入'}</p>
+          <p class="sub">${usage ? '与其他应用共用' : '用量还没有写入'}</p>
         </article>
       </div>
-      ${sourceLine('总分、人数、任务来自 data.json 与工时规则。本周额度来自 data/usage.json。没有历史的卡片不画趋势线。')}`;
+      ${infoTip('人数、任务和分数来自办公室记录。本周额度与套餐里其他应用共用。没有逐日记录的卡片不画趋势。')}`;
     paintCharts(clock);
   }
 
@@ -165,38 +179,19 @@
       setSeries('sparkDone', dLabels, dValues);
     }
     const ranks = M.departmentRanks(state.data.teams, rules, clock.nowMs);
-    if (document.getElementById('rankChart')) {
-      const colors = ranks.map((_, i) => PALETTE[i % PALETTE.length]);
-      if (!charts.rankChart) {
-        charts.rankChart = new Chart(document.getElementById('rankChart'), {
-          type: 'bar',
-          data: {
-            labels: ranks.map((r) => `${r.name} · ${r.n}人`),
-            datasets: [{ data: ranks.map((r) => r.total), backgroundColor: colors, borderRadius: 8, borderSkipped: false, maxBarThickness: 18 }],
-          },
-          options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => M.fmtScore(c.raw) } } },
-            scales: { x: axis(), y: { ...axis(), grid: { display: false } } },
-          },
-        });
-      } else {
-        charts.rankChart.data.labels = ranks.map((r) => `${r.name} · ${r.n}人`);
-        charts.rankChart.data.datasets[0].data = ranks.map((r) => r.total);
-        charts.rankChart.update();
-      }
-    }
+    if (document.getElementById('rankChart')) paintRank(ranks);
     if (document.getElementById('trendChart')) {
-      const note = $('#trendNote');
+      const card = $('#trendCard');
       const box = $('#trendChart').parentElement;
+      const caption = $('#trendCaption');
       if (mismatches.length) {
-        if (note) note.hidden = false;
+        if (card) card.classList.add('nocurve');
         box.hidden = true;
+        if (caption) caption.hidden = false;
       } else if (values.length) {
-        if (note) note.hidden = true;
+        if (card) card.classList.remove('nocurve');
         box.hidden = false;
+        if (caption) caption.hidden = false;
         upsert('trendChart', () => ({
           type: 'line',
           data: {
@@ -229,6 +224,47 @@
     paintPeopleNumbers(clock);
   }
 
+  function paintRank(ranks) {
+    const narrow = isPhone();
+    const labels = ranks.map((r) => (narrow ? r.name : `${r.name} · ${r.n}人`));
+    const data = ranks.map((r) => r.total);
+    const maxVal = data.reduce((m, n) => Math.max(m, Number(n) || 0), 0);
+    const colors = ranks.map((_, i) => PALETTE[i % PALETTE.length]);
+    const x = { ...axis(), beginAtZero: true, ticks: { ...axis().ticks, maxTicksLimit: narrow ? 4 : 8 } };
+    if (narrow) {
+      x.grace = '18%';
+      x.suggestedMax = Math.ceil((maxVal || 1) * 1.2);
+    }
+    const scales = {
+      x,
+      y: { ...axis(), grid: { display: false }, ticks: { ...axis().ticks, font: { family: FONT, size: narrow ? 14 : 11 }, autoSkip: false } },
+    };
+    const layout = { padding: { right: narrow ? 12 : 0, left: 0, top: 4, bottom: 0 } };
+    const barStyle = { borderRadius: narrow ? 4 : 8, borderSkipped: narrow ? 'start' : false, maxBarThickness: narrow ? 14 : 18 };
+    if (!charts.rankChart) {
+      charts.rankChart = new Chart(document.getElementById('rankChart'), {
+        type: 'bar',
+        data: { labels, datasets: [{ data, backgroundColor: colors, ...barStyle }] },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          layout,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => M.fmtScore(c.raw) } } },
+          scales,
+        },
+      });
+    } else {
+      charts.rankChart.data.labels = labels;
+      charts.rankChart.data.datasets[0].data = data;
+      Object.assign(charts.rankChart.data.datasets[0], barStyle);
+      charts.rankChart.options.scales = scales;
+      charts.rankChart.options.layout = layout;
+      charts.rankChart.update();
+    }
+    requestAnimationFrame(() => charts.rankChart && charts.rankChart.resize());
+  }
+
   function sparkConfig(labels, data, color) {
     const line = color || '#93c5fd';
     return {
@@ -258,7 +294,7 @@
   function renderProgress() {
     const doc = state.progress;
     if (!doc || doc.__error || !Array.isArray(doc.milestones) || !doc.milestones.length) {
-      $('#progressBody').innerHTML = `<div class="glass pad">${emptyBlock('暂无数据', '公司里程碑写入 data/progress.json 后会出现在这里。')}</div>`;
+      $('#progressBody').innerHTML = `<div class="glass pad">${emptyBlock('暂无数据', '公司里程碑还没有写入。')}</div>`;
       return;
     }
     const { date } = readClock();
@@ -266,7 +302,7 @@
       const phase = M.milestonePhase(item, date);
       return `<li class="${esc(phase)}"><i></i><div><p class="when">${esc(monthDay(item.date))} · ${esc(PHASE[phase] || phase)}</p><p class="what">${esc(item.title)}</p></div></li>`;
     }).join('');
-    $('#progressBody').innerHTML = `<div class="glass pad"><ol class="tl">${items}</ol>${sourceLine('里程碑来自 data/progress.json，日期为马来西亚时间。计划项过了日期仍未改成完成时，标成已到期、结果尚未回写。')}</div>`;
+    $('#progressBody').innerHTML = `<div class="glass pad"><ol class="tl">${items}</ol>${infoTip('日期为马来西亚时间。计划过了日期还没回写，会标成已到期。')}</div>`;
   }
 
   function renderPeople() {
@@ -294,30 +330,34 @@
     });
     const head = `<div class="person head" aria-hidden="true"><span>姓名</span><span>部门</span><span>职责</span><span>状态</span><span>任务分</span><span>工时分</span><span>加班</span><span>合计</span></div>`;
     const body = rows.map(({ team, staff }) => personRow(team, staff, rules)).join('');
+    const clockNote = '状态用办公室同一套时钟：周一至周五 09:00–18:00（吉隆坡）为忙碌；例会时段为开会中；其余时间为下班。喝咖啡、休息、汇报中、交接任务只在 3D 办公室的实时走动里出现，此页不编造。合计 = 任务分 − 额外扣分 + 工时分。ED 不计工时，私密不计入。';
     const mismatch = (state.mismatches || []).length
-      ? '记分动态和工作条对不上，这里不推算曲线。上方总分仍是当前快照加实时工时。'
-      : `曲线按动态里写明的分值，加上自 ${started || 'trackingStartedAt'} 起的工时分。周末不计工时。`;
+      ? '已记下的分值和当前分数对不齐，这里先不画曲线。'
+      : `曲线按已记下的分值，加上自 ${started || '开始计分'} 起的工时。周末不计工时。`;
     $('#peopleBody').innerHTML = `
-      <p class="note">状态用办公室同一套时钟：周一至周五 09:00–18:00（吉隆坡）为忙碌；例会时段为开会中；其余时间为下班。喝咖啡、休息、汇报中、交接任务只在 3D 办公室的实时走动里出现，此页不编造。合计 = 任务分 − 额外扣分 + 工时分。ED 不计工时，私密不计入。</p>
+      <p class="note desk-note">${esc(clockNote)}</p>
+      <details class="explain"><summary>说明</summary><p>${esc(clockNote)}</p></details>
       <div class="charts-2">
         <div class="glass pad"><h3 class="block" style="margin-top:0">部门总分</h3><div class="chartbox"><canvas id="rankChart"></canvas></div></div>
-        <div class="glass pad"><h3 class="block" style="margin-top:0">分数趋势</h3><div class="chartbox" id="trendBox"><canvas id="trendChart"></canvas></div><p class="chart-miss" id="trendNote" hidden></p><p class="src" id="trendCaption">${esc(mismatch)}</p></div>
+        <div class="glass pad trend-card" id="trendCard"><h3 class="block" style="margin-top:0">分数趋势</h3><div class="chartbox" id="trendBox"><canvas id="trendChart"></canvas></div><p class="src" id="trendCaption">${esc(mismatch)}</p></div>
       </div>
       <div class="glass pad">
         <div class="filters">
           <input id="q" type="search" placeholder="搜索姓名或职责" aria-label="搜索姓名或职责">
-          <div class="chips" id="chips">${chips}</div>
+          <div class="chip-fade"><div class="chips" id="chips">${chips}</div></div>
         </div>
         <p class="sub" id="peopleCount"></p>
         <div class="people" id="peopleList">${head}${body}</div>
+        <button type="button" id="showAll" hidden>显示全部</button>
         <p class="miss" id="peopleMiss" hidden>没有匹配的人员</p>
-        ${sourceLine('人员、部门、职责、任务分来自 data.json。工时分按 workRules 用当前时钟计算。星级记分时间来自 feed 里写明基数或加分的句子。')}
+        ${infoTip('分数按办公室记分。工时按工作日时钟累加。ED 不计工时，私密不计入。')}
       </div>`;
-    if ((state.mismatches || []).length) $('#trendNote').textContent = mismatch;
-    $('#q').addEventListener('input', applyPeopleFilter);
+    $('#q').addEventListener('input', () => { state.showAll = false; applyPeopleFilter(); });
+    $('#showAll').addEventListener('click', () => { state.showAll = !state.showAll; applyPeopleFilter(); });
     $('#chips').addEventListener('click', (event) => {
       const button = event.target.closest('button');
       if (!button) return;
+      state.showAll = false;
       state.dept = button.dataset.dept || 'all';
       $('#chips').querySelectorAll('button').forEach((el) => el.classList.toggle('on', el === button));
       applyPeopleFilter();
@@ -330,26 +370,44 @@
     const priv = !!team.private;
     const name = priv ? '私密' : (staff.name || '');
     const dept = publicTeamName(team);
+    const chip = priv ? '私密' : (team.short || team.name);
     const role = priv ? '' : (staff.role || '');
-    const q = `${name} ${dept} ${role}`.toLowerCase();
+    const q = `${name} ${dept} ${chip} ${role}`.toLowerCase();
     if (priv) {
-      return `<article class="person slim" data-dept="${esc(team.id)}" data-q="${esc(q)}"><div class="who"><b>私密</b></div></article>`;
+      return `<article class="person slim" data-dept="${esc(team.id)}" data-q="${esc(q)}"><div class="who"><b>私密</b></div><div class="mrow mstatic"><span class="mwho"><b>私密</b></span></div></article>`;
     }
     const off = M.workBarOff(staff, team, rules);
     const parts = off ? null : M.scoreParts(staff, rules, readClock().nowMs);
     const key = M.activityKey(readClock().date, state.data.meetings);
+    const badge = `<span class="badge st-${esc(key)}" data-badge="${esc(staff.id)}">${esc(M.ACT[key] || key)}</span>`;
     const scores = off
       ? `<div class="na" data-label="分数">不计工时</div>`
       : `<div class="num" data-label="任务分" data-k="task" data-staff="${esc(staff.id)}">${M.fmtScore(parts.task)}</div>
          <div class="num" data-label="工时分" data-k="hour" data-staff="${esc(staff.id)}">${M.fmtScore(parts.hourPts)}</div>
          <div class="num" data-label="加班" data-k="ot" data-staff="${esc(staff.id)}">${M.fmtScore(parts.overtime)}</div>
          <div class="num sum" data-label="合计" data-k="total" data-staff="${esc(staff.id)}">${M.fmtScore(parts.total)}</div>`;
+    const totalText = off ? '不计工时' : M.fmtScore(parts.total);
+    const bar = off ? '' : `<span class="mtrack" aria-hidden="true"><i class="mfill" data-staff="${esc(staff.id)}" style="width:${fillPct(parts.total, rules)}%"></i></span>`;
+    const detailScores = off
+      ? `<p><span>分数</span><b>不计工时</b></p>`
+      : `<p><span>任务分</span><b data-k="task" data-staff="${esc(staff.id)}">${M.fmtScore(parts.task)}</b></p>
+         <p><span>工时分</span><b data-k="hour" data-staff="${esc(staff.id)}">${M.fmtScore(parts.hourPts)}</b></p>
+         <p><span>加班</span><b data-k="ot" data-staff="${esc(staff.id)}">${M.fmtScore(parts.overtime)}</b></p>`;
     return `<article class="person" data-dept="${esc(team.id)}" data-q="${esc(q)}">
       <div class="who" data-label="姓名"><b>${esc(name)}</b></div>
       <div data-label="部门">${esc(dept)}</div>
       <div class="role" data-label="职责">${esc(role)}</div>
-      <div data-label="状态"><span class="badge st-${esc(key)}" data-badge="${esc(staff.id)}">${esc(M.ACT[key] || key)}</span></div>
+      <div data-label="状态">${badge}</div>
       ${scores}
+      <button type="button" class="mrow" aria-expanded="false">
+        <span class="mwho"><b>${esc(name)}</b><span class="dchip">${esc(chip)}</span></span>
+        ${badge}
+        <span class="mscore">${bar}<b class="${off ? '' : 'num'}" ${off ? '' : `data-k="total" data-staff="${esc(staff.id)}"`}>${esc(totalText)}</b></span>
+      </button>
+      <div class="mdetail" hidden>
+        <p><span>职责</span><b>${esc(role || '—')}</b></p>
+        ${detailScores}
+      </div>
     </article>`;
   }
 
@@ -371,6 +429,11 @@
       el.className = `badge st-${key}`;
       el.textContent = M.ACT[key] || key;
     });
+    document.querySelectorAll('.mfill[data-staff]').forEach((el) => {
+      const hit = index.get(el.dataset.staff);
+      if (!hit || M.workBarOff(hit.staff, hit.team, rules)) return;
+      el.style.width = `${fillPct(M.scoreParts(hit.staff, rules, clock.nowMs).total, rules)}%`;
+    });
     const live = M.companyTotalLive(state.data.teams, rules, clock.nowMs);
     const score = $('#statScore');
     if (score) score.textContent = M.fmtScore(live.total);
@@ -378,22 +441,33 @@
 
   function applyPeopleFilter() {
     const q = ($('#q')?.value || '').trim().toLowerCase();
-    let shown = 0;
+    const phone = isPhone();
+    const matches = [];
     document.querySelectorAll('#peopleList .person[data-dept]').forEach((el) => {
       const ok = (state.dept === 'all' || el.dataset.dept === state.dept) && (!q || (el.dataset.q || '').includes(q));
-      el.hidden = !ok;
-      if (ok) shown += 1;
+      el.classList.toggle('nomatch', !ok);
+      if (ok) matches.push(el);
+      else el.hidden = true;
     });
+    const cap = phone && !state.showAll;
+    matches.forEach((el, i) => { el.hidden = cap && i >= 10; });
+    const shown = matches.filter((el) => !el.hidden).length;
     const miss = $('#peopleMiss');
-    if (miss) miss.hidden = shown !== 0;
+    if (miss) miss.hidden = matches.length !== 0;
     const count = $('#peopleCount');
-    if (count) count.textContent = `显示 ${shown} 人`;
+    if (count) count.textContent = cap && matches.length > 10 ? `前 10 人，共 ${matches.length} 人` : `显示 ${shown} 人`;
+    const more = $('#showAll');
+    if (more) {
+      const extra = phone && matches.length > 10;
+      more.hidden = !extra;
+      more.textContent = state.showAll ? '只看前 10 人' : `显示全部 ${matches.length} 人`;
+    }
   }
 
   function renderDev() {
     const tasks = state.progress?.devTasks;
     if (!state.progress || state.progress.__error || !Array.isArray(tasks)) {
-      $('#devBody').innerHTML = `<div class="glass pad">${emptyBlock('暂无数据', '开发任务写入 data/progress.json 的 devTasks 后，会按待开始、进行中、已完成排列。')}</div>`;
+      $('#devBody').innerHTML = `<div class="glass pad">${emptyBlock('暂无数据', '开发任务还没有写入。')}</div>`;
       return;
     }
     const known = new Set(COLS.map(([id]) => id));
@@ -412,7 +486,7 @@
     };
     const html = COLS.map(([id, label]) => column(id, label, tasks.filter((task) => task.status === id))).join('')
       + (extra.length ? column('other', '其他', extra) : '');
-    $('#devBody').innerHTML = `<div class="kanban">${html}</div>${sourceLine('开发任务来自 data/progress.json。公司 Dashboard 仍是进行中，对应本 PR。')}`;
+    $('#devBody').innerHTML = `<div class="kanban">${html}</div>${infoTip('开发任务按待开始、进行中、已完成排列。')}`;
   }
 
   function renderTasks() {
@@ -444,9 +518,9 @@
           <div><h3 class="block">等 Edward 确认</h3><div class="list">${waiting.map(taskItem).join('') || emptyBlock('暂无数据', '现在没有等 Edward 确认的事项。')}</div></div>
         </div>
         <h3 class="block">完成报告</h3>
-        <p class="note">只列出动态原文里写明了星级或分值的句子。任务板本身没有星级和分值字段，所以上面标成未记录。</p>
+        <p class="note">星级和分值只列在已经写明的完成报告里，其余标成未记录。</p>
         <div class="list">${reports}</div>
-        ${sourceLine('状态数量与标题来自 data.json 的 tasks。完成报告来自 data.json 的 feed，且只保留能读出分值的句子。')}
+        ${infoTip('上面是任务板的状态和标题。完成报告只保留写明了星级或分值的记录。')}
       </div>`;
     if (window.Chart && document.getElementById('taskChart')) {
       charts.taskChart = new Chart(document.getElementById('taskChart'), {
@@ -474,7 +548,7 @@
   function renderUsage() {
     const report = latestUsage();
     if (!report) {
-      $('#usageBody').innerHTML = `<div class="glass pad">${emptyBlock('暂无数据', '每日用量写入 data/usage.json 后，这里会显示额度和部门份额。不记录金额。')}</div>`;
+      $('#usageBody').innerHTML = `<div class="glass pad">${emptyBlock('暂无数据', '用量日报还没有写入。本页不记录金额。')}</div>`;
       return;
     }
     const depts = Array.isArray(report.departments) ? report.departments : [];
@@ -503,7 +577,7 @@
         <table class="share">${rows}</table>
         ${sumNote}
         <div class="callout"><p style="margin:0">${esc(report.caveat || '')}</p><p class="src" style="margin-bottom:0">${esc(report.source || '')} ${esc(report.asOfNote || '')}</p></div>
-        ${sourceLine('用量只来自 data/usage.json。本页不写金额，也不按已用比例推算哪天用完。')}
+        ${infoTip('本页不写金额，也不按已用比例推算哪天用完。')}
       </div>`;
     if (!window.Chart) return;
     charts.gauge = new Chart(document.getElementById('gauge'), {
@@ -554,7 +628,7 @@
       });
     }
     if (!rows.length) {
-      $('#examsBody').innerHTML = `<div class="glass pad">${emptyBlock('暂无数据', sentence)}${sourceLine('成绩写入 data/exams.json 的 records（employee、date、score）后，这里画出每次考核。')}</div>`;
+      $('#examsBody').innerHTML = `<div class="glass pad">${emptyBlock('暂无数据', sentence)}</div>`;
       return;
     }
     const latest = new Map();
@@ -571,7 +645,7 @@
           <div><h3 class="block" style="margin-top:0">最近一次成绩</h3><div class="chartbox"><canvas id="examBar"></canvas></div></div>
           <div><h3 class="block" style="margin-top:0">复测对比</h3><div class="chartbox" id="examLineBox"><canvas id="examLine"></canvas></div><p class="chart-miss" id="examLineNote"${multi.length ? ' hidden' : ''}>尚无第二次成绩，成长曲线会在复测后出现。</p></div>
         </div>
-        ${sourceLine('成绩来自 data/exams.json。' + sentence)}
+        ${infoTip(sentence)}
       </div>`;
     if (!window.Chart) return;
     charts.examBar = new Chart(document.getElementById('examBar'), {
@@ -618,7 +692,7 @@
   function renderClients() {
     const doc = state.pipeline;
     if (!doc || doc.__error || !Array.isArray(doc.stages)) {
-      $('#clientsBody').innerHTML = `<div class="glass pad">${emptyBlock('暂无数据', '各阶段数量写入 data/pipeline.json 后显示。客户明细只保存在内部。')}</div>`;
+      $('#clientsBody').innerHTML = `<div class="glass pad">${emptyBlock('暂无数据', '客户明细只保存在内部。这里只记各阶段数量。')}</div>`;
       return;
     }
     const stages = doc.stages;
@@ -632,7 +706,7 @@
     const head = allZero
       ? `<div class="empty"><p class="empty-k">暂无数据</p><p class="principle">${esc(doc.principle || '少而对的客户')}</p><p>${esc(doc.note || '客户明细只保存在内部，此页只记各阶段数量。')}</p></div>`
       : `<p class="principle">${esc(doc.principle || '')}</p><p class="note">${esc(doc.note || '')}</p>`;
-    $('#clientsBody').innerHTML = `<div class="glass pad">${head}<ol class="pipe">${pipe}</ol>${sourceLine('阶段数量来自 data/pipeline.json，没有客户姓名。')}</div>`;
+    $('#clientsBody').innerHTML = `<div class="glass pad">${head}<ol class="pipe">${pipe}</ol>${infoTip('只显示各阶段数量，不显示客户姓名。')}</div>`;
   }
 
   function bindNav() {
@@ -649,7 +723,7 @@
     const observer = new IntersectionObserver((entries) => {
       const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (visible) setActive(visible.target.id);
-    }, { rootMargin: '-15% 0px -55% 0px', threshold: [0.15, 0.4] });
+    }, { rootMargin: '-72px 0px -52% 0px', threshold: [0.12, 0.3, 0.6] });
     sections.forEach((section) => observer.observe(section));
     links.forEach((link) => link.addEventListener('click', () => setActive(link.dataset.sec)));
     setActive((location.hash || '#overview').slice(1));
@@ -673,7 +747,7 @@
       loadJson('./data/pipeline.json'),
     ]);
     if (!data || data.__error || !Array.isArray(data.teams)) {
-      document.querySelectorAll('.wait').forEach((el) => { el.textContent = '暂时读不到 data.json。'; });
+      document.querySelectorAll('.wait').forEach((el) => { el.textContent = '暂时读不到公司数据。'; });
       paintChrome();
       return;
     }
@@ -693,6 +767,45 @@
     renderExams(exams);
     renderClients();
     bindNav();
+    document.addEventListener('click', (event) => {
+      const row = event.target.closest('.mrow');
+      if (row && !row.classList.contains('mstatic')) {
+        const art = row.closest('.person');
+        const open = !art.classList.contains('open');
+        art.classList.toggle('open', open);
+        row.setAttribute('aria-expanded', open ? 'true' : 'false');
+        const detail = art.querySelector('.mdetail');
+        if (detail) detail.hidden = !open;
+        return;
+      }
+      const info = event.target.closest('.info');
+      if (info) {
+        const box = info.parentElement.querySelector('.tipbox');
+        const willOpen = box.hidden;
+        document.querySelectorAll('.tipbox').forEach((el) => { el.hidden = true; });
+        document.querySelectorAll('.info').forEach((el) => el.setAttribute('aria-expanded', 'false'));
+        if (willOpen) {
+          box.hidden = false;
+          info.setAttribute('aria-expanded', 'true');
+        }
+        return;
+      }
+      if (!event.target.closest('.tip')) {
+        document.querySelectorAll('.tipbox').forEach((el) => { el.hidden = true; });
+        document.querySelectorAll('.info').forEach((el) => el.setAttribute('aria-expanded', 'false'));
+      }
+    });
+    const toTop = $('#toTop');
+    if (toTop) {
+      const syncTop = () => { toTop.hidden = !(isPhone() && window.scrollY > 480); };
+      window.addEventListener('scroll', syncTop, { passive: true });
+      toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
+      syncTop();
+    }
+    matchMedia(phoneQuery).addEventListener('change', () => {
+      applyPeopleFilter();
+      paintCharts(readClock());
+    });
     window.__dash = { renderExams, readClock, state };
     setInterval(tick, 60000);
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
