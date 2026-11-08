@@ -25,6 +25,7 @@ const dataHashes = Object.fromEntries(dataFiles.map((file) => [
 ]));
 const dataHash = dataHashes['public/data.json'];
 const rows = [];
+const collisions = [];
 const browser = await chromium.launch({
   executablePath: '/usr/bin/google-chrome',
   args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'],
@@ -156,9 +157,55 @@ async function closeSheet(page) {
   return { ok, assert: ok ? 'panel hidden, focus outside' : `hidden=${got.hidden} opacity=${got.opacity} focusInPanel=${got.focusInPanel}` };
 }
 async function openFeed(page) {
-  await page.evaluate(() => window.__app.popBubble());
+  await page.click('#feedToggle');
   await page.waitForFunction(() => document.querySelector('.bubble'), null, { timeout: 8000 });
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(350);
+}
+async function feedState(page) {
+  return page.evaluate(() => {
+    const el = document.querySelector('.bubble');
+    const aria = document.querySelector('#feedToggle')?.getAttribute('aria-expanded');
+    const r = el?.getBoundingClientRect();
+    const onScreen = !!(r && r.width > 20 && r.height > 8 && r.left < innerWidth - 1 && r.right > 1 && r.top < innerHeight - 1 && r.bottom > 1);
+    const nodes = [...document.querySelectorAll('.rlabel')].filter((node) => !node.classList.contains('packed-hide') && getComputedStyle(node).visibility !== 'hidden');
+    const hits = [];
+    let pairs = 0;
+    const rects = nodes.map((node) => ({ id: node.dataset.room, r: node.getBoundingClientRect() })).filter((item) => item.r.width > 2);
+    for (let a = 0; a < rects.length; a++) {
+      for (let b = a + 1; b < rects.length; b++) {
+        const A = rects[a].r;
+        const B = rects[b].r;
+        const ox = Math.min(A.right, B.right) - Math.max(A.left, B.left);
+        const oy = Math.min(A.bottom, B.bottom) - Math.max(A.top, B.top);
+        if (ox > 0.5 && oy > 0.5) pairs += 1;
+      }
+    }
+    if (r && r.width > 8) {
+      for (const item of rects) {
+        const box = item.r;
+        const ox = Math.min(r.right, box.right) - Math.max(r.left, box.left);
+        const oy = Math.min(r.bottom, box.bottom) - Math.max(r.top, box.top);
+        if (ox > 0.5 && oy > 0.5) hits.push(item.id);
+      }
+    }
+    return { aria, onScreen, pairs, hits };
+  });
+}
+async function collisionSample(page, frames = 12) {
+  const rows = [];
+  for (let i = 0; i < frames; i++) {
+    rows.push(await feedState(page));
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  }
+  const labelPairs = rows.map((row) => row.pairs);
+  const bubbleHits = rows.map((row) => row.hits.length);
+  return {
+    frames,
+    labelPairs,
+    bubbleHits,
+    maxLabelPairs: Math.max(...labelPairs),
+    maxBubbleHits: Math.max(...bubbleHits),
+  };
 }
 async function bubbleInside(page) {
   return page.evaluate(() => {
@@ -215,13 +262,29 @@ const spaces = [
   ['archive-confidential', [27.4, 0.8, -9.95], [22.0, 7.4, -7.0]],
 ];
 
+async function saveFeed(page, device, mode, fileName, viewName, w, h) {
+  const bubble = await bubbleInside(page);
+  const state = await feedState(page);
+  const sample = await collisionSample(page);
+  collisions.push({ device, mode, view: viewName, viewport: `${w}x${h}`, ...sample });
+  const anchor = await page.evaluate(() => document.querySelector('.bubble')?.dataset.anchor || '');
+  const ok = bubble.ok && state.aria === 'true' && state.onScreen && anchor === 'visible' && sample.maxBubbleHits === 0 && sample.maxLabelPairs === 0;
+  const assert = ok
+    ? 'bubble on screen, aria expanded, anchor visible, no label overlap'
+    : `inside=${bubble.ok} aria=${state.aria} onScreen=${state.onScreen} anchor=${anchor} hits=${state.hits.join(',') || 'none'} pairs=${sample.maxLabelPairs} bubbleHits=${sample.maxBubbleHits}`;
+  await save(page, `${device}_${mode}_${fileName}`, { name: viewName, mode, status: ok ? 'valid' : 'invalid', assert });
+}
 async function officeSet(device, w, h, mode, now) {
   const { ctx, page } = await bootOffice(w, h, now);
   const label = mode === 'day' ? '日间' : '夜间';
   await forceLight(page, label);
   await home(page);
   const framed = await campusInside(page);
-  await save(page, `${device}_${mode}_overview_home`, { name: 'overview', mode, status: framed.ok ? 'valid' : 'invalid', assert: framed.assert });
+  const overviewHits = await collisionSample(page);
+  collisions.push({ device, mode, view: 'overview', viewport: `${w}x${h}`, ...overviewHits });
+  const overviewOk = framed.ok && overviewHits.maxLabelPairs === 0 && overviewHits.maxBubbleHits === 0;
+  const overviewAssert = overviewOk ? `${framed.assert}; labels ${overviewHits.maxLabelPairs}` : `${framed.assert}; labelPairs=${overviewHits.labelPairs.join(',')} bubbleHits=${overviewHits.bubbleHits.join(',')}`;
+  await save(page, `${device}_${mode}_overview_home`, { name: 'overview', mode, status: overviewOk ? 'valid' : 'invalid', assert: overviewAssert });
   for (const id of rooms) {
     await page.evaluate((id) => window.__app.selectRoom(id), id);
     await settle(page);
@@ -235,17 +298,40 @@ async function officeSet(device, w, h, mode, now) {
     await home(page);
     await save(page, `${device}_${mode}_feed_collapsed`, { name: 'feed-collapsed', mode });
     await openFeed(page);
-    const bubble = await bubbleInside(page);
-    await save(page, `${device}_${mode}_feed_expanded`, { name: 'feed-expanded', mode, status: bubble.ok ? 'valid' : 'invalid', assert: bubble.assert });
+    await saveFeed(page, device, mode, 'feed_expanded', 'feed-expanded', w, h);
     await page.click('#feedToggle');
+    await page.waitForTimeout(200);
+    if (mode === 'night') {
+      await openFeed(page);
+      await saveFeed(page, device, mode, 'feed_second', 'feed-second', w, h);
+      await page.click('#feedToggle');
+      await page.waitForTimeout(200);
+    }
     await page.evaluate(() => window.__app.selectRoom('ed'));
     await settle(page);
+    const collapsedBox = await page.evaluate(() => {
+      const r = document.querySelector('#panel').getBoundingClientRect();
+      return { w: r.width, h: r.height };
+    });
     await save(page, `${device}_${mode}_panel_collapsed`, { name: 'panel-collapsed', mode });
     await page.click('#panelExpand');
-    await page.waitForTimeout(1200);
+    await page.waitForTimeout(400);
+    const grown = await page.evaluate((before) => {
+      const r = document.querySelector('#panel').getBoundingClientRect();
+      const taller = r.height >= before.h + 80;
+      const wider = r.width >= before.w + 80;
+      const strip = r.top >= window.innerHeight * 0.28;
+      const notNarrower = r.width >= before.w - 1;
+      return {
+        ok: (taller || wider) && strip && notNarrower,
+        assert: `collapsed ${Math.round(before.w)}x${Math.round(before.h)} expanded ${Math.round(r.width)}x${Math.round(r.height)} top ${Math.round(r.top)}`,
+      };
+    }, collapsedBox);
+    await page.waitForTimeout(800);
     await settle(page);
     const above = await labelAboveDrawer(page);
-    await save(page, `${device}_${mode}_panel_expanded`, { name: 'panel-expanded', mode, status: above.ok ? 'valid' : 'invalid', assert: above.assert });
+    const drawerOk = above.ok && grown.ok;
+    await save(page, `${device}_${mode}_panel_expanded`, { name: 'panel-expanded', mode, status: drawerOk ? 'valid' : 'invalid', assert: `${grown.assert}; ${above.assert}` });
     await page.evaluate(() => { const body = document.querySelector('#panelBody'); if (body) body.scrollTop = body.scrollHeight; });
     await page.waitForTimeout(200);
     await save(page, `${device}_${mode}_panel_scrolled`, { name: 'panel-scrolled', mode });
@@ -262,9 +348,14 @@ async function officeSet(device, w, h, mode, now) {
     await save(page, `${device}_${mode}_sidebar_closed`, { name: 'sidebar-closed', mode, status: closed.ok ? 'valid' : 'invalid', assert: closed.assert });
     await save(page, `${device}_${mode}_feed_collapsed`, { name: 'feed-collapsed', mode });
     await openFeed(page);
-    const bubble = await bubbleInside(page);
-    await save(page, `${device}_${mode}_feed_expanded`, { name: 'feed-expanded', mode, status: bubble.ok ? 'valid' : 'invalid', assert: bubble.assert });
+    await saveFeed(page, device, mode, 'feed_expanded', 'feed-expanded', w, h);
     await page.click('#feedToggle');
+    await page.waitForTimeout(200);
+    if (mode === 'night') {
+      await openFeed(page);
+      await saveFeed(page, device, mode, 'feed_second', 'feed-second', w, h);
+      await page.click('#feedToggle');
+    }
   }
   await ctx.close();
 }
@@ -362,10 +453,16 @@ const manifest = {
   clocks: { day: dayUrl, night: nightUrl },
   timezone: 'Asia/Bangkok',
   supersedes: ['6d4938a', '6e82a14', '950dcbff0227bb1fed0dd83ba813535496bca3bb', '8f689da2270887d2682f0f60ae83e2698f249f1c'],
-  note: 'Shots from earlier heads are superseded. These files are the valid set for this head. The service worker was blocked for these captures. Times are Asia/Bangkok (UTC+7). Main has no washbasin in the male restroom; the restroom shots show the stalls, the aisle, and the existing 男洗手 sign.',
+  note: 'Shots from earlier heads are superseded. These files are the valid set for this head. The service worker was blocked for these captures. Times are Asia/Bangkok (UTC+7). Main has no washbasin in the male restroom; the restroom shots show the stalls, the aisle, and the existing 男洗手 sign. Collision counts are pairs whose boxes overlap by more than half a pixel.',
+  collisions,
   shots: rows,
 };
 fs.writeFileSync(`${out}/manifest.json`, JSON.stringify(manifest, null, 2));
+fs.writeFileSync(`${out}/collision-report.json`, JSON.stringify({
+  head: sha,
+  metric: 'overlap greater than 0.5px on both axes, 12 consecutive frames',
+  collisions,
+}, null, 2));
 const md = ['# Batch 1 screenshot index', '', `Head \`${sha}\`. ${rows.length} shots. Data \`${dataHash.slice(0, 12)}\`.`, '', '| File | View | Mode | Viewport |', '| --- | --- | --- | --- |',
   ...rows.map((r) => `| ${r.file} | ${r.view} | ${r.mode} | ${r.viewport.width}x${r.viewport.height} |`)];
 fs.writeFileSync(`${out}/manifest.md`, md.join('\n'));

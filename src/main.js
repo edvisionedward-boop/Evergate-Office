@@ -1254,18 +1254,15 @@ $('#dirMode').addEventListener('click', e => {
   renderDirectory();
 });
 $('#dirClose').addEventListener('click', () => { $('#directory').classList.add('hidden'); setTab('office'); });
+function dismissBubbles() {
+  for (const b of activeBubbles) { b.o.parent?.remove(b.o); b.el.remove(); }
+  activeBubbles.length = 0;
+  bubbleArmed = false;
+  $('#feedToggle')?.setAttribute('aria-expanded', 'false');
+}
 $('#feedToggle')?.addEventListener('click', () => {
-  const btn = $('#feedToggle');
-  if (activeBubbles.length) {
-    for (const b of activeBubbles) { b.o.parent?.remove(b.o); b.el.remove(); }
-    activeBubbles.length = 0;
-    bubbleArmed = false;
-    btn.setAttribute('aria-expanded', 'false');
-    return;
-  }
-  bubbleArmed = true;
-  bubbleTimer = 0;
-  btn.setAttribute('aria-expanded', 'true');
+  if (activeBubbles.length) { dismissBubbles(); return; }
+  $('#feedToggle')?.setAttribute('aria-expanded', popBubble() ? 'true' : 'false');
 });
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
@@ -1276,24 +1273,51 @@ document.addEventListener('keydown', (event) => {
 /* ---------- speech bubbles ---------- */
 let bubbleTimer = 1e9, bubbleIdx = 0, bubbleArmed = false;
 const activeBubbles = [];
+function anchorVisible(obj) {
+  let node = obj;
+  while (node) {
+    if (node.visible === false) return false;
+    node = node.parent;
+  }
+  return !!obj;
+}
+function bubblePool(R) {
+  if (!R) return [];
+  const add = (obj, into) => {
+    if (!obj?.userData?.bubbleAnchor || !anchorVisible(obj)) return;
+    into.push(obj);
+  };
+  if (R.boss && anchorVisible(R.boss) && R.boss.userData.bubbleAnchor) return [R.boss];
+  const pool = [];
+  for (const person of R.agents || []) add(person, pool);
+  for (const person of R.walkers || []) add(person, pool);
+  return pool;
+}
 function popBubble() {
   const cands = DATA.teams.filter(t => !t.private && DATA.feed.some(f => f.team === t.id));
-  if (!cands.length) return;
-  // prioritise non-idle teams but rotate through everyone
-  const t = cands[bubbleIdx++ % cands.length];
-  const R = office.rooms[t.id]; if (!R) return;
-  const pool = t.id === 'ed' && R.boss ? [R.boss] : [...R.agents, ...R.walkers.filter(w => w.visible)];
-  if (!pool.length) return;
-  const agent = pool[Math.floor(Math.random() * pool.length)];
-  const latest = DATA.feed.filter(f => f.team === t.id).sort((a, b) => new Date(b.time) - new Date(a.time))[0];
-  if (activeBubbles.some(b => b.agent === agent)) return;
-  if (activeBubbles.length >= 1) return;
-  const host = document.createElement('div'); host.className = 'bubble-host' + (t.id === 'ed' ? ' ed' : '');
-  const el = document.createElement('div'); el.className = 'bubble'; el.style.setProperty('--c', hue(t));
-  el.innerHTML = `<b>${esc(t.name)}</b>${esc(latest.text)}`;
-  host.appendChild(el);
-  const o = new CSS2DObject(host); o.renderOrder = t.id === 'ed' ? 40 : 8; agent.userData.bubbleAnchor.add(o);
-  const b = { o, el, agent, life: 6, ed: t.id === 'ed' }; activeBubbles.push(b);
+  if (!cands.length || activeBubbles.length >= 1) return false;
+  const start = bubbleIdx;
+  for (let n = 0; n < cands.length; n++) {
+    const t = cands[(start + n) % cands.length];
+    const R = office.rooms[t.id];
+    const pool = bubblePool(R);
+    if (!pool.length) continue;
+    bubbleIdx = (start + n + 1) % cands.length;
+    const agent = pool[Math.floor(Math.random() * pool.length)];
+    const latest = DATA.feed.filter(f => f.team === t.id).sort((a, b) => new Date(b.time) - new Date(a.time))[0];
+    if (!latest || activeBubbles.some(b => b.agent === agent)) continue;
+    const host = document.createElement('div'); host.className = 'bubble-host' + (t.id === 'ed' ? ' ed' : '');
+    const el = document.createElement('div'); el.className = 'bubble'; el.style.setProperty('--c', hue(t));
+    el.dataset.room = t.id;
+    el.dataset.anchor = 'visible';
+    el.innerHTML = `<b>${esc(t.name)}</b>${esc(latest.text)}`;
+    host.appendChild(el);
+    const o = new CSS2DObject(host); o.renderOrder = t.id === 'ed' ? 40 : 8; agent.userData.bubbleAnchor.add(o);
+    activeBubbles.push({ o, el, agent, life: 6, ed: t.id === 'ed' });
+    return true;
+  }
+  bubbleIdx = (start + 1) % cands.length;
+  return false;
 }
 const labelNudge = {};
 function labelRank(R) {
@@ -1491,6 +1515,7 @@ function layoutRoomLabels() {
     }
     if (!moved) break;
   }
+  settleBubbles();
 }
 function separateChrome() {
   const feed = $('#feedToggle');
@@ -1556,65 +1581,209 @@ function settleStaffTags() {
     }
   }
 }
-function placeBubble(el) {
+function bubbleBounds() {
+  const pad = 8;
+  const topLimit = ($('#topbar')?.getBoundingClientRect().bottom || 0) + 4;
+  const bounds = { l: pad, t: topLimit, r: viewW - pad, b: viewH - pad };
+  const quick = $('#quickbar')?.getBoundingClientRect();
+  if (quick && quick.height > 2 && quick.top > topLimit + 40) bounds.b = Math.min(bounds.b, quick.top - 6);
+  return bounds;
+}
+function readLabels() {
+  return [...document.querySelectorAll('.rlabel')].map((el) => {
+    const ml = parseFloat(el.style.marginLeft) || 0;
+    const mt = parseFloat(el.style.marginTop) || 0;
+    const r = el.getBoundingClientRect();
+    const hidden = el.classList.contains('packed-hide') || r.width < 2 || r.height < 2 || getComputedStyle(el).visibility === 'hidden';
+    return {
+      el,
+      id: el.dataset.room,
+      hidden,
+      sel: el.classList.contains('sel'),
+      rank: el.classList.contains('sel') ? 1000 : labelRankEl(el),
+      rect: { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height },
+      base: {
+        left: Math.round(r.left - ml), top: Math.round(r.top - mt),
+        right: Math.round(r.right - ml), bottom: Math.round(r.bottom - mt),
+        width: r.width, height: r.height,
+      },
+    };
+  });
+}
+function paintBubbleLeader(el, dx, dy) {
+  let leader = el.querySelector(':scope > .leader');
+  if (!leader) {
+    leader = document.createElement('i');
+    leader.className = 'leader';
+    leader.setAttribute('aria-hidden', 'true');
+    el.appendChild(leader);
+  }
+  const len = Math.hypot(dx, dy);
+  if (len < 36) {
+    leader.style.display = 'none';
+    return;
+  }
+  leader.style.display = 'block';
+  leader.style.width = `${Math.round(len)}px`;
+  leader.style.left = dx < 0 ? '0px' : '100%';
+  leader.style.top = dy < 0 ? '0px' : '100%';
+  leader.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+}
+function relocateForBubble(spec) {
+  const { preferLeft, preferTop, w, h, labels, chrome, free, bounds, speaker } = spec;
+  const gap = 4;
+  let best = null;
+  for (const shift of labelShifts(96)) {
+    const left = Math.round(preferLeft + shift.x);
+    const top = Math.round(preferTop + shift.y);
+    if (left < bounds.l || top < bounds.t || left + w > bounds.r || top + h > bounds.b) continue;
+    const bubble = { left, top, right: left + w, bottom: top + h };
+    if (chrome.some((rect) => rectsOverlap(bubble, rect, 2))) continue;
+    const hit = labels.filter((item) => rectsOverlap(bubble, item.rect, gap));
+    if (hit.some((item) => item.sel || item === speaker)) continue;
+    const moving = [...hit].sort((a, b) => a.rank - b.rank);
+    const blocked = labels.filter((item) => !moving.includes(item)).map((item) => item.rect).concat(chrome, [bubble]);
+    const moves = [];
+    let ok = true;
+    for (const item of moving) {
+      let placed = null;
+      for (const step of labelShifts(180)) {
+        const box = shiftBox(item.base, step.x, step.y);
+        if (!boxInside(box, free) || blocked.some((rect) => rectsOverlap(box, rect, gap))) continue;
+        placed = { item, x: step.x, y: step.y, box };
+        break;
+      }
+      if (!placed) { ok = false; break; }
+      moves.push(placed);
+      blocked.push(placed.box);
+    }
+    if (!ok) continue;
+    const cost = Math.hypot(shift.x, shift.y) + moves.length * 40;
+    if (!best || cost < best.cost) best = { left, top, moves, cost };
+  }
+  return best;
+}
+function shoveLabel(item, blocked, free) {
+  for (const step of labelShifts(280)) {
+    const box = shiftBox(item.base, step.x, step.y);
+    if (!boxInside(box, free) || blocked.some((rect) => rectsOverlap(box, rect, 4))) continue;
+    return { item, x: step.x, y: step.y, box };
+  }
+  return null;
+}
+function forceBubbleClear(spec) {
+  const { w, h, labels, chrome, free, bounds, speaker, anchor } = spec;
+  const spots = [];
+  if (anchor) {
+    spots.push({ left: anchor.rect.left + (anchor.rect.width - w) / 2, top: anchor.rect.top - 12 - h });
+    spots.push({ left: anchor.rect.left + (anchor.rect.width - w) / 2, top: anchor.rect.bottom + 18 });
+    spots.push({ left: anchor.rect.left - w - 16, top: anchor.rect.top });
+    spots.push({ left: anchor.rect.right + 16, top: anchor.rect.top });
+  }
+  spots.push({ left: bounds.l, top: bounds.t });
+  spots.push({ left: bounds.r - w, top: bounds.t });
+  spots.push({ left: bounds.l, top: bounds.b - h });
+  spots.push({ left: bounds.r - w, top: bounds.b - h });
+  for (const spot of spots) {
+    const left = Math.round(Math.min(Math.max(bounds.l, spot.left), Math.max(bounds.l, bounds.r - w)));
+    const top = Math.round(Math.min(Math.max(bounds.t, spot.top), Math.max(bounds.t, bounds.b - h)));
+    const bubble = { left, top, right: left + w, bottom: top + h };
+    if (chrome.some((rect) => rectsOverlap(bubble, rect, 2))) continue;
+    if (labels.some((item) => (item.sel || item === speaker) && rectsOverlap(bubble, item.rect, 4))) continue;
+    const moving = labels.filter((item) => rectsOverlap(bubble, item.rect, 4)).sort((a, b) => a.rank - b.rank);
+    const blocked = labels.filter((item) => !moving.includes(item)).map((item) => item.rect).concat(chrome, [bubble]);
+    const moves = [];
+    let ok = true;
+    for (const item of moving) {
+      const placed = shoveLabel(item, blocked, free);
+      if (!placed) { ok = false; break; }
+      moves.push(placed);
+      blocked.push(placed.box);
+    }
+    if (ok) return { left, top, moves };
+  }
+  return null;
+}
+function settleBubbles() {
+  for (const b of activeBubbles) settleBubble(b);
+}
+function settleBubble(b) {
+  const el = b.el;
   const br = el.getBoundingClientRect();
   if (br.width < 20 || br.height < 8) return;
-  const labels = [...document.querySelectorAll('.rlabel')]
-    .filter((node) => !node.classList.contains('packed-hide') && getComputedStyle(node).visibility !== 'hidden')
-    .map((node) => node.getBoundingClientRect())
-    .filter((rect) => rect.width > 2 && rect.height > 2);
   const cs = getComputedStyle(el);
   const curLeft = parseFloat(cs.left) || 0;
   const curTop = parseFloat(cs.top) || 0;
   const originX = br.left - curLeft;
   const originY = br.top - curTop;
-  const pad = 8;
-  const topLimit = ($('#topbar')?.getBoundingClientRect().bottom || 0) + 4;
-  const bounds = { l: pad, t: topLimit, r: viewW - pad, b: viewH - pad };
-  const anchor = office.rooms.ed?.labelEl?.getBoundingClientRect();
-  const preferX = anchor && anchor.width > 2 ? anchor.left + (anchor.width - br.width) / 2 : br.left;
-  const preferY = anchor && anchor.height > 2 ? anchor.top - 12 - br.height : br.top;
-  const hitsLabel = (left, top) => labels.some((rect) => left < rect.right - 1 && rect.left < left + br.width - 1 && top < rect.bottom - 1 && rect.top < top + br.height - 1);
-  const onScreen = (left, top) => left >= bounds.l - 0.5 && top >= bounds.t - 0.5 && left + br.width <= bounds.r + 0.5 && top + br.height <= bounds.b + 0.5;
-  const clear = (left, top) => onScreen(left, top) && !hitsLabel(left, top);
+  const w = br.width;
+  const h = br.height;
+  const labels = readLabels().filter((item) => !item.hidden);
+  const chrome = labelObstacles();
+  const free = labelFreeRect();
+  const bounds = bubbleBounds();
+  const speaker = labels.find((item) => item.id === el.dataset.room) || null;
+  const anchor = speaker || labels.find((item) => item.id === 'ed');
+  const preferLeft = anchor ? anchor.rect.left + (anchor.rect.width - w) / 2 : br.left;
+  const preferTop = anchor ? anchor.rect.top - 12 - h : br.top;
+  const gap = 4;
+  const hitsLabels = (left, top) => labels.filter((item) => left < item.rect.right + gap && item.rect.left < left + w + gap && top < item.rect.bottom + gap && item.rect.top < top + h + gap);
+  const hitsChrome = (left, top) => chrome.some((rect) => left < rect.right + 2 && rect.left < left + w + 2 && top < rect.bottom + 2 && rect.top < top + h + 2);
+  const onScreen = (left, top) => left >= bounds.l - 0.5 && top >= bounds.t - 0.5 && left + w <= bounds.r + 0.5 && top + h <= bounds.b + 0.5;
+  const clearOf = (left, top) => onScreen(left, top) && !hitsChrome(left, top) && hitsLabels(left, top).length === 0;
+  const nearLimit = 220;
+  let chosen = null;
+  let bestD = Infinity;
+  const step = 8;
+  const left0 = Math.round(bounds.l);
+  const top0 = Math.round(bounds.t);
+  for (let top = top0; top <= bounds.b - h; top += step) {
+    for (let left = left0; left <= bounds.r - w; left += step) {
+      const d = Math.hypot(left - preferLeft, top - preferTop);
+      if (d > nearLimit || d >= bestD || !clearOf(left, top)) continue;
+      bestD = d;
+      chosen = { left, top, moves: [] };
+    }
+  }
+  if (!chosen) {
+    const relocated = relocateForBubble({ preferLeft, preferTop, w, h, labels, chrome, free, bounds, speaker });
+    if (relocated) chosen = relocated;
+  }
+  if (!chosen) {
+    for (let top = top0; top <= bounds.b - h; top += step) {
+      for (let left = left0; left <= bounds.r - w; left += step) {
+        if (!clearOf(left, top)) continue;
+        const d = Math.hypot(left - preferLeft, top - preferTop);
+        if (d < bestD) { bestD = d; chosen = { left, top, moves: [] }; }
+      }
+    }
+  }
+  if (!chosen) {
+    chosen = forceBubbleClear({ preferLeft, preferTop, w, h, labels, chrome, free, bounds, speaker, anchor });
+  }
+  if (!chosen) {
+    b.o.parent?.remove(b.o);
+    el.remove();
+    const idx = activeBubbles.indexOf(b);
+    if (idx >= 0) activeBubbles.splice(idx, 1);
+    if (!activeBubbles.length) $('#feedToggle')?.setAttribute('aria-expanded', 'false');
+    return;
+  }
   const hold = el._hold;
-  let chosen = hold && clear(hold.left, hold.top) ? hold : null;
-  if (!chosen) {
-    const steps = [{ x: 0, y: 0 }];
-    for (let dist = 20; dist <= 200; dist += 20) {
-      for (let k = 0; k < 8; k++) {
-        const angle = -Math.PI / 2 + (k / 8) * Math.PI * 2;
-        steps.push({ x: Math.round(Math.cos(angle) * dist), y: Math.round(Math.sin(angle) * dist) });
-      }
-    }
-    for (const step of steps) {
-      const left = preferX + step.x;
-      const top = preferY + step.y;
-      if (clear(left, top)) { chosen = { left, top }; break; }
-    }
+  if (hold && clearOf(hold.left, hold.top) && !(chosen.moves && chosen.moves.length) && Math.hypot(hold.left - chosen.left, hold.top - chosen.top) <= 12) {
+    chosen = { left: hold.left, top: hold.top, moves: [] };
   }
-  if (!chosen) {
-    let best = null;
-    let bestHits = 1e9;
-    for (let dist = 0; dist <= 180; dist += 24) {
-      for (let k = 0; k < 8; k++) {
-        const angle = -Math.PI / 2 + (k / 8) * Math.PI * 2;
-        let left = preferX + Math.round(Math.cos(angle) * dist);
-        let top = preferY + Math.round(Math.sin(angle) * dist);
-        left = Math.min(Math.max(bounds.l, left), Math.max(bounds.l, bounds.r - br.width));
-        top = Math.min(Math.max(bounds.t, top), Math.max(bounds.t, bounds.b - br.height));
-        const n = labels.filter((rect) => left < rect.right - 1 && rect.left < left + br.width - 1 && top < rect.bottom - 1 && rect.top < top + br.height - 1).length;
-        if (n < bestHits) { bestHits = n; best = { left, top }; }
-        if (n === 0) break;
-      }
-      if (bestHits === 0) break;
-    }
-    chosen = best;
+  for (const move of chosen.moves || []) {
+    move.item.el.classList.remove('packed-hide');
+    move.item.el.style.marginLeft = move.x ? `${move.x}px` : '0px';
+    move.item.el.style.marginTop = move.y ? `${move.y}px` : '0px';
+    labelHold.set(move.item.el, { x: move.x, y: move.y, icon: move.item.el.classList.contains('icononly') });
+    paintLeader(move.item.el, move.x, move.y);
   }
-  if (!chosen) return;
-  el._hold = chosen;
+  el._hold = { left: chosen.left, top: chosen.top };
   el.style.left = `${Math.round(chosen.left - originX)}px`;
   el.style.top = `${Math.round(chosen.top - originY)}px`;
+  paintBubbleLeader(el, preferLeft - chosen.left, preferTop - chosen.top);
 }
 function clampBubble(el) {
   const r = el.getBoundingClientRect();
@@ -1633,11 +1802,48 @@ function clampBubble(el) {
   el.style.left = `${Math.round((parseFloat(cs.left) || 0) + dx)}px`;
   el.style.top = `${Math.round((parseFloat(cs.top) || 0) + dy)}px`;
 }
+function bubbleOnScreen(el) {
+  if (!el?.isConnected) return false;
+  const r = el.getBoundingClientRect();
+  return r.width > 20 && r.height > 8 && r.left < viewW - 1 && r.right > 1 && r.top < viewH - 1 && r.bottom > 1;
+}
+function syncFeedAria() {
+  const btn = $('#feedToggle');
+  if (!btn) return;
+  for (let i = activeBubbles.length - 1; i >= 0; i--) {
+    const b = activeBubbles[i];
+    if (!anchorVisible(b.agent)) {
+      b.o.parent?.remove(b.o);
+      b.el.remove();
+      activeBubbles.splice(i, 1);
+      continue;
+    }
+    if (bubbleOnScreen(b.el)) { b.miss = 0; continue; }
+    b.miss = (b.miss || 0) + 1;
+    if (b.miss < 8) continue;
+    b.o.parent?.remove(b.o);
+    b.el.remove();
+    activeBubbles.splice(i, 1);
+  }
+  btn.setAttribute('aria-expanded', activeBubbles.length ? 'true' : 'false');
+}
 function tickBubbles(dt) {
   bubbleTimer -= dt;
-  if (bubbleArmed && bubbleTimer <= 0) { popBubble(); bubbleArmed = false; bubbleTimer = 1e9; }
+  if (bubbleArmed && bubbleTimer <= 0) {
+    const opened = popBubble();
+    bubbleArmed = false;
+    bubbleTimer = 1e9;
+    if (!opened) $('#feedToggle')?.setAttribute('aria-expanded', 'false');
+  }
   for (let i = activeBubbles.length - 1; i >= 0; i--) {
-    const b = activeBubbles[i]; b.life -= dt;
+    const b = activeBubbles[i];
+    if (!anchorVisible(b.agent)) {
+      b.o.parent?.remove(b.o);
+      b.el.remove();
+      activeBubbles.splice(i, 1);
+      continue;
+    }
+    b.life -= dt;
     if (b.life < 0.4 && !b.el.classList.contains('out')) b.el.classList.add('out');
     if (b.life <= 0) { b.o.parent?.remove(b.o); b.el.remove(); activeBubbles.splice(i, 1); }
   }
@@ -1815,7 +2021,7 @@ function frame() {
   if (composer) composer.render(); else renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
   layoutRoomLabels();
-  for (const b of activeBubbles) placeBubble(b.el);
+  syncFeedAria();
   separateChrome();
   measureChrome();
   refineOverview();
