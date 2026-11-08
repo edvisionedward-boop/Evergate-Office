@@ -194,7 +194,7 @@
               }
             });
           });
-          if (chart.$sliceLabels && chart.$sliceLabels.length) drawSpreadLabels(chart, ctx);
+          if (chart.$sliceLabels && chart.$sliceLabels.length > 2) drawSpreadLabels(chart, ctx);
         },
       });
     }
@@ -759,7 +759,7 @@
               <canvas id="gauge"></canvas>
               <div class="gauge-label"><b>${esc(report.weekUsedPct)}%</b><span>本周已用</span></div>
             </div>
-            ${sliceLegend([{ id: '已用', name: '已用', pct: used }, { id: '按百分比剩下的部分', name: '按百分比剩下的部分', pct: rest }])}
+            ${sliceLegend([{ id: '已用', name: '已用', pct: used }, { id: '按百分比剩下的部分', name: '按百分比剩下的部分', pct: rest }]).replace('slice-legend', 'slice-legend always')}
           </div>
           <div>
             <p class="note">${esc(report.weekUsedNote || '')}</p>
@@ -779,7 +779,7 @@
         labels: ['已用', '按百分比剩下的部分'],
         datasets: [{ data: [used, rest], backgroundColor: ['#D0B993', 'rgba(255,255,255,.16)'], borderWidth: 0 }],
       },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '74%', layout: { padding: isPhone() ? 8 : 28 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } } },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '74%', layout: { padding: isPhone() ? 8 : { top: 18, right: 16, bottom: 18, left: 168 } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } } },
     });
     charts.donut = new Chart(document.getElementById('donut'), {
       type: 'doughnut',
