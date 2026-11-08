@@ -737,7 +737,7 @@ function confidentialNotice(parent, x, y, z, ry = Math.PI) {
   ctx.fillText('双锁', 256, 52);
   ctx.fillStyle = '#f8f4ec'; ctx.font = '700 36px sans-serif';
   ctx.fillText('ED 连署', 256, 122);
-  ctx.fillText('私人助理 连署', 256, 178);
+  ctx.fillText('私密 连署', 256, 178);
   ctx.fillStyle = '#f0c9a0'; ctx.font = '600 26px sans-serif';
   ctx.fillText('缺一不得放行', 256, 242);
   ctx.fillStyle = '#d9c7a6'; ctx.font = '500 22px sans-serif';
@@ -820,7 +820,7 @@ function furnishArchive(g, def, dyn, R) {
   red.position.set(splitX - 0.1, 1.7, secZ); g.add(red);
   const face = -Math.PI / 2;
   namePlate(g, splitX - 0.12, 1.55, secZ + doorW / 2 + 0.38, 'ED', '连署', face);
-  namePlate(g, splitX - 0.12, 1.55, secZ - doorW / 2 - 0.38, '私人助理', '连署', face);
+  namePlate(g, splitX - 0.12, 1.55, secZ - doorW / 2 - 0.38, '私密', '连署', face);
   doorSign(g, splitX - 0.12, 2.15, secZ, '机密文件房', 'CONFIDENTIAL', face);
   confidentialNotice(g, splitX - 0.14, 1.15, secZ, face);
   doorSign(g, -W / 2 + 0.2, 1.85, -1.15, '客厅', 'LOBBY', face);
@@ -1106,7 +1106,7 @@ export const LAYOUT = {
   info:     { x: 13.5,  z: -6.025, w: 10, d: 20.45, icon: '信', sign: '信息部', signSub: 'AI NEWS & INFO' },
   corpfin:  { x: -13.5, z: 12,  w: 10, d: 8.5, icon: '会', sign: '会计部', signSub: 'ACCOUNTING' },
   logistics:{ x: 0,     z: 13.875, w: 11, d: 12.25, icon: '物', sign: '物流部', signSub: 'LOGISTICS' },
-  privfin:  { x: 13.5,  z: 12,  w: 10, d: 8.5, icon: '私', walls: 'glass', private: true, sign: '私人助理', signSub: 'PRIVATE · 仅 EDWARD' },
+  privfin:  { x: 13.5,  z: 12,  w: 10, d: 8.5, icon: '私', walls: 'glass', private: true, sign: '私密', signSub: '私密' },
   lounge:   { x: 25.6, z: 0,   w: 9.4, d: 11, icon: '休', color: '#E87708', door: 'west', sign: '休息室', signSub: 'LOUNGE', label: '休息室' },
   archive:  { x: 25.6, z: -12, w: 9.4, d: 8.2, icon: '资', color: '#D0B993', door: 'west', sign: '资料库', signSub: 'RECORDS', label: '资料库' },
   // Shares 会计部's south wall. Separate room, entered from the east corridor.

@@ -189,7 +189,7 @@ function applyData() {
     const t = teamOf(R.id); const el = R.labelEl;
     el.classList.toggle('sel', state.selected === R.id);
     if (!t) continue;
-    el.querySelector('.nm').textContent = t.name;
+    el.querySelector('.nm').textContent = t.private ? '私密' : t.name;
     const gb = el.querySelector('.nmrow .gbadge');
     if (gb) {
       if (t.private) gb.hidden = true;
@@ -204,7 +204,9 @@ function applyData() {
     }
     const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
     const st = el.querySelector('.st');
-    st.innerHTML = `<i class="dot ${esc(t.status)}"></i><span>${esc(lbl)}${t.private ? ' · 私密' : ` · ${t.agents ?? 0} 位成员`}</span>`;
+    st.innerHTML = t.private
+      ? `<span>私密</span>`
+      : `<i class="dot ${esc(t.status)}"></i><span>${esc(lbl)} · ${t.agents ?? 0} 位成员</span>`;
   }
   const cnt = { busy: 0, confirm: 0, idle: 0 };
   DATA.teams.forEach(t => cnt[t.status] = (cnt[t.status] || 0) + 1);
@@ -305,7 +307,7 @@ function failureDeduction(staff, task) {
 function workRuleLine() {
   const saved = workRules().summary;
   if (saved) return saved;
-  return '部门完成任务后须交审查部判定达标或敷衍，由 ED 记分。部门自行标完成不加分。私人助理不参与。';
+  return '部门完成任务后须交审查部判定达标或敷衍，由 ED 记分。部门自行标完成不加分。私密不参与。';
 }
 function klParts(date) {
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
@@ -566,8 +568,7 @@ function renderPanel(id) {
     return;
   }
   if (t.private) {
-    const word = t.privateLabel || '私密';
-    body.innerHTML = `<div class="ph" style="--c:${esc(t.color)}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '私')}</div><div><h3>${esc(t.name)}</h3></div></div><div class="sec"><div class="card private"><div>${esc(word)}</div></div></div>`;
+    body.innerHTML = `<div class="ph" style="--c:${esc(t.color)}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '私')}</div><div><h3>私密</h3></div></div><div class="sec"><div class="card private"><div>私密</div></div></div>`;
     return;
   }
   const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
@@ -664,20 +665,22 @@ function renderBoard() {
     $('#boardStats').innerHTML = `<div class="bstotal">分数 <b>与头顶绿条同一实时分数</b> · ${people} 人</div>`;
     $('#boardCols').innerHTML = `<div class="col grade-col">${teams.map(t => {
       const rows = t.private
-        ? `<span class="smini"><b>私密</b></span>`
+        ? ''
         : (t.staff || []).map(s => `<span class="smini"><b>${esc(s.name)}</b>${workBarHtml(s)}</span>`).join('');
       return `<button type="button" class="gcard" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="top"><div class="bn">${esc(t.private ? '私密' : t.name)}</div></div><div class="sminis">${rows}</div></button>`;
     }).join('')}</div>`;
     return;
   }
-  const members = DATA.teams.reduce((n, t) => n + (t.agents ?? 0), 0);
+  const members = DATA.teams.reduce((n, t) => n + (t.private ? 0 : (t.agents ?? 0)), 0);
   const chips = DATA.teams.map(t => {
     const c = teamCounts(t);
     const icon = office.rooms[t.id]?.def.icon ?? (t.private ? '私' : '·');
     const stats = t.private
       ? `<div class="bpriv">私密</div>`
       : `<div class="bc"><span>进行中 ${c.doing}</span><span>等你确认 ${c.confirm}</span><span>已完成 ${c.done}</span></div><div class="bt">共 ${c.total} 项</div>`;
-    return `<button type="button" class="bschip" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="top"><span class="ic">${esc(icon)}</span><span class="bn">${esc(t.name)}</span></div><div class="bm">成员 ${c.members} 人</div>${stats}</button>`;
+    const who = t.private ? '私密' : t.name;
+    const count = t.private ? '' : `<div class="bm">成员 ${c.members} 人</div>`;
+    return `<button type="button" class="bschip" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="top"><span class="ic">${esc(icon)}</span><span class="bn">${esc(who)}</span></div>${count}${stats}</button>`;
   }).join('');
   $('#boardStats').innerHTML = `<div class="bstotal">全公司 <b>成员 ${members}</b> / <b>任务 ${DATA.tasks.length}</b></div><div class="bsrow">${chips}</div>`;
   const cols = [['doing', '进行中', 'busy'], ['confirm', '等你确认', 'confirm'], ['done', '已完成', 'idle']];
@@ -685,8 +688,9 @@ function renderBoard() {
     const items = DATA.tasks.filter(x => x.status === k);
     return `<div class="col"><h3><i class="dot ${dot}"></i>${name}<span class="n">${items.length}</span></h3>${items.map(x => {
       const t = teamOf(x.team) ?? { name: x.team, color: '#D0B993' };
-      const title = t.private ? '私密任务（仅 Edward 可见）' : esc(x.title);
-      return `<div class="tcard ${k}" data-team="${esc(x.team)}" style="--c:${esc(t.color)}"><div class="tm"><i></i>${esc(t.name)} · ${fmtTime(x.updatedAt)}</div><div class="tt">${title}</div></div>`;
+      const title = t.private ? '私密' : esc(x.title);
+      const teamName = t.private ? '私密' : t.name;
+      return `<div class="tcard ${k}" data-team="${esc(x.team)}" style="--c:${esc(t.color)}"><div class="tm"><i></i>${esc(teamName)} · ${fmtTime(x.updatedAt)}</div><div class="tt">${title}</div></div>`;
     }).join('') || '<div class="empty" style="padding:6px 4px">暂无</div>'}</div>`;
   }).join('');
 }
@@ -741,7 +745,8 @@ function renderQuick() {
   row.innerHTML = DATA.teams.map(t => {
     const icon = office.rooms[t.id]?.def.icon ?? (t.private ? '私' : '·');
     const on = state.selected === t.id ? ' on' : '';
-    return `<button type="button" class="qchip${on}" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><span class="qi">${esc(icon)}</span><span>${esc(t.short || t.name)}</span></button>`;
+    const label = t.private ? '私密' : (t.short || t.name);
+    return `<button type="button" class="qchip${on}" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><span class="qi">${esc(icon)}</span><span>${esc(label)}</span></button>`;
   }).join('');
 }
 $('#homeBtn')?.addEventListener('click', () => {
@@ -775,8 +780,7 @@ function deptCard(t) {
   const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status] || '';
   const sel = state.selected === t.id ? ' sel' : '';
   if (t.private) {
-    const note = t.privateNote || '私密内容，仅 Edward 可见';
-    return `<button type="button" class="dcard${sel}" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="dtop"><span class="ic">${esc(icon)}</span><div class="nm">${esc(t.name)}</div></div><div class="dlock">私 ${esc(note)}</div></button>`;
+    return `<button type="button" class="dcard${sel}" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="dtop"><span class="ic">${esc(icon)}</span><div class="nm">私密</div></div><div class="dlock">私密</div></button>`;
   }
   const head = `<div class="dtop"><span class="ic">${esc(icon)}</span><div><div class="nm">${esc(t.name)}</div><div class="sub"><i class="dot ${esc(t.status)}"></i>${esc(lbl)} · ${t.agents ?? 0} 位成员</div></div></div>`;
   const tasks = directoryTasks(t);
@@ -808,9 +812,11 @@ function renderDirectory() {
       { status: 'idle', label: '待命空闲' },
     ];
     for (const g of groups) {
-      const teams = DATA.teams.filter(t => t.status === g.status);
+      const teams = DATA.teams.filter(t => !t.private && t.status === g.status);
       html += `<section class="dgroup"><h3><i class="dot ${esc(g.status)}"></i>${esc(g.label)}<span class="n">${teams.length}</span></h3>${teams.length ? teams.map(deptCard).join('') : '<div class="dnone">无</div>'}</section>`;
     }
+    const hiddenTeams = DATA.teams.filter(t => t.private);
+    if (hiddenTeams.length) html += `<section class="dgroup"><h3>私密</h3>${hiddenTeams.map(deptCard).join('')}</section>`;
   }
   root.innerHTML = html + sharedSpaceCard();
 }
@@ -1046,11 +1052,12 @@ function paintShiftLabels() {
     const t = teamOf(R.id);
     const span = R.labelEl?.querySelector('.st span');
     if (!t || !span) continue;
-    if (off && t.id === 'ed') span.textContent = '值班';
+    if (t.private) span.textContent = '私密';
+    else if (off && t.id === 'ed') span.textContent = '值班';
     else if (off) span.textContent = '已下班';
     else {
       const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
-      span.textContent = `${lbl}${t.private ? ' · 私密' : ` · ${t.agents ?? 0} 位成员`}`;
+      span.textContent = `${lbl} · ${t.agents ?? 0} 位成员`;
     }
   }
   const meet = office.rooms.meeting?.labelEl?.querySelector('.st span');
