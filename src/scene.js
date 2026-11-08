@@ -1308,16 +1308,18 @@ export function buildOffice(scene, teams) {
     const lx = pos.x - d.x, lz = pos.z - d.z;
     const w = (x, z) => localW(id, x, z);
     if (id === 'market') {
-      if (lx > 1.4 && lz < 2.25) return [w(1.6, 0.55), w(0.55, 0.55), w(-2.8, 0.55), w(-2.8, 6.05)];
-      if (lx > 1.4) return [w(1.6, 4.0), w(0.55, 4.0), w(0.55, 0.55), w(-2.8, 0.55), w(-2.8, 6.05)];
-      return [w(-4.15, lz), w(-4.15, 6.05), w(-2.8, 6.05)];
+      // Around the meeting table: east of it for the glass offices, west of it (the door line) for everyone else.
+      if (lx > 1.4 && lz < 2.25) return [w(1.55, 0.55), w(0.75, 1.85), w(-2.8, 1.85), w(-2.8, 6.05)];
+      if (lx > 1.4) return [w(1.55, 4.0), w(0.75, 4.0), w(0.75, 1.85), w(-2.8, 1.85), w(-2.8, 6.05)];
+      return [w(lx, -2.55), w(-2.8, -2.55), w(-2.8, 6.05)];
     }
     if (id === 'legal') {
-      if (lz > 3.4 && lx > 4.3) return [w(6.2, 3.85), w(6.2, 1.7), w(7.5, 1.7), w(7.5, 0)];
-      if (lz > 3.4) return [w(2.4, 3.85), w(2.4, 1.7), w(7.5, 1.7), w(7.5, 0)];
-      return [w(Math.min(lx, 6.5), 1.7), w(7.5, 1.7), w(7.5, 0)];
+      if (lz > 3.4 && lx > 4.3) return [w(6.2, 3.85), w(6.2, 2.15), w(7.5, 2.15), w(7.5, 0)];
+      if (lz > 3.4) return [w(2.4, 3.85), w(2.4, 2.15), w(7.5, 2.15), w(7.5, 0)];
+      return [w(Math.min(lx, 6.5), 2.15), w(7.5, 2.15), w(7.5, 0)];
     }
-    if (id === 'invest') return [w(-4.55, lz), w(-4.55, 5.55), w(-0.35, 5.55)];
+    // West aisle, then the open band between the planning chairs and the strategy table, then up to the north door.
+    if (id === 'invest') return [w(-4.85, lz), w(-4.85, 3.05), w(-0.15, 3.05), w(-0.15, 6.05)];
     if (id === 'info') return [w(4.15, lz), w(4.15, 9.3), w(-0.3, 9.3)];
     if (id === 'corpfin') return [w(4.15, lz), w(4.15, -2.7)];
     if (id === 'logistics') return [w(3.65, Math.min(lz, -0.4)), w(3.65, -3.9)];
@@ -1843,44 +1845,28 @@ function furnishPantry(g, W) {
   for (const z of [z0 + 0.38, z0 + 1.12, z0 + 1.9]) barStool(g, stoolX, z);
 
   const sign = new THREE.Mesh(
-    new THREE.PlaneGeometry(2.05, 0.52),
+    new THREE.PlaneGeometry(1.36, 0.34),
     new THREE.MeshBasicMaterial({ map: signTexture('茶水间', 'PANTRY', ORANGE), toneMapped: false }),
   );
-  sign.position.set(wallInner - 0.12, 2.05, zc);
+  sign.position.set(wallInner - 0.1, 1.7, zc);
   sign.rotation.y = -Math.PI / 2;
   sign.userData.keep = true;
   g.add(sign);
 
-  // Floor tint under the counter, visible from the overview as well as inside the room.
-  const rugW = 2.55, rugD = len + 0.85;
-  const rug = new THREE.Mesh(new THREE.PlaneGeometry(rugW, rugD), M('#E87708', { r: .72, e: '#E87708', ei: 0.22 }));
-  rug.rotation.x = -Math.PI / 2;
-  rug.position.set(topX - 0.85, 0.025, zc);
-  rug.userData.keep = true;
-  g.add(rug);
-  const rim = new THREE.Mesh(new THREE.RingGeometry(0.92, 1.05, 28), new THREE.MeshBasicMaterial({ color: '#fff1d6', transparent: true, opacity: 0.85, toneMapped: false, side: THREE.DoubleSide }));
-  rim.rotation.x = -Math.PI / 2;
-  rim.position.set(topX - 1.15, 0.03, z0 + 1.52);
-  rim.userData.keep = true;
-  g.add(rim);
-
   const el = document.createElement('div');
-  el.className = 'pantry-flag';
-  el.textContent = '茶水间';
+  el.className = 'rlabel minor';
+  el.style.setProperty('--c', ORANGE);
+  el.dataset.room = 'lounge';
+  el.innerHTML = '<div class="nm">茶水间</div>';
   const label = new CSS2DObject(el);
-  // Float above the east wall so the default overview camera can read it.
-  label.position.set(topX - 0.4, 4.85, z0 + 1.52);
+  label.position.set(topX - 0.05, 2.15, z0 + 0.28);
   label.center.set(0.5, 1);
   g.add(label);
 
   pendant(g, stoolX - 0.05, zc);
-  const warm = new THREE.PointLight('#ffb15a', 1.35, 9.5, 1.4);
-  warm.position.set(topX - 0.55, 2.15, z0 + 1.52);
+  const warm = new THREE.PointLight('#fff1d6', 0.32, 4.8, 1.6);
+  warm.position.set(topX - 0.15, 1.85, zc);
   g.add(warm);
-  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), B('#ffb15a', { e: '#ffb15a', ei: 1.4 }));
-  bulb.position.copy(warm.position);
-  bulb.userData.keep = true;
-  g.add(bulb);
 }
 function furnishLounge(g, def) {
   const W = def.w, D = def.d;
@@ -1904,8 +1890,8 @@ function furnishLounge(g, def) {
   cyl(g, 0.08, 0.1, 0.72, dineX, 0, dineZ, M('#1f2937'), 8);
   chair(g, dineX, dineZ - 1.05, Math.PI, '#44403c');
   chair(g, dineX, dineZ + 1.05, 0, '#44403c');
-  chair(g, dineX - 1.05, dineZ, Math.PI / 2, '#44403c');
-  chair(g, dineX + 1.05, dineZ, -Math.PI / 2, '#44403c');
+  chair(g, dineX - 1.05, dineZ, -Math.PI / 2, '#44403c');
+  chair(g, dineX + 1.05, dineZ, Math.PI / 2, '#44403c');
   furnishPantry(g, W);
   // east + south walls, door stays on the west
   const wallMat = smokeGlass();
@@ -2112,12 +2098,18 @@ function furnishMarket(g, t, accent, W, D) {
   bookshelf(g, 3.35, D / 2 - 1.55, Math.PI, 1.2, 1.35);
   notePlate(g, 3.35, 1.7, D / 2 - 1.42, ['品牌规范'], Math.PI, 0.62, 0.2);
   const dark = M(DARK_WOOD, { r: .46 });
-  box(g, 2.7, 0.06, 0.78, -2.45, 0.72, -0.15, dark, { round: 0.02, cast: false });
-  for (const lx of [-3.55, -1.35]) {
-    cyl(g, 0.045, 0.05, 0.72, lx, 0, -0.38, M('#1a1a1a'), 8, { cast: false });
-    cyl(g, 0.045, 0.05, 0.72, lx, 0, 0.08, M('#1a1a1a'), 8, { cast: false });
+  // Clear of the desk row to the south and of the door aisle at x = -2.8.
+  const mtx = -0.85, mtz = 0.35, mtw = 2.7, mtd = 0.84;
+  box(g, mtw, 0.06, mtd, mtx, 0.72, mtz, dark, { round: 0.02, cast: false });
+  for (const lx of [mtx - 0.95, mtx + 0.95]) {
+    cyl(g, 0.045, 0.05, 0.72, lx, 0, mtz - 0.26, M('#1a1a1a'), 8, { cast: false });
+    cyl(g, 0.045, 0.05, 0.72, lx, 0, mtz + 0.26, M('#1a1a1a'), 8, { cast: false });
   }
-  chair(g, -2.45, -0.72, 0, accent); chair(g, -2.45, 0.42, Math.PI, accent);
+  const mSeat = mtd / 2 + 0.2;
+  for (const lx of [mtx - 0.65, mtx + 0.65]) {
+    chair(g, lx, mtz - mSeat, Math.PI, accent);
+    chair(g, lx, mtz + mSeat, 0, accent);
+  }
   bookshelf(g, -W / 2 + 0.28, -2.55, Math.PI / 2, 1.8, 1.9);
   const map = new THREE.Mesh(new THREE.PlaneGeometry(1.05, 0.72), new THREE.MeshBasicMaterial({ map: signTexture('区域图', '空白 · 无标注', '#94a3b8'), toneMapped: false }));
   map.position.set(-W / 2 + 0.18, 1.45, rowZ); map.rotation.y = Math.PI / 2; map.userData.keep = true; g.add(map);
@@ -2146,21 +2138,27 @@ function furnishLegal(g, t, accent, W, D) {
   const ip = deskSet(g, 2.7, zRow, 0, t, { kinds: ['dash', 'doc'], monitors: 2, chair: accent, papers: true, privacy: true });
   const overseas = deskSet(g, 4.5, zRow, 0, t, { kinds: ['chart'], monitors: 1, chair: accent, privacy: true });
   for (const x of [-6.1, -4.3, -2.5, 0.9, 2.7, 4.5]) drawerBank(g, x, zRow);
-  box(g, 3.8, 0.06, 0.85, -1.4, 0.74, 0.6, M('#c4b496', { r: .45 }), { round: 0.02, cast: false });
-  cyl(g, 0.05, 0.06, 0.74, -2.9, 0, 0.6, M('#1a1a1a'), 8, { cast: false });
-  cyl(g, 0.05, 0.06, 0.74, 0.1, 0, 0.6, M('#1a1a1a'), 8, { cast: false });
+  const ltx = -1.4, ltz = 0.35, ltw = 3.8, ltd = 0.85;
+  box(g, ltw, 0.06, ltd, ltx, 0.74, ltz, M('#c4b496', { r: .45 }), { round: 0.02, cast: false });
+  cyl(g, 0.05, 0.06, 0.74, ltx - 1.5, 0, ltz, M('#1a1a1a'), 8, { cast: false });
+  cyl(g, 0.05, 0.06, 0.74, ltx + 1.5, 0, ltz, M('#1a1a1a'), 8, { cast: false });
+  const lSeat = ltd / 2 + 0.2;
+  for (const lx of [ltx - 1.2, ltx, ltx + 1.2]) {
+    chair(g, lx, ltz - lSeat, Math.PI, accent);
+    chair(g, lx, ltz + lSeat, 0, accent);
+  }
   fileCabinet(g, -6.9, 1.15, Math.PI / 2, true);
   notePlate(g, -6.55, 1.55, 1.15, ['档案'], Math.PI / 2, 0.5, 0.2);
-  box(g, 0.52, 0.32, 0.4, -5.5, 0.72, 2.35, M('#e7e5e4', { r: .4 }), { cast: false });
-  box(g, 0.42, 0.08, 0.32, -5.5, 1.04, 2.35, M('#111827'), { cast: false });
-  box(g, 0.34, 0.72, 0.3, -4.7, 0, 2.35, M('#1c1917', { r: .5 }), { cast: false });
+  box(g, 0.52, 0.32, 0.4, -5.5, 0.72, 2.95, M('#e7e5e4', { r: .4 }), { cast: false });
+  box(g, 0.42, 0.08, 0.32, -5.5, 1.04, 2.95, M('#111827'), { cast: false });
+  box(g, 0.34, 0.72, 0.3, -4.7, 0, 2.95, M('#1c1917', { r: .5 }), { cast: false });
   notePlate(g, -5.7, 1.15, 1.15, ['待核实', '审核中', '已交 ED'], Math.PI, 0.7, 0.42);
   // South band: 总监室 nearer the east door, 经理室 beside it. Doors open north into the room.
   glassRoom(g, 4.55, 3.65, ex - 0.18, zz - 0.22, 'north', '总监室');
   glassRoom(g, 0.7, 3.65, 4.3, zz - 0.22, 'north', '经理室');
   const clo = deskSet(g, 6.7, 5.55, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
   drawerBank(g, 6.7, 5.55);
-  chair(g, 5.7, 4.55, Math.PI / 2, accent);
+  chair(g, 5.5, 4.35, -Math.PI / 2, accent);
   cyl(g, 0.32, 0.32, 0.04, 6.15, 0.7, 4.35, M('#d7c4a3', { r: .45 }), 16, { cast: false });
   cyl(g, 0.045, 0.05, 0.7, 6.15, 0, 4.35, M('#1a1a1a'), 8, { cast: false });
   deskSet(g, 2.5, 5.45, 0, t, { kinds: ['doc'], monitors: 1, chair: accent, privacy: true, mug: false, plant: false });
@@ -2169,9 +2167,9 @@ function furnishLegal(g, t, accent, W, D) {
   frostBand(g, ex - 0.05, 2.05, ex - 0.05, zz - 0.15);
   frostBand(g, bx + 0.2, zz - 0.05, ex - 0.2, zz - 0.05);
   coatHooks(g, ex - 0.2, -2.45, -Math.PI / 2);
-  floorLamp(g, -0.7, -1.4); floorLamp(g, 2.2, 2.2);
+  floorLamp(g, -0.7, -1.4); floorLamp(g, 3.5, 2.7);
   plant(g, -0.8, zRow + 0.15, 0.85, 1); plant(g, bx + 0.7, zz - 1.1, 0.9, 0);
-  plant(g, 3.6, 2.4, 0.8, 1);
+  plant(g, 3.6, 3.15, 0.8, 1);
   // Staff order: CLO, 合同法务, 知产, 马法规, 马AI, 海外AI, 海事.
   desks.push(clo, contract, ip, myLaw, myAi, overseas, maritime);
   return desks;
@@ -2193,31 +2191,33 @@ function furnishInvest(g, t, accent, W, D) {
   const data = deskSet(g, -3.55, -4.05, 0, t, { ...wood, kinds: ['dash', 'doc'], monitors: 2, chair: accent, papers: false, privacy: true });
   drawerBank(g, -3.55, -4.05);
   plant(g, 4.35, bz + 1.15, 0.85, 1);
-  const project = deskSet(g, -1.65, -0.35, 0, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
-  const risk = deskSet(g, 0.15, -0.35, 0, t, { ...wood, kinds: ['chart'], monitors: 1, chair: accent, papers: true, privacy: true });
-  const quant = deskSet(g, 1.95, -0.35, 0, t, { ...wood, kinds: ['dash', 'doc'], monitors: 2, chair: accent, privacy: true });
-  for (const x of [-1.65, 0.15, 1.95]) drawerBank(g, x, -0.35);
-  box(g, 3.4, 0.7, 0.1, 0.7, 0, 1.7, M('#1c2433', { r: .65 }), { cast: false });
-  plant(g, -0.85, 1.7, 0.7, 1); plant(g, 2.15, 1.7, 0.62, 0);
-  const plan1 = deskSet(g, -4.65, 2.4, 0, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
-  const plan2 = deskSet(g, -2.35, 2.4, 0, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent, privacy: true });
-  drawerBank(g, -4.65, 2.4); drawerBank(g, -2.35, 2.4);
-  box(g, 0.4, 0.05, 0.85, -3.5, 0.72, 2.4, dark, { round: 0.02, cast: false });
-  const cio = deskSet(g, -3.85, zz - 1.55, Math.PI, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
-  drawerBank(g, -3.85, zz - 1.55);
-  // Long internal strategy table, east of the door aisle. No walls around it.
-  const tableZ = 4.15;
-  box(g, 5.2, 0.07, 1.05, 1.15, 0.74, tableZ, dark, { round: 0.02, cast: false });
-  for (const lx of [-1.15, 1.15, 3.45]) {
-    cyl(g, 0.05, 0.06, 0.74, lx, 0, tableZ - 0.36, M('#1a1a1a'), 8, { cast: false });
-    cyl(g, 0.05, 0.06, 0.74, lx, 0, tableZ + 0.36, M('#1a1a1a'), 8, { cast: false });
+  const midZ = -0.85;
+  const project = deskSet(g, -1.65, midZ, 0, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
+  const risk = deskSet(g, 0.15, midZ, 0, t, { ...wood, kinds: ['chart'], monitors: 1, chair: accent, papers: true, privacy: true });
+  const quant = deskSet(g, 1.95, midZ, 0, t, { ...wood, kinds: ['dash', 'doc'], monitors: 2, chair: accent, privacy: true });
+  for (const x of [-1.65, 0.15, 1.95]) drawerBank(g, x, midZ);
+  box(g, 3.2, 0.7, 0.1, 0.4, 0, 0.55, M('#1c2433', { r: .65 }), { cast: false });
+  plant(g, 3.4, 0.55, 0.62, 0);
+  const planZ = 1.45;
+  const plan1 = deskSet(g, -3.15, planZ, 0, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
+  const plan2 = deskSet(g, -1.15, planZ, 0, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent, privacy: true });
+  drawerBank(g, -3.15, planZ); drawerBank(g, -1.15, planZ);
+  box(g, 0.4, 0.05, 0.7, -2.15, 0.72, planZ, dark, { round: 0.02, cast: false });
+  const cio = deskSet(g, -3.35, zz - 1.55, Math.PI, t, { ...wood, kinds: ['doc'], monitors: 1, chair: accent, papers: true, privacy: true });
+  drawerBank(g, -3.35, zz - 1.55);
+  // Strategy table sits east of the door, with a walking band south of its chairs.
+  const tableX = 2.5, tableZ = 4.75, tableW = 3.6, tableD = 0.9;
+  box(g, tableW, 0.07, tableD, tableX, 0.74, tableZ, dark, { round: 0.02, cast: false });
+  for (const lx of [tableX - 1.15, tableX + 1.15]) {
+    cyl(g, 0.05, 0.06, 0.74, lx, 0, tableZ - 0.28, M('#1a1a1a'), 8, { cast: false });
+    cyl(g, 0.05, 0.06, 0.74, lx, 0, tableZ + 0.28, M('#1a1a1a'), 8, { cast: false });
   }
-  for (const lx of [-1.2, 1.15, 3.4]) {
-    chair(g, lx, tableZ - 0.78, 0, accent);
-    chair(g, lx, tableZ + 0.78, Math.PI, accent);
+  const tSeat = tableD / 2 + 0.22;
+  for (const lx of [tableX - 1.1, tableX, tableX + 1.1]) {
+    chair(g, lx, tableZ - tSeat, Math.PI, accent);
+    chair(g, lx, tableZ + tSeat, 0, accent);
   }
-  notePlate(g, 1.15, 0.98, tableZ - 0.2, ['待交 ED', '待改'], 0, 0.7, 0.28);
-  chair(g, 4.55, 4.55, -Math.PI / 2, accent); chair(g, 4.55, 5.35, -Math.PI / 2, accent);
+  notePlate(g, tableX, 0.98, tableZ - 0.12, ['待交 ED', '待改'], 0, 0.7, 0.28);
   fileCabinet(g, 4.6, 1.2, -Math.PI / 2, true);
   notePlate(g, 4.32, 1.5, 1.2, ['内部归档'], -Math.PI / 2, 0.52, 0.2);
   box(g, 0.46, 0.26, 0.34, 4.45, 0.74, 2.15, M('#e7e5e4', { r: .4 }), { cast: false });
@@ -2226,7 +2226,7 @@ function furnishInvest(g, t, accent, W, D) {
   notePlate(g, -W / 2 + 0.14, 1.35, 0.5, ['A轨 / B轨', '预测须写假设', '待确认非事实'], Math.PI / 2, 0.72, 0.55);
   notePlate(g, -W / 2 + 0.14, 1.75, -2.3, ['吉隆坡时间'], Math.PI / 2, 0.55, 0.24);
   floorLamp(g, -4.85, 4.9); floorLamp(g, 3.1, -0.2); floorLamp(g, -1.0, -3.1);
-  plant(g, -1.1, 5.15, 0.72, 0); plant(g, -4.7, -2.4, 0.68, 1); plant(g, 2.6, -3.2, 0.6, 0);
+  plant(g, -1.15, 5.35, 0.62, 0); plant(g, -5.15, -5.7, 0.68, 1); plant(g, 3.6, -2.4, 0.6, 0);
   desks.push(cio, project, data, risk, quant, plan1, plan2);
   return desks;
 }
