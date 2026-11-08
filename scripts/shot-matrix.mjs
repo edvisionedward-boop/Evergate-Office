@@ -144,7 +144,8 @@ async function officeSet(device, w, h, mode, now) {
     await page.evaluate(() => { const body = document.querySelector('#panelBody'); if (body) body.scrollTop = body.scrollHeight; });
     await page.waitForTimeout(200);
     await save(page, `${device}_${mode}_panel_scrolled`, { name: 'panel-scrolled', mode });
-    await page.evaluate(() => document.querySelector('#panelClose')?.click());
+    await page.evaluate(() => window.__app.closePanel());
+    await page.waitForTimeout(500);
     await settle(page);
     await save(page, `${device}_${mode}_panel_closed`, { name: 'panel-closed', mode });
   } else {
@@ -154,7 +155,8 @@ async function officeSet(device, w, h, mode, now) {
     await page.evaluate(() => { const body = document.querySelector('#panelBody'); if (body) body.scrollTop = body.scrollHeight; });
     await page.waitForTimeout(200);
     await save(page, `${device}_${mode}_sidebar_scrolled`, { name: 'sidebar-scrolled', mode });
-    await page.evaluate(() => document.querySelector('#panelClose')?.click());
+    await page.evaluate(() => window.__app.closePanel());
+    await page.waitForTimeout(500);
     await settle(page);
     await save(page, `${device}_${mode}_sidebar_closed`, { name: 'sidebar-closed', mode });
   }

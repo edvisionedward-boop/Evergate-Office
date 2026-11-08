@@ -84,23 +84,26 @@
     ctx.strokeStyle = '#E6D8C3';
     ctx.lineWidth = 1;
     const placed = [];
-    const gap = 20;
+    const left = [];
+    const right = [];
     for (const src of labels) {
-      const side = Math.cos(src.mid) >= 0 ? 1 : -1;
-      const width = ctx.measureText(src.text).width;
-      let x = src.cx + Math.cos(src.mid) * (src.outer + 36);
-      let y = src.cy + Math.sin(src.mid) * (src.outer + 36);
-      for (let n = 0; n < 18; n++) {
-        const hit = placed.find((p) => Math.abs(p.y - y) < gap && Math.abs(p.x - x) < (p.w + width) * 0.5 + 12);
-        if (!hit) break;
-        y += (y >= src.cy ? 1 : -1) * gap;
-      }
-      const left = side > 0 ? x : x - width;
-      if (left < 6) x += 6 - left;
-      if (left + width > chart.width - 6) x -= left + width - (chart.width - 6);
-      y = Math.max(12, Math.min(chart.height - 12, y));
-      placed.push({ ...src, x, y, side, w: width });
+      const item = { ...src, w: ctx.measureText(src.text).width };
+      (Math.cos(src.mid) >= 0 ? right : left).push(item);
     }
+    const stack = (arr, side) => {
+      arr.sort((a, b) => Math.sin(a.mid) - Math.sin(b.mid));
+      const gap = 22;
+      let y = Math.max(16, (chart.height - gap * Math.max(arr.length - 1, 0)) / 2);
+      for (const item of arr) {
+        item.y = Math.min(chart.height - 16, y);
+        y += gap;
+        item.side = side;
+        item.x = side > 0 ? Math.max(item.w + 8, chart.width - 8 - item.w) : Math.min(chart.width - item.w - 8, 8 + item.w);
+        placed.push(item);
+      }
+    };
+    stack(left, -1);
+    stack(right, 1);
     for (const lab of placed) {
       const rimX = lab.cx + Math.cos(lab.mid) * lab.outer;
       const rimY = lab.cy + Math.sin(lab.mid) * lab.outer;
