@@ -1,5 +1,5 @@
 /* Bump this name to drop previously cached builds on the next visit. */
-const CACHE = 'evergate-office-v68';
+const CACHE = 'evergate-office-v69';
 const PRECACHE = [
   'dashboard.html',
   'dashboard.css',
