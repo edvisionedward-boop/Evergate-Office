@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-08T22:00:48+08:00",
+  "updatedAt": "2026-11-08T22:08:11+08:00",
   "workRules": {
     "taskPoints": 1.0,
     "mistakePoints": -0.3,
@@ -1125,8 +1125,8 @@
     },
     {
       "id": "it",
-      "name": "IT部",
-      "short": "IT",
+      "name": "科技部",
+      "short": "科技",
       "color": "#7eb6d6",
       "status": "idle",
       "statusNote": "空闲",
@@ -1138,8 +1138,8 @@
       "staff": [
         {
           "id": "it-1",
-          "name": "IT总监",
-          "chip": "IT总监",
+          "name": "科技总监",
+          "chip": "科技总监",
           "role": "统筹与技术方案",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
@@ -1185,7 +1185,7 @@
           "id": "it-4",
           "name": "系统运维",
           "chip": "运维",
-          "role": "服务器、部署与监控",
+          "role": "服务器与部署监控",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null,
@@ -1200,7 +1200,7 @@
           "id": "it-5",
           "name": "安全工程师",
           "chip": "安全",
-          "role": "安全审查与密钥管理",
+          "role": "开源安全审查与密钥管理",
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null,
