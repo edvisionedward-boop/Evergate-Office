@@ -340,7 +340,8 @@ h3.block { margin: 16px 0 8px; font-size: 16px; }
 .skill-updated { margin-top: 0; }
 .skill-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; min-width: 0; }
 .skill-card { padding: 14px; min-width: 0; }
-.skill-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-width: 0; }
+.skill-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; min-width: 0; }
+.skill-head b { flex: 1; min-width: 0; }
 .skill-head h3, .skill-head b { margin: 0; font-size: 16px; }
 .skill-head span, .skill-head time { color: var(--muted); font-size: 14px; font-weight: 600; white-space: nowrap; }
 .skill-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-width: 0; }
@@ -446,6 +447,8 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
   .rail { display: none; }
   .main { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
   .charts-2, .usage-grid, .split, .kanban, .skill-grid { grid-template-columns: 1fr; }
+  .skill-row .skill-head { flex-wrap: wrap; }
+  .skill-row .skill-head b { flex: 1 0 100%; }
   .pipe { flex-direction: column; }
   .pipe .arrow { transform: rotate(90deg); }
   h1 { font-size: 22px; }
