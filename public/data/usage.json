@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "description": "公司 AI 用量日报。新的一天追加到 reports，不要改历史条目。本文件不记录金额。",
+  "reports": [
+    {
+      "date": "2026-11-06",
+      "timezone": "Asia/Kuala_Lumpur",
+      "asOf": "2026-11-06T07:30:00+08:00",
+      "asOfNote": "约 07:30（马来西亚时间）",
+      "preparedBy": "会计部 财务监管师",
+      "source": "官方用量报告（当日由 ED 读取并核对，会计部未再查第二次）",
+      "status": "ED 已审",
+      "reviewedAt": "2026-11-06",
+      "plan": "Super",
+      "weekUsedPercent": 69.3,
+      "weekUsedShared": true,
+      "weekUsedNote": "与套餐里其他应用共用，不只是 Grok Bot",
+      "grokBotSharePercent": 33,
+      "resetAt": "2026-11-12T08:07:00+08:00",
+      "resetNote": "2026-11-12（周四）08:07（马来西亚时间）",
+      "weekFrom": "2026-11-05",
+      "weekNote": "本周从 2026-11-05 UTC 起；到本日报时点为止，已见用量 100% 记在 11 月 5 日 UTC。",
+      "caveat": "2026-11-05 包含改组和办公室建设，不能当成今后每天的正常水平。不得据此推算哪天会用完额度。",
+      "cursorNote": "Cursor / 云端编程助手用量不在本日报内。",
+      "moneyNote": "报告没有已核对的金额，本页不显示费用。",
+      "trailing30d": {
+        "from": "2026-10-06",
+        "to": "2026-11-05",
+        "note": "近 30 天各部门占比与本周相同。用量几乎都集中在系统开始运转之后，还不能计算平常每天每位员工用多少。"
+      },
+      "departmentShares": [
+        { "dept": "ED", "percent": 28, "note": "与用户对话 21%，部门间 7%，定时任务 <1%" },
+        { "dept": "会计部", "percent": 16, "note": "几乎都是部门间协作" },
+        { "dept": "规划部（已并入投资部）", "percent": 15, "note": "几乎都是部门间协作；交接期间用量" },
+        { "dept": "法务部", "percent": 14, "note": "与用户对话 8%，部门间 6%" },
+        { "dept": "市场部", "percent": 10, "note": "部门间 7%，与用户对话 3%" },
+        { "dept": "信息部", "percent": 6, "note": "定时任务 4%，部门间 2%" },
+        { "dept": "私密", "percent": 3, "note": "不展开" },
+        { "dept": "物流部", "percent": 3, "note": "报告未再拆" },
+        { "dept": "设计部", "percent": 3, "note": "报告未再拆" },
+        { "dept": "投资部", "percent": 2, "note": "报告未再拆" }
+      ],
+      "scheduledTasks": [
+        { "dept": "信息部", "name": "全球 AI 动态快讯", "shareNote": "约 4%", "cadenceNote": "大约每周 168 次" },
+        { "dept": "信息部", "name": "Citaglobal / CGPD / TIZA 监测", "shareNote": "<1%", "cadenceNote": "大约每周 15 次" }
+      ]
+    }
+  ]
+}

@@ -1,8 +1,22 @@
 /* Bump this name to drop previously cached builds on the next visit. */
-const CACHE = 'evergate-office-v52';
+const CACHE = 'evergate-office-v53';
+const PRECACHE = [
+  'dashboard.html',
+  'dashboard/app.css',
+  'dashboard/app.js',
+  'dashboard/score.js',
+  'dashboard/bg.jpg',
+  'data/usage.json',
+  'data/exams.json',
+  'data/pipeline.json',
+];
 
-self.addEventListener('install', () => {
-  self.skipWaiting();
+self.addEventListener('install', (event) => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await cache.addAll(PRECACHE);
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (event) => {
