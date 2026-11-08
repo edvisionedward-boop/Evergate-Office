@@ -128,6 +128,40 @@
     }
     ctx.restore();
   }
+  function drawSliceMark(ctx, mark, x, y) {
+    ctx.save();
+    ctx.fillStyle = '#F4EFE6';
+    ctx.beginPath();
+    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    drawMark(ctx, mark.shape, x, y, 4.5, '#1a140c', mark.fill);
+  }
+  function drawPhoneMarks(chart, ctx) {
+    const marks = chart.$phoneMarks || [];
+    for (let pass = 0; pass < 10; pass++) {
+      for (let i = 0; i < marks.length; i++) {
+        for (let j = i + 1; j < marks.length; j++) {
+          const a = marks[i];
+          const b = marks[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          if (dist >= 18) continue;
+          const push = (18 - dist) / 2;
+          a.x -= (dx / dist) * push;
+          a.y -= (dy / dist) * push;
+          b.x += (dx / dist) * push;
+          b.y += (dy / dist) * push;
+        }
+      }
+    }
+    for (const mark of marks) {
+      mark.x = Math.max(10, Math.min(chart.width - 10, mark.x));
+      mark.y = Math.max(10, Math.min(chart.height - 10, mark.y));
+      drawSliceMark(ctx, mark.mark, mark.x, mark.y);
+    }
+  }
   const PHASE = { done: '已完成', upcoming: '即将到来', today: '今天', overdue: '已到期，结果尚未回写' };
   const COLS = [['todo', '待开始'], ['doing', '进行中'], ['done', '已完成']];
   const charts = {};
@@ -146,6 +180,7 @@
           const type = chart.config.type;
           const ctx = chart.ctx;
           chart.$sliceLabels = [];
+          chart.$phoneMarks = [];
           if (type === 'line') {
             ctx.save();
             ctx.font = '12px ' + FONT;
@@ -173,14 +208,17 @@
                 const mx = el.x + Math.cos(mid) * rad;
                 const my = el.y + Math.sin(mid) * rad;
                 const mark = markFor(id, i);
-                if (!isPhone()) {
-                  ctx.save();
-                  ctx.fillStyle = '#F4EFE6';
-                  ctx.beginPath();
-                  ctx.arc(mx, my, 7, 0, Math.PI * 2);
-                  ctx.fill();
-                  ctx.restore();
-                  drawMark(ctx, mark.shape, mx, my, 4.5, '#1a140c', mark.fill);
+                const outerR = el.outerRadius || rad;
+                const span = Math.abs((el.endAngle || 0) - (el.startAngle || 0));
+                const outside = isPhone() && span * outerR < 22;
+                const markDist = outside ? outerR + 15 : rad;
+                const markX = el.x + Math.cos(mid) * markDist;
+                const markY = el.y + Math.sin(mid) * markDist;
+                if (isPhone()) {
+                  if (!chart.$phoneMarks) chart.$phoneMarks = [];
+                  chart.$phoneMarks.push({ mark, x: markX, y: markY, cx: el.x, cy: el.y });
+                } else {
+                  drawSliceMark(ctx, mark, mx, my);
                 }
                 if (!chart.$sliceLabels) chart.$sliceLabels = [];
                 if (!isPhone()) {
@@ -203,6 +241,7 @@
             });
           });
           if (chart.$sliceLabels && chart.$sliceLabels.length > 2) drawSpreadLabels(chart, ctx);
+          if (chart.$phoneMarks && chart.$phoneMarks.length) drawPhoneMarks(chart, ctx);
         },
       });
     }
@@ -800,7 +839,7 @@
         responsive: true,
         maintainAspectRatio: false,
         cutout: '58%',
-        layout: { padding: isPhone() ? 8 : { top: 24, right: 200, bottom: 24, left: 132 } },
+        layout: { padding: isPhone() ? 28 : { top: 24, right: 200, bottom: 24, left: 132 } },
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } },
       },
     });

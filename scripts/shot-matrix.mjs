@@ -200,9 +200,10 @@ async function labelAboveDrawer(page) {
 
 const rooms = ['ed', 'market', 'legal', 'invest', 'corpfin', 'logistics', 'review', 'design', 'info', 'it', 'privfin', 'lounge', 'meeting', 'showroom', 'archive'];
 const spaces = [
-  ['pantry', [29.7, 1.05, 2.25], [26.4, 4.2, 0.6]],
+  ['pantry', [28.7, 1.15, 1.6], [23.4, 6.3, -0.2]],
   ['restroom-f', [34.4, 0.6, -2.7], [31.0, 7.2, -2.2]],
   ['restroom-m', [33.8, 0.7, 2.8], [28.2, 8.4, 0.6]],
+  ['restroom-m-mid', [32.0, 1.15, 1.8], [30.15, 4.5, 7.5]],
   ['restroom-m-wash', [30.82, 1.12, 3.25], [30.95, 2.25, 5.55]],
   ['archive-lobby', [22.7, 0.9, -12], [18.6, 6.4, -9.0]],
   ['archive-general', [27.4, 0.8, -14.05], [23.0, 6.6, -11.0]],

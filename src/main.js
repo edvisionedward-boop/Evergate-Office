@@ -114,10 +114,8 @@ function homeDistance() {
 function safeOverviewRect() {
   const top = $('#topbar')?.getBoundingClientRect().bottom || 0;
   let bottom = viewH;
-  for (const sel of ['#quickbar', '#legend', '#feedToggle']) {
-    const r = $(sel)?.getBoundingClientRect();
-    if (r && r.height > 2 && r.top > top + 40) bottom = Math.min(bottom, r.top);
-  }
+  const quick = $('#quickbar')?.getBoundingClientRect();
+  if (quick && quick.height > 2 && quick.top > top + 40) bottom = quick.top;
   return { l: 8, t: top + 8, r: Math.max(48, viewW - 8), b: Math.max(top + 80, bottom - 8) };
 }
 function rectArea(r) { return Math.max(0, r.r - r.l) * Math.max(0, r.b - r.t); }
@@ -371,6 +369,31 @@ function homeDir() {
   if (camera.aspect < 0.8) return new THREE.Vector3(0.42, 1.65, 0.55).normalize();
   return HOME_DIR;
 }
+function desktopOverviewPose() {
+  const safe = safeOverviewRect();
+  const target = new THREE.Vector3(0, 0, 1.5);
+  const dir = HOME_DIR.clone();
+  const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+  const hf = Math.atan(Math.tan(vf) * camera.aspect);
+  let dist = Math.max(46 * 0.78 / Math.tan(vf), 46 * 1.05 / Math.tan(hf));
+  const south = [];
+  for (const id of ['design', 'showroom']) {
+    const d = office.rooms[id]?.def;
+    if (!d?.w) continue;
+    for (const x of [d.x - d.w / 2, d.x + d.w / 2]) {
+      for (const z of [d.z - d.d / 2, d.z + d.d / 2]) south.push(new THREE.Vector3(x, 0.2, z));
+    }
+  }
+  const floor = roomFootprint();
+  for (let i = 0; i < 14; i++) {
+    placeOverview(dir, dist, target);
+    const edge = projectedBounds(south.length ? south : floor);
+    const clipped = edge.maxY > safe.b - 8;
+    if (!clipped) break;
+    dist *= 1.04;
+  }
+  return { dir, dist, target };
+}
 function goHome(anim = true) {
   window.__userAimed = false;
   controls.minDistance = 9;
@@ -378,9 +401,7 @@ function goHome(anim = true) {
   const fromT = controls.target.clone();
   const fromP = camera.position.clone();
   applyFitLimits();
-  const pose = phoneLayout()
-    ? overviewPose()
-    : fitPose(cornersOf(campusSpan()), safeOverviewRect(), 1.06);
+  const pose = phoneLayout() ? overviewPose() : desktopOverviewPose();
   controls.maxDistance = Math.max(140, pose.dist * 1.2);
   camera.far = Math.max(400, pose.dist + 180);
   camera.updateProjectionMatrix();
@@ -1290,66 +1311,147 @@ function labelRankEl(el) {
   if (el.classList.contains('minor')) rank = Math.min(rank, 3);
   return rank;
 }
-function packNarrowLabels() {
+function nudgeOf(el) {
+  const cs = getComputedStyle(el);
+  return { x: parseFloat(cs.marginLeft) || 0, y: parseFloat(cs.marginTop) || 0 };
+}
+function baseBox(el) {
+  const r = el.getBoundingClientRect();
+  const n = nudgeOf(el);
+  return { left: r.left - n.x, top: r.top - n.y, right: r.right - n.x, bottom: r.bottom - n.y, width: r.width, height: r.height };
+}
+function shiftBox(base, x, y) {
+  return { left: base.left + x, top: base.top + y, right: base.right + x, bottom: base.bottom + y, width: base.width, height: base.height };
+}
+function labelObstacles() {
+  const out = [];
+  for (const sel of ['#topbar', '#quickbar', '#legend', '#feedToggle', '#panel', '#navfab']) {
+    const el = document.querySelector(sel);
+    if (!el || el.classList.contains('hidden')) continue;
+    if (Number(getComputedStyle(el).opacity) < 0.15) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width > 2 && r.height > 2) out.push(r);
+  }
+  for (const el of document.querySelectorAll('.bubble')) {
+    if (Number(getComputedStyle(el).opacity) < 0.15) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width > 8 && r.height > 8) out.push(r);
+  }
+  return out;
+}
+function labelFreeRect() {
+  const topEl = $('#topbar')?.getBoundingClientRect();
+  const top = (topEl && topEl.height > 2 ? topEl.bottom : 0) + 6;
+  let bottom = viewH - 6;
+  let left = 6;
+  let right = viewW - 6;
+  const quick = $('#quickbar')?.getBoundingClientRect();
+  if (quick && quick.height > 2 && quick.top > top + 20) bottom = Math.min(bottom, quick.top - 6);
+  const panel = $('#panel');
+  if (panel && !panel.classList.contains('hidden') && Number(getComputedStyle(panel).opacity) > 0.15) {
+    const r = panel.getBoundingClientRect();
+    if (r.width > 2 && r.height > 2) {
+      if (r.width > viewW * 0.7) bottom = Math.min(bottom, r.top - 6);
+      else if (r.left > viewW * 0.4) right = Math.min(right, r.left - 6);
+      else if (r.right < viewW * 0.6) left = Math.max(left, r.right + 6);
+    }
+  }
+  return { l: left, t: top, r: Math.max(left + 48, right), b: Math.max(top + 40, bottom) };
+}
+function boxInside(box, bounds) {
+  return box.left >= bounds.l && box.right <= bounds.r && box.top >= bounds.t && box.bottom <= bounds.b;
+}
+function labelShifts(reach) {
+  const shifts = [{ x: 0, y: 0 }];
+  for (let dist = 16; dist <= reach; dist += 18) {
+    for (let k = 0; k < 10; k++) {
+      const angle = -Math.PI / 2 + (k / 10) * Math.PI * 2;
+      shifts.push({ x: Math.round(Math.cos(angle) * dist), y: Math.round(Math.sin(angle) * dist) });
+    }
+  }
+  return shifts;
+}
+function paintLeader(el, x, y) {
+  let leader = el.querySelector(':scope > .leader');
+  if (!leader) {
+    leader = document.createElement('i');
+    leader.className = 'leader';
+    leader.setAttribute('aria-hidden', 'true');
+    el.prepend(leader);
+  }
+  const len = Math.hypot(x, y);
+  if (len < 14) {
+    leader.style.display = 'none';
+    return;
+  }
+  leader.style.display = 'block';
+  leader.style.width = `${Math.round(len)}px`;
+  leader.style.transform = `rotate(${Math.atan2(-y, -x)}rad)`;
+}
+function layoutRoomLabels() {
   const list = [...document.querySelectorAll('.rlabel')];
+  const phone = phoneLayout();
+  const far = camera.position.distanceTo(controls.target) > 62;
   for (const el of list) {
     el.classList.remove('icononly', 'packed-hide');
-    el.style.marginLeft = '';
-    el.style.marginTop = '';
     const st = el.querySelector('.st');
-    if (st) st.hidden = false;
+    if (st) st.hidden = phone;
   }
-  if (!phoneLayout()) return false;
-  for (const el of list) {
-    const st = el.querySelector('.st');
-    if (st) st.hidden = true;
-  }
-  const boxes = () => list
-    .filter(el => !el.classList.contains('packed-hide'))
-    .map(el => ({ el, r: el.getBoundingClientRect() }))
-    .filter(x => x.r.width > 2 && x.r.height > 2);
-  const loser = (a, b) => (labelRankEl(a.el) === labelRankEl(b.el) ? (a.r.top > b.r.top ? a : b) : (labelRankEl(a.el) < labelRankEl(b.el) ? a : b));
-  const collide = (items) => {
-    for (let i = 0; i < items.length; i++) {
-      for (let j = i + 1; j < items.length; j++) {
-        if (rectsOverlap(items[i].r, items[j].r)) return [items[i], items[j]];
+  const obstacles = labelObstacles();
+  const free = labelFreeRect();
+  const items = list.map((el) => {
+    const base = baseBox(el);
+    const sel = el.classList.contains('sel');
+    return { el, base, sel, rank: sel ? 1000 : labelRankEl(el), icon: !!el.querySelector('.ic') };
+  }).filter((item) => item.base.width > 2 && item.base.height > 2);
+  items.sort((a, b) => b.rank - a.rank || a.base.top - b.base.top);
+  const placed = [];
+  const hits = (box, extra = []) => placed.some((rect) => rectsOverlap(box, rect)) || obstacles.some((rect) => rectsOverlap(box, rect)) || extra.some((rect) => rectsOverlap(box, rect));
+  for (const item of items) {
+    const reach = item.sel ? 240 : far ? 96 : 64;
+    const place = (base) => {
+      let fallback = null;
+      for (const shift of labelShifts(reach)) {
+        const box = shiftBox(base, shift.x, shift.y);
+        const clear = !hits(box);
+        const onScreen = boxInside(box, { l: 4, t: 4, r: viewW - 4, b: viewH - 4 });
+        const inFree = boxInside(box, free);
+        if (item.sel) {
+          if (inFree && clear) return { ...shift, box };
+          if (inFree && !fallback) fallback = { ...shift, box };
+        } else if (clear && onScreen && inFree) return { ...shift, box };
       }
+      return fallback;
+    };
+    let chosen = place(item.base);
+    if (!chosen && !item.sel && item.icon) {
+      item.el.classList.add('icononly');
+      const shrunk = baseBox(item.el);
+      chosen = place(shrunk);
+      if (!chosen) item.el.classList.remove('icononly');
     }
-    return null;
-  };
-  for (let pass = 0; pass < list.length; pass++) {
-    const pair = collide(boxes());
-    if (!pair) break;
-    const low = loser(pair[0], pair[1]);
-    if (low.el.classList.contains('icononly')) break;
-    low.el.classList.add('icononly');
+    if (!chosen && item.sel) {
+      let x = 0;
+      let y = 0;
+      if (item.base.bottom > free.b) y -= item.base.bottom - free.b;
+      if (item.base.top + y < free.t) y += free.t - (item.base.top + y);
+      if (item.base.right + x > free.r) x -= item.base.right + x - free.r;
+      if (item.base.left + x < free.l) x += free.l - (item.base.left + x);
+      chosen = { x: Math.round(x), y: Math.round(y), box: shiftBox(item.base, x, y) };
+    }
+    if (!chosen) {
+      item.el.classList.add('packed-hide');
+      paintLeader(item.el, 0, 0);
+      item.el.style.marginLeft = '';
+      item.el.style.marginTop = '';
+      continue;
+    }
+    item.el.style.marginLeft = chosen.x ? `${chosen.x}px` : '';
+    item.el.style.marginTop = chosen.y ? `${chosen.y}px` : '';
+    labelNudge[item.el.dataset.room || ''] = { x: chosen.x, y: chosen.y };
+    paintLeader(item.el, chosen.x, chosen.y);
+    placed.push(chosen.box);
   }
-  for (let pass = 0; pass < list.length; pass++) {
-    const pair = collide(boxes());
-    if (!pair) break;
-    loser(pair[0], pair[1]).el.classList.add('packed-hide');
-  }
-  const chrome = () => ['#topbar', '#quickbar', '#legend', '#feedToggle', '#panel'].map((sel) => {
-    const el = document.querySelector(sel);
-    if (!el || el.classList.contains('hidden')) return null;
-    const r = el.getBoundingClientRect();
-    return r.width > 2 && r.height > 2 ? r : null;
-  }).filter(Boolean);
-  const hitsChrome = (r) => chrome().some((c) => rectsOverlap(r, c));
-  for (let pass = 0; pass < list.length; pass++) {
-    const hit = boxes().find((x) => !x.el.classList.contains('sel') && hitsChrome(x.r));
-    if (!hit) break;
-    if (!hit.el.classList.contains('icononly')) hit.el.classList.add('icononly');
-    else hit.el.classList.add('packed-hide');
-  }
-  for (let pass = 0; pass < list.length; pass++) {
-    const items = boxes();
-    const out = items.find(x => x.r.left < 1 || x.r.right > viewW - 1 || x.r.top < 1 || x.r.bottom > viewH - 1);
-    if (!out) break;
-    if (!out.el.classList.contains('icononly')) out.el.classList.add('icononly');
-    else out.el.classList.add('packed-hide');
-  }
-  return true;
 }
 function separateChrome() {
   const feed = $('#feedToggle');
@@ -1374,52 +1476,6 @@ function separateChrome() {
   const top = Math.max(8, Math.round(hr.top - gap - 44));
   feed.style.bottom = 'auto';
   feed.style.top = `${top}px`;
-}
-function separateLabels() {
-  const list = Object.values(office.rooms).filter(R => R.labelEl);
-  if (list.length < 2) return;
-  const pad = 8;
-  const base = {};
-  for (const R of list) {
-    const m = R.labelEl.getBoundingClientRect();
-    const cur = labelNudge[R.id] || { x: 0, y: 0 };
-    if (m.width < 2 || m.height < 2) continue;
-    base[R.id] = { left: m.left - cur.x, top: m.top - cur.y, right: m.right - cur.x, bottom: m.bottom - cur.y };
-  }
-  const ids = Object.keys(base);
-  const pos = {};
-  for (const id of ids) pos[id] = { ...base[id] };
-  for (let pass = 0; pass < 10; pass++) {
-    for (let i = 0; i < ids.length; i++) {
-      for (let j = i + 1; j < ids.length; j++) {
-        const A = pos[ids[i]], B = pos[ids[j]];
-        const ox = Math.min(A.right, B.right) - Math.max(A.left, B.left);
-        const oy = Math.min(A.bottom, B.bottom) - Math.max(A.top, B.top);
-        if (ox <= 0 || oy <= 0) continue;
-        if (ox < oy) {
-          const left = A.left <= B.left ? A : B;
-          const right = left === A ? B : A;
-          const d = (ox + pad) / 2;
-          left.left -= d; left.right -= d; right.left += d; right.right += d;
-        } else {
-          const up = A.top <= B.top ? A : B;
-          const down = up === A ? B : A;
-          const d = (oy + pad) / 2;
-          up.top -= d; up.bottom -= d; down.top += d; down.bottom += d;
-        }
-      }
-    }
-  }
-  for (const R of list) {
-    const b = base[R.id];
-    if (!b) continue;
-    const p = pos[R.id];
-    const x = Math.round(Math.max(-96, Math.min(96, p.left - b.left)));
-    const y = Math.round(Math.max(-72, Math.min(72, p.top - b.top)));
-    labelNudge[R.id] = { x, y };
-    R.labelEl.style.marginLeft = x ? `${x}px` : '';
-    R.labelEl.style.marginTop = y ? `${y}px` : '';
-  }
 }
 function settleStaffTags() {
   const tags = [...document.querySelectorAll('.ptag')];
@@ -1464,7 +1520,7 @@ function settleStaffTags() {
 function layoutEdBubble(el) {
   const label = office.rooms.ed?.labelEl;
   if (!label) return;
-  const lr = label.getBoundingClientRect();
+  const lr = baseBox(label);
   const br = el.getBoundingClientRect();
   if (br.width < 20 || lr.width < 20) return;
   const cs = getComputedStyle(el);
@@ -1690,15 +1746,15 @@ function frame() {
   refreshWorkBars();
   if (composer) composer.render(); else renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
-  if (!packNarrowLabels()) separateLabels();
-  separateChrome();
-  measureChrome();
-  refineOverview();
-  settleStaffTags();
   for (const b of activeBubbles) {
     if (b.ed) layoutEdBubble(b.el);
     clampBubble(b.el);
   }
+  layoutRoomLabels();
+  separateChrome();
+  measureChrome();
+  refineOverview();
+  settleStaffTags();
   if ((T % 0.5) < dt) applyClock();
   if (first) { first = false; setTimeout(() => $('#loading').classList.add('gone'), 150); window.__ready = true; }
 }

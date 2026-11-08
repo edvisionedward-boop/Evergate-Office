@@ -82,6 +82,7 @@ a.tab{text-decoration:none;color:var(--mut)}
 .rlabel.icononly{padding:4px;gap:0}
 .rlabel.icononly .nmrow,.rlabel.icononly .st{display:none}
 .rlabel.packed-hide{visibility:hidden;pointer-events:none}
+.rlabel .leader{position:absolute;left:0;top:100%;height:0;border-top:1.5px solid rgba(230,216,195,.95);transform-origin:0 0;pointer-events:none;display:none}
 .rlabel .st[hidden]{display:none}
 .bubble{max-width:220px}
 .ph{display:flex;gap:12px;align-items:center;padding-right:40px}
