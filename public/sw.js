@@ -1,5 +1,5 @@
 /* Bump this name to drop previously cached builds on the next visit. */
-const CACHE = 'evergate-office-v60';
+const CACHE = 'evergate-office-v61';
 const PRECACHE = [
   'dashboard.html',
   'dashboard.css',
@@ -12,6 +12,7 @@ const PRECACHE = [
   'data/usage.json',
   'data/exams.json',
   'data/pipeline.json',
+  'data/skills.json',
 ];
 
 self.addEventListener('install', (event) => {
