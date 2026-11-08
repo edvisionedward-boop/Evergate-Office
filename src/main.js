@@ -1325,6 +1325,7 @@ function shiftBox(base, x, y) {
 }
 function labelObstacles() {
   const out = [];
+  out.bubble = false;
   for (const sel of ['#topbar', '#quickbar', '#legend', '#feedToggle', '#panel', '#navfab']) {
     const el = document.querySelector(sel);
     if (!el || el.classList.contains('hidden')) continue;
@@ -1333,9 +1334,12 @@ function labelObstacles() {
     if (r.width > 2 && r.height > 2) out.push(r);
   }
   for (const el of document.querySelectorAll('.bubble')) {
-    if (Number(getComputedStyle(el).opacity) < 0.15) continue;
+    if (el.classList.contains('out')) continue;
     const r = el.getBoundingClientRect();
-    if (r.width > 8 && r.height > 8) out.push(r);
+    if (r.width > 8 && r.height > 8) {
+      out.bubble = true;
+      out.push({ left: r.left - 10, top: r.top - 10, right: r.right + 10, bottom: r.bottom + 10, width: r.width + 20, height: r.height + 20 });
+    }
   }
   return out;
 }
@@ -1408,7 +1412,7 @@ function layoutRoomLabels() {
   const placed = [];
   const hits = (box, extra = []) => placed.some((rect) => rectsOverlap(box, rect)) || obstacles.some((rect) => rectsOverlap(box, rect)) || extra.some((rect) => rectsOverlap(box, rect));
   for (const item of items) {
-    const reach = item.sel ? 240 : far ? 96 : 64;
+    const reach = item.sel ? 240 : far || obstacles.bubble ? 150 : 64;
     const place = (base) => {
       let fallback = null;
       for (const shift of labelShifts(reach)) {
