@@ -86,7 +86,15 @@
               if (type === 'doughnut' || type === 'pie') {
                 const mid = ((el.startAngle || 0) + (el.endAngle || 0)) / 2;
                 const rad = ((el.outerRadius || 0) + (el.innerRadius || 0)) / 2;
-                drawMark(ctx, shapeFor(id), el.x + Math.cos(mid) * rad, el.y + Math.sin(mid) * rad, 5, color || '#E6D8C3');
+                const mx = el.x + Math.cos(mid) * rad;
+                const my = el.y + Math.sin(mid) * rad;
+                ctx.save();
+                ctx.fillStyle = '#F4EFE6';
+                ctx.beginPath();
+                ctx.arc(mx, my, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+                drawMark(ctx, shapeFor(id), mx, my, 4.5, '#1a140c');
               } else {
                 const p = el.getProps(['x', 'y'], true);
                 drawMark(ctx, shapeFor(id), p.x, p.y, 5, color || '#E6D8C3');
