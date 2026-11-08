@@ -172,6 +172,8 @@ function focusRoom(id, anim = true) {
   camera.updateProjectionMatrix();
   if (anim) flyTo(pose.target, pose.dist, pose.dir, 0.7);
   else {
+    tween = null;
+    window.__flying = false;
     controls.target.copy(pose.target);
     camera.position.copy(pose.target).addScaledVector(pose.dir, pose.dist);
   }
@@ -303,6 +305,7 @@ function refineOverview() {
 let tween = null;
 function flyTo(target, dist, dir, dur = 0.9) {
   const curDir = camera.position.clone().sub(controls.target).normalize();
+  window.__flying = true;
   tween = { t: 0, dur, fromT: controls.target.clone(), toT: target.clone(), fromP: camera.position.clone(),
     toP: target.clone().add((dir ?? curDir).clone().multiplyScalar(dist)) };
 }
@@ -327,6 +330,8 @@ function goHome(anim = true) {
     homeFraming = 12;
     if (anim) flyTo(pose.target, pose.dist, pose.dir);
     else {
+      tween = null;
+      window.__flying = false;
       controls.target.copy(pose.target);
       camera.position.copy(pose.target).addScaledVector(pose.dir, pose.dist);
     }
@@ -336,7 +341,12 @@ function goHome(anim = true) {
   const tgt = new THREE.Vector3(center.x, 0, center.z);
   const dir = homeDir();
   if (anim) flyTo(tgt, homeDistance(), dir);
-  else { controls.target.copy(tgt); camera.position.copy(tgt).add(dir.clone().multiplyScalar(homeDistance())); }
+  else {
+    tween = null;
+    window.__flying = false;
+    controls.target.copy(tgt);
+    camera.position.copy(tgt).add(dir.clone().multiplyScalar(homeDistance()));
+  }
 }
 
 /* post */
@@ -1546,7 +1556,7 @@ function frame() {
   if (tween) {
     tween.t += dt / tween.dur; const k = tween.t >= 1 ? 1 : 1 - Math.pow(1 - tween.t, 3);
     controls.target.lerpVectors(tween.fromT, tween.toT, k); camera.position.lerpVectors(tween.fromP, tween.toP, k);
-    if (tween.t >= 1) tween = null;
+    if (tween.t >= 1) { tween = null; window.__flying = false; }
   }
   controls.update();
   if (scene.fog) {
