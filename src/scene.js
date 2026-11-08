@@ -443,10 +443,11 @@ function deskSet(parent, x, z, ry, team, opt = {}) {
   const kinds = opt.kinds ?? ['code', 'chart'];
   const n = opt.monitors ?? 2;
   const mStand = M('#111522', { r: .4, m: .3 });
-  const mw = opt.wide ? 1.15 : 0.6, mh = opt.wide ? 0.64 : 0.37;
-  const sw = opt.wide ? 1.05 : 0.56, sh = opt.wide ? 0.56 : 0.33;
+  const mw = opt.wide ? 1.15 : (n > 2 ? 0.44 : 0.6), mh = opt.wide ? 0.64 : 0.37;
+  const sw = opt.wide ? 1.05 : (n > 2 ? 0.38 : 0.56), sh = opt.wide ? 0.56 : 0.33;
+  const step = n > 2 ? 0.46 : 0.62;
   for (let i = 0; i < n; i++) {
-    const mx = n === 1 ? 0 : (i - (n - 1) / 2) * 0.62, ang = n === 1 ? 0 : (i - (n - 1) / 2) * -0.35;
+    const mx = n === 1 ? 0 : (i - (n - 1) / 2) * step, ang = n === 1 ? 0 : (i - (n - 1) / 2) * -0.28;
     const mg = new THREE.Group(); mg.position.set(mx, 0.77, -0.18); mg.rotation.y = ang; mg.userData.deskScreen = 1; g.add(mg);
     box(mg, 0.18, 0.015, 0.14, 0, 0, 0, mStand); box(mg, 0.04, opt.wide ? 0.28 : 0.22, 0.03, 0, 0, -0.03, mStand);
     box(mg, mw, mh, 0.035, 0, opt.wide ? 0.28 : 0.18, 0, mStand, { round: 0.012 });
@@ -468,6 +469,16 @@ function deskSet(parent, x, z, ry, team, opt = {}) {
   if (opt.plant !== false) plant(g, opt.papers ? -0.42 : 0.55, 0.18, 0.32, 1, 0.775);
   const ch = chair(g, 0, 0.62, 0, opt.chair ?? '#2b3142');
   return { group: g, seat: new THREE.Vector3(0, 0, 0.58) };
+}
+function laptopOnStand(parent, x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0.75, z); parent.add(g);
+  box(g, 0.2, 0.012, 0.14, 0, 0.01, 0, M('#334155', { m: .4 }), { cast: false });
+  box(g, 0.012, 0.07, 0.012, -0.05, 0.05, 0, M('#94a3b8', { m: .55 }), { cast: false });
+  box(g, 0.012, 0.07, 0.012, 0.05, 0.05, 0, M('#94a3b8', { m: .55 }), { cast: false });
+  const deck = new THREE.Group(); deck.position.set(0, 0.1, 0); deck.rotation.x = -0.5; g.add(deck);
+  box(deck, 0.26, 0.012, 0.18, 0, 0, 0, M('#0f172a', { r: .35 }), { cast: false });
+  const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.12), screenMat('code', '#7eb6d6', false));
+  scr.position.set(0, 0.07, 0.012); scr.rotation.x = -1.05; deck.add(scr);
 }
 function staffRng(id) {
   let h = 2166136261;
@@ -519,10 +530,10 @@ function personalizeDesk(g, staff, team) {
   if (team?.id === 'corpfin' || /会计|财务/.test(blob)) items.push('calc');
   if (team?.id === 'legal' || team?.id === 'review' || /法务|审查/.test(blob)) items.push('folder');
   if (team?.id === 'it') {
-    if (/安全|密钥/.test(blob)) items.push('folder');
-    else if (/运维|服务器/.test(blob)) items.push('notes');
-    else if (/前端|设计/.test(blob)) items.push('pen');
-    else items.push('phone');
+    if (/安全|密钥/.test(blob)) items.push('folder', 'notes');
+    else if (/运维|服务器/.test(blob)) items.push('notes', 'calc');
+    else if (/总监/.test(blob)) items.push('folder', 'calc');
+    else items.push('calc', 'notes');
   }
   if (rnd() < 0.5) items.push(rnd() < 0.5 ? 'notes' : 'folder');
   if (rnd() < 0.55) items.push('mug');
@@ -1063,8 +1074,8 @@ function labelEl(def) {
 export const LAYOUT = {
   // North street wall stays; only the outer north wall moves.
   market:   { x: -13.5, z: -14.475, w: 10, d: 13.45, icon: '市', sign: '市场部', signSub: 'MARKETING & RESEARCH' },
-  // Former 投资部 cell, the only office still empty. The old 法务部 cell north of ED is now 投资部.
-  it:       { x: -13.5, z: 0, w: 10, d: 8.5, icon: 'IT', sign: 'IT部', signSub: 'INFORMATION TECHNOLOGY' },
+  // Vacated office beside ED. The old 法务部 footprint directly north of ED is inside 投资部.
+  it:       { x: -13.5, z: 0, w: 10, d: 8.5, icon: '科', sign: '科技部', signSub: 'TECHNOLOGY' },
   legal:    { x: -30.2, z: -8, w: 17.2, d: 14.0, icon: '法', sign: '法务部', signSub: 'LEGAL' },
   // ED's column. South wall locked at z=-7.75. North wall lines up with 市场部 (-21.2).
   // Width stays 11 so the street width W does not change.
@@ -2365,10 +2376,18 @@ function decorate(R, dyn, teamById) {
   } else if (id === 'lounge') {
     furnishLounge(g, def);
   } else if (id === 'it') {
-    // Head desk is staff[0], then four staff desks. Center aisle stays open to the south door.
-    const seats = [[-3.15, -2.55], [-3.15, -0.35], [2.55, -2.55], [-3.15, 1.55], [2.55, -0.45]];
-    const kinds = [['code', 'dash'], ['code', 'chart'], ['dash', 'doc'], ['chart', 'doc'], ['doc', 'code']];
-    seats.forEach(([x, z], i) => desks.push(deskSet(g, x, z, 0, t, { kinds: kinds[i], chair: accentChair, papers: i % 2 === 0 })));
+    // staff[0] is 科技总监. Developers, ops, and security each get a different screen setup.
+    // The center aisle stays clear from the south door to the back desks.
+    const head = deskSet(g, -3.15, -2.7, 0, t, { kinds: ['dash', 'doc'], monitors: 2, papers: true, chair: accentChair });
+    const dev = deskSet(g, -3.15, -0.35, 0, t, { kinds: ['code', 'code', 'chart'], monitors: 3, papers: false, plant: false, chair: accentChair });
+    const front = deskSet(g, 2.55, -2.7, 0, t, { kinds: ['dash', 'doc'], monitors: 2, papers: true, plant: false, chair: accentChair });
+    const ops = deskSet(g, -3.15, 1.55, 0, t, { kinds: ['dash', 'chart', 'dash'], monitors: 3, papers: false, plant: false, chair: accentChair });
+    const sec = deskSet(g, 2.55, -0.45, 0, t, { kinds: ['doc', 'code'], monitors: 2, papers: true, chair: accentChair });
+    desks.push(head, dev, front, ops, sec);
+    laptopOnStand(dev.group, 0.46, 0.05);
+    laptopOnStand(front.group, -0.48, 0.06);
+    cabinet(g, -4.35, -3.55, Math.PI / 2, 0.55, 1.05, '#1e293b');
+    safeBox(g, 4.2, -1.35, -Math.PI / 2);
     const tx = 1.85, tz = 2.15;
     box(g, 1.35, 0.08, 0.72, tx, 0.74, tz, M('#2a241c', { r: .45 }), { round: 0.03, cast: false });
     for (const [lx, lz] of [[-0.5, -0.22], [0.5, -0.22], [-0.5, 0.22], [0.5, 0.22]]) {
