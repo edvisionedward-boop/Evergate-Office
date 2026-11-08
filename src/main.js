@@ -197,9 +197,9 @@ function applyData() {
     }
     for (const a of [R.boss, ...(R.agents || [])].filter(Boolean)) {
       const s = (t.staff || []).find(x => x.id === a.userData.staffId);
-      const nm = a.userData.badgeEl?.querySelector('.pn');
+      const nm = a.userData.badgeEl?.querySelector('.pnn') || a.userData.badgeEl?.querySelector('.pn');
       const bar = a.userData.badgeEl?.querySelector('.wbar');
-      if (nm && s) nm.textContent = t.private ? '私密' : (s.chip || s.name);
+      if (nm && s) nm.textContent = t.private ? '私密' : t.id === 'ed' ? 'ED' : (s.chip || s.name);
       if (bar && s) paintWorkBar(bar, s);
     }
     const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
@@ -346,27 +346,99 @@ function fmtScore(n) {
   const v = Math.round((Number(n) || 0) * 100) / 100;
   return v.toFixed(2);
 }
+function homeTeam(s) {
+  if (!s?.id) return null;
+  return (DATA.teams || []).find(t => (t.staff || []).some(x => x.id === s.id)) || null;
+}
 function workBarOff(s, team) {
-  if (s?.noWorkBar || team?.noWorkBar) return true;
+  const home = team || homeTeam(s);
+  if (s?.noWorkBar || home?.noWorkBar || home?.private) return true;
   const blocked = workRules().noWorkBarTeams || [];
-  if (team?.id && blocked.includes(team.id)) return true;
+  if (home?.id && blocked.includes(home.id)) return true;
   if (s?.id && blocked.includes(s.id)) return true;
-  if (s && !team) {
-    const home = (DATA.teams || []).find(t => (t.staff || []).some(x => x.id === s.id));
-    if (home && (home.noWorkBar || blocked.includes(home.id))) return true;
-  }
   return false;
+}
+function scoreParts(s) {
+  const rules = workRules();
+  const task = Number(s?.workScore) || 0;
+  const extra = Number(s?.extraPenalty) || 0;
+  const otHours = Number(s?.overtimeHours) || 0;
+  const overtime = otHours * (Number(rules.overtimePoints) || 0);
+  const started = Date.parse(rules.trackingStartedAt || '');
+  const hours = Number.isFinite(started) ? regularHoursBetween(started, Date.now()) : 0;
+  const hourPts = hours * (Number(rules.hourPoints) || 0);
+  // Stored workScore stays task-only (tasks, mistakes, penalties, recorded overtime).
+  // Hour points are added from the clock and are not written back.
+  const total = Math.round((task - extra + hourPts) * 100) / 100;
+  return {
+    task: Math.round(task * 100) / 100,
+    extra,
+    hours,
+    hourPts: Math.round(hourPts * 100) / 100,
+    overtime: Math.round(overtime * 100) / 100,
+    total,
+  };
+}
+function breakdownText(parts) {
+  if (!parts) return '';
+  return `任务分 ${fmtScore(parts.task)} · 工时分 ${fmtScore(parts.hourPts)} · 加班 ${fmtScore(parts.overtime)}`;
 }
 function displayedScore(s) {
   if (workBarOff(s)) return null;
-  const rules = workRules();
-  const base = Number(s?.workScore) || 0;
-  const extra = Number(s?.extraPenalty) || 0;
-  const ot = Number(s?.overtimeHours) || 0;
-  const started = Date.parse(rules.trackingStartedAt || DATA.updatedAt || '');
-  const hours = Number.isFinite(started) ? regularHoursBetween(started, Date.now()) : 0;
-  const raw = base - extra + hours * (Number(rules.hourPoints) || 0) + ot * (Number(rules.overtimePoints) || 0);
-  return Math.round(raw * 100) / 100;
+  return scoreParts(s).total;
+}
+const ACT = {
+  desk: ['忙碌', 'st-busy'],
+  meeting: ['开会中', 'st-meet'],
+  report: ['汇报中', 'st-report'],
+  errand: ['交接任务', 'st-errand'],
+  coffee: ['喝咖啡', 'st-coffee'],
+  rest: ['休息', 'st-rest'],
+  off: ['下班', 'st-off'],
+};
+function debugNow() {
+  const q = qs.get('now');
+  if (!q) return null;
+  const d = new Date(q);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+function isWorkingHours(date) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(date).map(p => [p.type, p.value]));
+  const dow = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[parts.weekday] ?? 0;
+  const mins = Number(parts.hour) * 60 + Number(parts.minute);
+  return dow >= 1 && dow <= 5 && mins >= 9 * 60 && mins < 18 * 60;
+}
+function activityOf(id) {
+  if (!state.clock.working) return 'off';
+  if (!office?.rooms) return 'desk';
+  for (const R of Object.values(office.rooms)) {
+    for (const a of [R.boss, ...(R.agents || [])].filter(Boolean)) {
+      if (a.userData?.staffId === id) return a.userData.activity || 'desk';
+    }
+  }
+  return 'desk';
+}
+function statusBadgeHtml(s) {
+  if (!s || s.id === 'privfin-1' || workBarOff(s) && homeTeam(s)?.private) return '';
+  if (homeTeam(s)?.private) return '';
+  const key = activityOf(s.id);
+  const [label, cls] = ACT[key] || ACT.desk;
+  return `<span class="pstat ${cls}" data-staff="${esc(s.id)}">${label}</span>`;
+}
+function paintStatusEl(el, key) {
+  const [label, cls] = ACT[key] || ACT.desk;
+  el.className = `pstat ${cls}`;
+  el.textContent = label;
+}
+function refreshStatuses() {
+  const working = !!state.clock.working;
+  for (const el of document.querySelectorAll('.pstat[data-staff]')) {
+    const id = el.dataset.staff;
+    if (!id || id === 'privfin-1') continue;
+    paintStatusEl(el, working ? activityOf(id) : 'off');
+  }
 }
 function fillPct(score) {
   const s = Number(score) || 0;
@@ -383,15 +455,25 @@ function workFactsHtml(s) {
   if (workBarOff(s)) return '';
   const extra = Number(s.extraPenalty) || 0;
   const penalty = extra !== 0 ? `<span>重大失职额外扣分 ${fmtScore(extra)}</span>` : '';
-  return `<span class="wfacts"><span>已完成任务 ${s.tasksDone || 0}</span><span>失误 ${s.mistakes || 0}</span>${penalty}</span>`;
+  return `<span class="wfacts" data-staff="${esc(s.id)}"><span class="wbreak">${breakdownText(scoreParts(s))}</span><span>已完成任务 ${s.tasksDone || 0}</span><span>失误 ${s.mistakes || 0}</span>${penalty}</span>`;
 }
 function paintWorkBar(el, s) {
   if (!el || !s || workBarOff(s)) return;
-  const sc = displayedScore(s);
+  const parts = scoreParts(s);
+  const sc = parts.total;
   const fill = el.querySelector('.wfill');
   const num = el.querySelector('.wscore');
   if (fill) fill.style.width = `${fillPct(sc)}%`;
   if (num) num.textContent = fmtScore(sc);
+  const tag = el.closest('.ptag');
+  if (!tag || tag.classList.contains('guard')) return;
+  let tip = tag.querySelector('.wtip');
+  if (!tip) {
+    tip = document.createElement('span');
+    tip.className = 'wtip';
+    tag.appendChild(tip);
+  }
+  tip.textContent = breakdownText(parts);
 }
 const staffById = new Map();
 function indexStaff() {
@@ -404,6 +486,12 @@ function refreshWorkBars() {
     const s = staffById.get(el.dataset.staff);
     if (s && !workBarOff(s)) paintWorkBar(el, s);
   }
+  for (const el of document.querySelectorAll('.wfacts[data-staff]')) {
+    const s = staffById.get(el.dataset.staff);
+    const line = el.querySelector('.wbreak');
+    if (s && line && !workBarOff(s)) line.textContent = breakdownText(scoreParts(s));
+  }
+  refreshStatuses();
 }
 function teamUpdatedAt(t) {
   const times = (DATA.tasks || []).filter(x => x.team === t.id).map(x => x.updatedAt).filter(Boolean);
@@ -490,7 +578,7 @@ function renderPanel(id) {
   const doing = DATA.tasks.filter(x => x.team === id && x.status === 'doing');
   const doingItems = doing.length ? doing : (t.currentTask ? [{ status: 'doing', title: t.currentTask }] : []);
   const done = DATA.tasks.filter(x => x.team === id && x.status === 'done').sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 3);
-  const staff = (t.staff || []).map(s => `<li class="srow${state.staffId === s.id ? ' on' : ''}"><span class="sn">${esc(s.name)}${s.role ? `<span class="srole">${esc(s.role)}</span>` : ''}</span><span class="grow">${workBarHtml(s)}${workFactsHtml(s)}</span></li>`).join('');
+  const staff = (t.staff || []).map(s => `<li class="srow${state.staffId === s.id ? ' on' : ''}" data-staff="${esc(s.id)}"><span class="sn">${esc(s.name)}${s.role ? `<span class="srole">${esc(s.role)}</span>` : ''}${statusBadgeHtml(s)}</span><span class="grow">${workBarHtml(s)}${workFactsHtml(s)}</span></li>`).join('');
   const head = `<div class="ph" style="--c:${esc(t.color)}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '')}</div><div><h3>${esc(t.name)}</h3>
     <div class="sub"><span class="chip ${esc(t.status)}"><i class="dot ${esc(t.status)}"></i>${esc(lbl)}</span><span class="scorebit">${ringHtml(t.score)}</span></div></div></div>`;
   body.innerHTML = head +
@@ -914,6 +1002,7 @@ async function loadData() {
 }
 loadData();
 setInterval(loadData, 60000);
+setInterval(refreshWorkBars, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) loadData(); });
 
 const DOW = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
@@ -1007,6 +1096,7 @@ function applyClock() {
   const night = mode === 'night' || (mode === 'auto' && day < 0.5);
   state.clock.offDuty = night;
   state.clock.meeting = (DATA.meetings || []).some(m => meetingActive(m, kl));
+  state.clock.working = isWorkingHours(debugNow() || new Date());
   const n = 1 - day;
   hemi.color.set('#f3efe6').lerp(new THREE.Color('#0C1824'), n);
   hemi.groundColor.set('#c9c2b2').lerp(new THREE.Color('#07080c'), n);
@@ -1049,7 +1139,7 @@ function frame() {
   controls.target.y = 0;
   office.update(t, dt, state);
   tickBubbles(dt);
-  if ((T % 1) < dt) refreshWorkBars();
+  refreshWorkBars();
   if (composer) composer.render(); else renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
   separateLabels();
