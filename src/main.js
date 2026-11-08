@@ -167,7 +167,7 @@ function focusRoom(id, anim = true) {
   homeFraming = 0;
   const safe = chromeSafeRect();
   const pose = holdCamera(() => fitPose(roomFitCorners(R.def), safe, 1.04));
-  controls.maxDistance = Math.max(80, pose.dist * 1.4);
+  controls.maxDistance = Math.max(140, pose.dist * 1.6);
   camera.far = Math.max(300, pose.dist + 160);
   camera.updateProjectionMatrix();
   if (anim) flyTo(pose.target, pose.dist, pose.dir, 0.7);
