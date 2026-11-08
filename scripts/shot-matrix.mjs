@@ -188,7 +188,73 @@ async function feedState(page) {
         if (ox > 0.5 && oy > 0.5) hits.push(item.id);
       }
     }
-    return { aria, onScreen, pairs, hits };
+    const pointer = assessPointer(rects);
+    return { aria, onScreen, pairs, hits, pointerOk: pointer.ok, pointer: pointer.reason };
+    function assessPointer(rects) {
+  const bubble = document.querySelector('.bubble');
+  if (!bubble) return { ok: true, reason: 'no bubble' };
+  const poly = document.querySelector('#callouts polyline.callout');
+  if (!poly) return { ok: false, reason: 'no leader' };
+  const tail = getComputedStyle(bubble, '::after').content;
+  if (tail && tail !== 'none') return { ok: false, reason: 'fixed tail still shown' };
+  const pts = poly.getAttribute('points').trim().split(/\s+/).map((pair) => {
+    const [x, y] = pair.split(',').map(Number);
+    return { x, y };
+  });
+  const end = pts[pts.length - 1];
+  const room = bubble.dataset.room;
+  const label = [...document.querySelectorAll('.rlabel')].find((node) => node.dataset.room === room && !node.classList.contains('packed-hide'));
+  const lr = label?.getBoundingClientRect();
+  const inLabel = !!(lr && end.x >= lr.left + 0.5 && end.x <= lr.right - 0.5 && end.y >= lr.top + 0.5 && end.y <= lr.bottom - 0.5);
+  let inRoom = false;
+  const def = window.__app?.office?.rooms?.[room]?.def;
+  const cam = window.__app?.camera;
+  if (def?.w && cam) {
+    const corners = [
+      [def.x - def.w / 2, def.z - def.d / 2],
+      [def.x + def.w / 2, def.z - def.d / 2],
+      [def.x + def.w / 2, def.z + def.d / 2],
+      [def.x - def.w / 2, def.z + def.d / 2],
+    ].map(([x, z]) => {
+      const p = cam.position.clone().set(x, 0.4, z).project(cam);
+      return { x: (p.x * 0.5 + 0.5) * innerWidth, y: (-p.y * 0.5 + 0.5) * innerHeight };
+    });
+    let inside = false;
+    for (let i = 0, j = corners.length - 1; i < corners.length; j = i++) {
+      const yi = corners[i].y;
+      const yj = corners[j].y;
+      const hit = (yi > end.y) !== (yj > end.y) && end.x < ((corners[j].x - corners[i].x) * (end.y - yi)) / ((yj - yi) || 1e-6) + corners[i].x;
+      if (hit) inside = !inside;
+    }
+    inRoom = inside;
+  }
+  if (!inLabel && !inRoom) return { ok: false, reason: `endpoint ${Math.round(end.x)},${Math.round(end.y)} outside ${room}` };
+  const cross = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+  const cuts = (a, b, c, d) => {
+    const d1 = cross(c, d, a);
+    const d2 = cross(c, d, b);
+    const d3 = cross(a, b, c);
+    const d4 = cross(a, b, d);
+    return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
+  };
+  for (const item of rects) {
+    if (item.id === room) continue;
+    const box = item.r;
+    const edges = [
+      [{ x: box.left, y: box.top }, { x: box.right, y: box.top }],
+      [{ x: box.right, y: box.top }, { x: box.right, y: box.bottom }],
+      [{ x: box.right, y: box.bottom }, { x: box.left, y: box.bottom }],
+      [{ x: box.left, y: box.bottom }, { x: box.left, y: box.top }],
+    ];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i];
+      const b = pts[i + 1];
+      const inside = (p) => p.x > box.left && p.x < box.right && p.y > box.top && p.y < box.bottom;
+      if (inside(a) || inside(b) || edges.some(([c, d]) => cuts(a, b, c, d))) return { ok: false, reason: `leader crosses ${item.id}` };
+    }
+  }
+  return { ok: true, reason: inLabel ? `ends in ${room} label` : `ends in ${room}` };
+    }
   });
 }
 async function collisionSample(page, frames = 12) {
@@ -199,12 +265,16 @@ async function collisionSample(page, frames = 12) {
   }
   const labelPairs = rows.map((row) => row.pairs);
   const bubbleHits = rows.map((row) => row.hits.length);
+  const pointerMiss = rows.map((row) => (row.pointerOk ? 0 : 1));
   return {
     frames,
     labelPairs,
     bubbleHits,
+    pointerMiss,
+    pointer: rows.map((row) => row.pointer).filter((reason, index, all) => reason && reason !== 'no bubble' && all.indexOf(reason) === index),
     maxLabelPairs: Math.max(...labelPairs),
     maxBubbleHits: Math.max(...bubbleHits),
+    maxPointerMiss: Math.max(...pointerMiss),
   };
 }
 async function bubbleInside(page) {
@@ -268,10 +338,10 @@ async function saveFeed(page, device, mode, fileName, viewName, w, h) {
   const sample = await collisionSample(page);
   collisions.push({ device, mode, view: viewName, viewport: `${w}x${h}`, ...sample });
   const anchor = await page.evaluate(() => document.querySelector('.bubble')?.dataset.anchor || '');
-  const ok = bubble.ok && state.aria === 'true' && state.onScreen && anchor === 'visible' && sample.maxBubbleHits === 0 && sample.maxLabelPairs === 0;
+  const ok = bubble.ok && state.aria === 'true' && state.onScreen && anchor === 'visible' && sample.maxBubbleHits === 0 && sample.maxLabelPairs === 0 && sample.maxPointerMiss === 0;
   const assert = ok
-    ? 'bubble on screen, aria expanded, anchor visible, no label overlap'
-    : `inside=${bubble.ok} aria=${state.aria} onScreen=${state.onScreen} anchor=${anchor} hits=${state.hits.join(',') || 'none'} pairs=${sample.maxLabelPairs} bubbleHits=${sample.maxBubbleHits}`;
+    ? `bubble on screen, aria expanded, anchor visible, no label overlap, ${state.pointer}`
+    : `inside=${bubble.ok} aria=${state.aria} onScreen=${state.onScreen} anchor=${anchor} hits=${state.hits.join(',') || 'none'} pairs=${sample.maxLabelPairs} bubbleHits=${sample.maxBubbleHits} pointer=${state.pointer}`;
   await save(page, `${device}_${mode}_${fileName}`, { name: viewName, mode, status: ok ? 'valid' : 'invalid', assert });
 }
 async function officeSet(device, w, h, mode, now) {
@@ -460,7 +530,7 @@ const manifest = {
 fs.writeFileSync(`${out}/manifest.json`, JSON.stringify(manifest, null, 2));
 fs.writeFileSync(`${out}/collision-report.json`, JSON.stringify({
   head: sha,
-  metric: 'overlap greater than 0.5px on both axes, 12 consecutive frames',
+  metric: 'overlap greater than 0.5px on both axes, 12 consecutive frames; a feed pointer must end inside the referenced room label or room bounds and must not cross another label',
   collisions,
 }, null, 2));
 const md = ['# Batch 1 screenshot index', '', `Head \`${sha}\`. ${rows.length} shots. Data \`${dataHash.slice(0, 12)}\`.`, '', '| File | View | Mode | Viewport |', '| --- | --- | --- | --- |',

@@ -1310,6 +1310,7 @@ function popBubble() {
     const el = document.createElement('div'); el.className = 'bubble'; el.style.setProperty('--c', hue(t));
     el.dataset.room = t.id;
     el.dataset.anchor = 'visible';
+    el.classList.add('aimed');
     el.innerHTML = `<b>${esc(t.name)}</b>${esc(latest.text)}`;
     host.appendChild(el);
     const o = new CSS2DObject(host); o.renderOrder = t.id === 'ed' ? 40 : 8; agent.userData.bubbleAnchor.add(o);
@@ -1610,58 +1611,136 @@ function readLabels() {
     };
   });
 }
-function paintBubbleLeader(el, dx, dy) {
-  let leader = el.querySelector(':scope > .leader');
-  if (!leader) {
-    leader = document.createElement('i');
-    leader.className = 'leader';
-    leader.setAttribute('aria-hidden', 'true');
-    el.appendChild(leader);
-  }
-  const len = Math.hypot(dx, dy);
-  if (len < 36) {
-    leader.style.display = 'none';
-    return;
-  }
-  leader.style.display = 'block';
-  leader.style.width = `${Math.round(len)}px`;
-  leader.style.left = dx < 0 ? '0px' : '100%';
-  leader.style.top = dy < 0 ? '0px' : '100%';
-  leader.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+function segmentsIntersect(a, b, c, d) {
+  const cross = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+  const d1 = cross(c, d, a);
+  const d2 = cross(c, d, b);
+  const d3 = cross(a, b, c);
+  const d4 = cross(a, b, d);
+  return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
 }
-function relocateForBubble(spec) {
-  const { preferLeft, preferTop, w, h, labels, chrome, free, bounds, speaker } = spec;
-  const gap = 4;
+function segHitsRect(a, b, rect, pad = 2) {
+  const r = { left: rect.left - pad, right: rect.right + pad, top: rect.top - pad, bottom: rect.bottom + pad };
+  const inside = (p) => p.x > r.left && p.x < r.right && p.y > r.top && p.y < r.bottom;
+  if (inside(a) || inside(b)) return true;
+  const edges = [
+    [{ x: r.left, y: r.top }, { x: r.right, y: r.top }],
+    [{ x: r.right, y: r.top }, { x: r.right, y: r.bottom }],
+    [{ x: r.right, y: r.bottom }, { x: r.left, y: r.bottom }],
+    [{ x: r.left, y: r.bottom }, { x: r.left, y: r.top }],
+  ];
+  return edges.some(([c, d]) => segmentsIntersect(a, b, c, d));
+}
+function pathClear(pts, obstacles) {
+  for (let i = 0; i < pts.length - 1; i++) {
+    if (obstacles.some((rect) => segHitsRect(pts[i], pts[i + 1], rect, 2))) return false;
+  }
+  return true;
+}
+function polylineLen(pts) {
+  let n = 0;
+  for (let i = 0; i < pts.length - 1; i++) n += Math.hypot(pts[i + 1].x - pts[i].x, pts[i + 1].y - pts[i].y);
+  return n;
+}
+function exitPoint(bubble, side) {
+  const cx = (bubble.left + bubble.right) / 2;
+  const cy = (bubble.top + bubble.bottom) / 2;
+  if (side === 'bottom') return { x: cx, y: bubble.bottom };
+  if (side === 'top') return { x: cx, y: bubble.top };
+  if (side === 'right') return { x: bubble.right, y: cy };
+  return { x: bubble.left, y: cy };
+}
+function routeToPoint(bubble, end, obstacles) {
+  const starts = ['top', 'bottom', 'left', 'right'].map((side) => exitPoint(bubble, side));
   let best = null;
-  for (const shift of labelShifts(96)) {
-    const left = Math.round(preferLeft + shift.x);
-    const top = Math.round(preferTop + shift.y);
-    if (left < bounds.l || top < bounds.t || left + w > bounds.r || top + h > bounds.b) continue;
-    const bubble = { left, top, right: left + w, bottom: top + h };
-    if (chrome.some((rect) => rectsOverlap(bubble, rect, 2))) continue;
-    const hit = labels.filter((item) => rectsOverlap(bubble, item.rect, gap));
-    if (hit.some((item) => item.sel || item === speaker)) continue;
-    const moving = [...hit].sort((a, b) => a.rank - b.rank);
-    const blocked = labels.filter((item) => !moving.includes(item)).map((item) => item.rect).concat(chrome, [bubble]);
-    const moves = [];
-    let ok = true;
-    for (const item of moving) {
-      let placed = null;
-      for (const step of labelShifts(180)) {
-        const box = shiftBox(item.base, step.x, step.y);
-        if (!boxInside(box, free) || blocked.some((rect) => rectsOverlap(box, rect, gap))) continue;
-        placed = { item, x: step.x, y: step.y, box };
-        break;
-      }
-      if (!placed) { ok = false; break; }
-      moves.push(placed);
-      blocked.push(placed.box);
+  const consider = (pts) => {
+    if (!pathClear(pts, obstacles)) return;
+    const len = polylineLen(pts);
+    if (!best || len < best.len) best = { pts, len };
+  };
+  for (const start of starts) {
+    consider([start, end]);
+    consider([start, { x: end.x, y: start.y }, end]);
+    consider([start, { x: start.x, y: end.y }, end]);
+  }
+  const lanes = [10, viewW - 10];
+  for (const start of starts) {
+    for (const x of lanes) {
+      consider([start, { x, y: start.y }, { x, y: end.y }, end]);
     }
-    if (!ok) continue;
-    const cost = Math.hypot(shift.x, shift.y) + moves.length * 40;
-    if (!best || cost < best.cost) best = { left, top, moves, cost };
   }
   return best;
+}
+function labelEntries(rect) {
+  const cx = (rect.left + rect.right) / 2;
+  const cy = (rect.top + rect.bottom) / 2;
+  return [
+    { x: cx, y: rect.top + 8 },
+    { x: cx, y: rect.bottom - 8 },
+    { x: rect.left + 8, y: cy },
+    { x: rect.right - 8, y: cy },
+  ].map((p) => ({
+    x: Math.min(rect.right - 4, Math.max(rect.left + 4, p.x)),
+    y: Math.min(rect.bottom - 4, Math.max(rect.top + 4, p.y)),
+  }));
+}
+function routeToLabel(bubble, rect, obstacles) {
+  let best = null;
+  for (const end of labelEntries(rect)) {
+    const route = routeToPoint(bubble, end, obstacles);
+    if (route && (!best || route.len < best.len)) best = route;
+  }
+  return best;
+}
+function roomScreenPoly(id) {
+  const d = office.rooms[id]?.def;
+  if (!d?.w) return null;
+  const corners = [
+    [d.x - d.w / 2, d.z - d.d / 2],
+    [d.x + d.w / 2, d.z - d.d / 2],
+    [d.x + d.w / 2, d.z + d.d / 2],
+    [d.x - d.w / 2, d.z + d.d / 2],
+  ];
+  return corners.map(([x, z]) => {
+    const p = new THREE.Vector3(x, 0.4, z).project(camera);
+    return { x: (p.x * 0.5 + 0.5) * viewW, y: (-p.y * 0.5 + 0.5) * viewH };
+  });
+}
+function calloutLayer() {
+  let svg = document.getElementById('callouts');
+  if (svg) return svg;
+  svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.id = 'callouts';
+  svg.setAttribute('aria-hidden', 'true');
+  document.getElementById('app')?.appendChild(svg);
+  return svg;
+}
+function drawCallout(pts) {
+  const svg = calloutLayer();
+  if (!svg) return;
+  const ns = 'http://www.w3.org/2000/svg';
+  const points = pts.map((pt) => `${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ');
+  for (const [width, color, marked] of [[5, '#1a140c', false], [2, '#f8fafc', true]]) {
+    const line = document.createElementNS(ns, 'polyline');
+    line.setAttribute('points', points);
+    line.setAttribute('fill', 'none');
+    line.setAttribute('stroke', color);
+    line.setAttribute('stroke-width', String(width));
+    line.setAttribute('stroke-linejoin', 'round');
+    line.setAttribute('stroke-linecap', 'round');
+    if (marked) line.setAttribute('class', 'callout');
+    svg.appendChild(line);
+  }
+  const end = pts[pts.length - 1];
+  const dot = document.createElementNS(ns, 'circle');
+  dot.setAttribute('class', 'callout-end');
+  dot.setAttribute('cx', end.x.toFixed(1));
+  dot.setAttribute('cy', end.y.toFixed(1));
+  dot.setAttribute('r', '4');
+  dot.setAttribute('fill', '#f8fafc');
+  dot.setAttribute('stroke', '#1a140c');
+  dot.setAttribute('stroke-width', '1.5');
+  svg.appendChild(dot);
 }
 function shoveLabel(item, blocked, free) {
   for (const step of labelShifts(280)) {
@@ -1671,40 +1750,68 @@ function shoveLabel(item, blocked, free) {
   }
   return null;
 }
-function forceBubbleClear(spec) {
-  const { w, h, labels, chrome, free, bounds, speaker, anchor } = spec;
-  const spots = [];
-  if (anchor) {
-    spots.push({ left: anchor.rect.left + (anchor.rect.width - w) / 2, top: anchor.rect.top - 12 - h });
-    spots.push({ left: anchor.rect.left + (anchor.rect.width - w) / 2, top: anchor.rect.bottom + 18 });
-    spots.push({ left: anchor.rect.left - w - 16, top: anchor.rect.top });
-    spots.push({ left: anchor.rect.right + 16, top: anchor.rect.top });
+function obstaclesAfter(labels, speaker, moves, chrome) {
+  const boxes = [];
+  for (const item of labels) {
+    if (item === speaker) continue;
+    const moved = moves.find((step) => step.item === item);
+    boxes.push(moved ? moved.box : item.rect);
   }
-  spots.push({ left: bounds.l, top: bounds.t });
-  spots.push({ left: bounds.r - w, top: bounds.t });
-  spots.push({ left: bounds.l, top: bounds.b - h });
-  spots.push({ left: bounds.r - w, top: bounds.b - h });
-  for (const spot of spots) {
-    const left = Math.round(Math.min(Math.max(bounds.l, spot.left), Math.max(bounds.l, bounds.r - w)));
-    const top = Math.round(Math.min(Math.max(bounds.t, spot.top), Math.max(bounds.t, bounds.b - h)));
-    const bubble = { left, top, right: left + w, bottom: top + h };
-    if (chrome.some((rect) => rectsOverlap(bubble, rect, 2))) continue;
-    if (labels.some((item) => (item.sel || item === speaker) && rectsOverlap(bubble, item.rect, 4))) continue;
-    const moving = labels.filter((item) => rectsOverlap(bubble, item.rect, 4)).sort((a, b) => a.rank - b.rank);
-    const blocked = labels.filter((item) => !moving.includes(item)).map((item) => item.rect).concat(chrome, [bubble]);
-    const moves = [];
-    let ok = true;
-    for (const item of moving) {
-      const placed = shoveLabel(item, blocked, free);
-      if (!placed) { ok = false; break; }
-      moves.push(placed);
-      blocked.push(placed.box);
-    }
-    if (ok) return { left, top, moves };
+  return boxes.concat(chrome);
+}
+function fitSpot(spot, spec) {
+  const { w, h, labels, chrome, free, bounds, speaker } = spec;
+  const left = Math.round(spot.left);
+  const top = Math.round(spot.top);
+  if (left < bounds.l || top < bounds.t || left + w > bounds.r || top + h > bounds.b) return null;
+  const bubble = { left, top, right: left + w, bottom: top + h };
+  if (chrome.some((rect) => rectsOverlap(bubble, rect, 2))) return null;
+  if (speaker && rectsOverlap(bubble, speaker.rect, 4)) return null;
+  const hit = labels.filter((item) => item !== speaker && rectsOverlap(bubble, item.rect, 4));
+  if (hit.some((item) => item.sel)) return null;
+  const moving = [...hit].sort((a, b) => a.rank - b.rank);
+  const blocked = labels.filter((item) => !moving.includes(item)).map((item) => item.rect).concat(chrome, [bubble]);
+  const moves = [];
+  for (const item of moving) {
+    const placed = shoveLabel(item, blocked, free);
+    if (!placed) return null;
+    moves.push(placed);
+    blocked.push(placed.box);
   }
-  return null;
+  const obstacles = obstaclesAfter(labels, speaker, moves, chrome);
+  const route = speaker ? routeToLabel(bubble, speaker.rect, obstacles) : null;
+  if (!route) return null;
+  return { left, top, moves, route, cost: route.len + moves.length * 70 };
+}
+function chooseBubbleSpot(spec) {
+  if (!spec.speaker) return null;
+  let best = null;
+  const consider = (spot) => {
+    const fitted = fitSpot(spot, spec);
+    if (fitted && (!best || fitted.cost < best.cost)) best = fitted;
+  };
+  const target = spec.speaker.rect;
+  const gap = 12;
+  const cx = target.left + (target.width - spec.w) / 2;
+  const cy = target.top + (target.height - spec.h) / 2;
+  const near = [
+    { left: cx, top: target.top - gap - spec.h },
+    { left: cx, top: target.bottom + gap },
+    { left: target.left - gap - spec.w, top: cy },
+    { left: target.right + gap, top: cy },
+  ];
+  for (const dx of [-100, -50, 50, 100]) {
+    near.push({ left: cx + dx, top: target.top - gap - spec.h });
+    near.push({ left: cx + dx, top: target.bottom + gap });
+  }
+  for (const spot of near) consider(spot);
+  if (best && best.cost < 130) return best;
+  for (const shift of labelShifts(160)) consider({ left: cx + shift.x, top: target.top - gap - spec.h + shift.y });
+  return best;
 }
 function settleBubbles() {
+  const svg = document.getElementById('callouts');
+  if (svg) svg.replaceChildren();
   for (const b of activeBubbles) settleBubble(b);
 }
 function settleBubble(b) {
@@ -1723,43 +1830,23 @@ function settleBubble(b) {
   const free = labelFreeRect();
   const bounds = bubbleBounds();
   const speaker = labels.find((item) => item.id === el.dataset.room) || null;
-  const anchor = speaker || labels.find((item) => item.id === 'ed');
-  const preferLeft = anchor ? anchor.rect.left + (anchor.rect.width - w) / 2 : br.left;
-  const preferTop = anchor ? anchor.rect.top - 12 - h : br.top;
-  const gap = 4;
-  const hitsLabels = (left, top) => labels.filter((item) => left < item.rect.right + gap && item.rect.left < left + w + gap && top < item.rect.bottom + gap && item.rect.top < top + h + gap);
-  const hitsChrome = (left, top) => chrome.some((rect) => left < rect.right + 2 && rect.left < left + w + 2 && top < rect.bottom + 2 && rect.top < top + h + 2);
-  const onScreen = (left, top) => left >= bounds.l - 0.5 && top >= bounds.t - 0.5 && left + w <= bounds.r + 0.5 && top + h <= bounds.b + 0.5;
-  const clearOf = (left, top) => onScreen(left, top) && !hitsChrome(left, top) && hitsLabels(left, top).length === 0;
-  const nearLimit = 220;
-  let chosen = null;
-  let bestD = Infinity;
-  const step = 8;
-  const left0 = Math.round(bounds.l);
-  const top0 = Math.round(bounds.t);
-  for (let top = top0; top <= bounds.b - h; top += step) {
-    for (let left = left0; left <= bounds.r - w; left += step) {
-      const d = Math.hypot(left - preferLeft, top - preferTop);
-      if (d > nearLimit || d >= bestD || !clearOf(left, top)) continue;
-      bestD = d;
-      chosen = { left, top, moves: [] };
-    }
-  }
-  if (!chosen) {
-    const relocated = relocateForBubble({ preferLeft, preferTop, w, h, labels, chrome, free, bounds, speaker });
-    if (relocated) chosen = relocated;
-  }
-  if (!chosen) {
-    for (let top = top0; top <= bounds.b - h; top += step) {
-      for (let left = left0; left <= bounds.r - w; left += step) {
-        if (!clearOf(left, top)) continue;
-        const d = Math.hypot(left - preferLeft, top - preferTop);
-        if (d < bestD) { bestD = d; chosen = { left, top, moves: [] }; }
+  let chosen = chooseBubbleSpot({ w, h, labels, chrome, free, bounds, speaker });
+  if (!chosen && speaker) {
+    const poly = roomScreenPoly(el.dataset.room);
+    if (poly) {
+      const end = poly.reduce((acc, p) => ({ x: acc.x + p.x / poly.length, y: acc.y + p.y / poly.length }), { x: 0, y: 0 });
+      const bubble = {
+        left: Math.round(Math.min(Math.max(bounds.l, end.x - w / 2), bounds.r - w)),
+        top: Math.round(Math.min(Math.max(bounds.t, end.y - h - 16), bounds.b - h)),
+      };
+      bubble.right = bubble.left + w;
+      bubble.bottom = bubble.top + h;
+      const obstacles = labels.filter((item) => item !== speaker).map((item) => item.rect).concat(chrome);
+      const route = routeToPoint(bubble, end, obstacles);
+      if (route && !labels.some((item) => item !== speaker && rectsOverlap(bubble, item.rect, 4)) && !chrome.some((rect) => rectsOverlap(bubble, rect, 2))) {
+        chosen = { left: bubble.left, top: bubble.top, moves: [], route };
       }
     }
-  }
-  if (!chosen) {
-    chosen = forceBubbleClear({ preferLeft, preferTop, w, h, labels, chrome, free, bounds, speaker, anchor });
   }
   if (!chosen) {
     b.o.parent?.remove(b.o);
@@ -1768,10 +1855,6 @@ function settleBubble(b) {
     if (idx >= 0) activeBubbles.splice(idx, 1);
     if (!activeBubbles.length) $('#feedToggle')?.setAttribute('aria-expanded', 'false');
     return;
-  }
-  const hold = el._hold;
-  if (hold && clearOf(hold.left, hold.top) && !(chosen.moves && chosen.moves.length) && Math.hypot(hold.left - chosen.left, hold.top - chosen.top) <= 12) {
-    chosen = { left: hold.left, top: hold.top, moves: [] };
   }
   for (const move of chosen.moves || []) {
     move.item.el.classList.remove('packed-hide');
@@ -1783,7 +1866,8 @@ function settleBubble(b) {
   el._hold = { left: chosen.left, top: chosen.top };
   el.style.left = `${Math.round(chosen.left - originX)}px`;
   el.style.top = `${Math.round(chosen.top - originY)}px`;
-  paintBubbleLeader(el, preferLeft - chosen.left, preferTop - chosen.top);
+  el.classList.add('aimed');
+  drawCallout(chosen.route.pts);
 }
 function clampBubble(el) {
   const r = el.getBoundingClientRect();

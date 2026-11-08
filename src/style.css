@@ -66,6 +66,8 @@ a.tab{text-decoration:none;color:var(--mut)}
   box-shadow:0 8px 20px rgba(0,0,0,.4);position:relative;left:84px;top:-52px;transform-origin:0 100%;animation:pop .35s ease-out forwards;white-space:normal;width:max-content}
 .bubble-host.ed .bubble{left:18px;top:-210px}
 .bubble:after{content:"";position:absolute;left:18px;bottom:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#f8fafc}
+.bubble.aimed:after{content:none}
+#callouts{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;overflow:visible}
 .bubble b{display:block;font-size:10px;color:var(--c);margin-bottom:2px}
 .bubble.out{animation:fade .4s forwards}
 @keyframes pop{from{opacity:0}to{opacity:1}}
