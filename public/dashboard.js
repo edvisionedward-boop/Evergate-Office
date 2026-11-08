@@ -816,14 +816,22 @@
         else link.removeAttribute('aria-current');
       });
     };
-    const sections = [...document.querySelectorAll('.sec')];
-    const observer = new IntersectionObserver((entries) => {
-      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (visible) setActive(visible.target.id);
-    }, { rootMargin: '-72px 0px -52% 0px', threshold: [0.12, 0.3, 0.6] });
-    sections.forEach((section) => observer.observe(section));
+    const sections = [...document.querySelectorAll('section.sec')];
+    const spy = () => {
+      const nav = document.querySelector('.pills-wrap');
+      const line = (nav?.getBoundingClientRect().bottom || 72) + 24;
+      let current = sections[0]?.id || 'overview';
+      for (const section of sections) {
+        if (section.getBoundingClientRect().top <= line) current = section.id;
+      }
+      setActive(current);
+    };
     links.forEach((link) => link.addEventListener('click', () => setActive(link.dataset.sec)));
+    document.addEventListener('scroll', spy, { passive: true, capture: true });
+    window.addEventListener('scroll', spy, { passive: true });
+    window.addEventListener('resize', spy);
     setActive((location.hash || '#overview').slice(1));
+    requestAnimationFrame(spy);
   }
 
   function tick() {

@@ -812,7 +812,20 @@ function selectRoom(id, source, staffId) {
   flyTo(tgt, portrait ? 31 : 22, HOME_DIR);
   renderQuick();
 }
+function measureChrome() {
+  const top = $('#topbar')?.getBoundingClientRect();
+  if (top && top.height > 2) document.documentElement.style.setProperty('--topbar-h', `${Math.ceil(top.height)}px`);
+  let bottomTop = viewH;
+  const topCut = (top?.bottom || 0) + 24;
+  for (const sel of ['#quickbar', '#legend', '#feedToggle']) {
+    const r = $(sel)?.getBoundingClientRect();
+    if (!r || r.height < 2 || r.top < topCut) continue;
+    bottomTop = Math.min(bottomTop, r.top);
+  }
+  document.documentElement.style.setProperty('--safe-bottom-controls', `${Math.max(72, Math.ceil(viewH - bottomTop + 8))}px`);
+}
 function syncPanelChrome() {
+  measureChrome();
   const open = !$('#panel').classList.contains('hidden');
   document.getElementById('app').classList.toggle('panel-open', open);
   const panel = $('#panel');
@@ -820,7 +833,7 @@ function syncPanelChrome() {
   if (open && viewW > 760) {
     const bar = $('#topbar').getBoundingClientRect().height;
     panel.style.top = `${Math.ceil(bar + 8)}px`;
-  } else panel.style.top = '';
+  } else if (!panel.classList.contains('open')) panel.style.top = '';
 }
 window.addEventListener('resize', () => syncPanelChrome());
 function closePanel() {
@@ -836,6 +849,7 @@ $('#panelExpand')?.addEventListener('click', () => {
   const open = $('#panel').classList.toggle('open');
   $('#panelExpand').setAttribute('aria-expanded', open ? 'true' : 'false');
   $('#panelExpand').textContent = open ? '收起' : '展开';
+  measureChrome();
 });
 
 function teamCounts(team) {
@@ -1469,6 +1483,7 @@ function frame() {
   labelRenderer.render(scene, camera);
   if (!packNarrowLabels()) separateLabels();
   separateChrome();
+  measureChrome();
   refineOverview();
   settleStaffTags();
   for (const b of activeBubbles) if (b.ed) layoutEdBubble(b.el);

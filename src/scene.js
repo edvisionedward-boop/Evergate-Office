@@ -684,12 +684,14 @@ function archiveRacks(parent, slots) {
   const n = slots.length;
   const ledN = n * 6;
   const bodyMesh = new THREE.InstancedMesh(bodyGeo, M('#101218', { r: .55, m: .4 }), n);
-  const faceMesh = new THREE.InstancedMesh(faceGeo, M('#1a2030', { r: .4, m: .25 }), n);
+  const faceMesh = new THREE.InstancedMesh(faceGeo, M('#3A4456', { r: .45, m: .2 }), n);
+  const edgeGeo = boxG(0.66, 0.045, 0.03);
+  const edgeMesh = new THREE.InstancedMesh(edgeGeo, M('#C7B596', { r: .4, m: .15 }), n);
   const ledMesh = new THREE.InstancedMesh(ledGeo, ledMat, ledN);
-  bodyMesh.castShadow = faceMesh.castShadow = ledMesh.castShadow = false;
+  bodyMesh.castShadow = faceMesh.castShadow = ledMesh.castShadow = edgeMesh.castShadow = false;
   bodyMesh.receiveShadow = true;
-  bodyMesh.frustumCulled = faceMesh.frustumCulled = ledMesh.frustumCulled = false;
-  bodyMesh.userData.keep = faceMesh.userData.keep = ledMesh.userData.keep = true;
+  bodyMesh.frustumCulled = faceMesh.frustumCulled = ledMesh.frustumCulled = edgeMesh.frustumCulled = false;
+  bodyMesh.userData.keep = faceMesh.userData.keep = ledMesh.userData.keep = edgeMesh.userData.keep = true;
   const dummy = new THREE.Object3D();
   const on = new THREE.Color(GOLD);
   const dim = new THREE.Color('#163044');
@@ -707,6 +709,10 @@ function archiveRacks(parent, slots) {
     dummy.position.set(s.x + front.x, 0.91, s.z + front.z);
     dummy.updateMatrix();
     faceMesh.setMatrixAt(i, dummy.matrix);
+    const base = new THREE.Vector3(0, -0.86, 0.24).applyEuler(dummy.rotation);
+    dummy.position.set(s.x + base.x, 0.91 - 0.86, s.z + base.z);
+    dummy.updateMatrix();
+    edgeMesh.setMatrixAt(i, dummy.matrix);
     for (let k = 0; k < 6; k++) {
       ledOff.set(k % 2 ? 0.14 : -0.14, 0, 0.25).applyEuler(dummy.rotation);
       dummy.position.set(s.x + ledOff.x, 0.38 + Math.floor(k / 2) * 0.46, s.z + ledOff.z);
@@ -717,9 +723,9 @@ function archiveRacks(parent, slots) {
       li++;
     }
   });
-  bodyMesh.instanceMatrix.needsUpdate = faceMesh.instanceMatrix.needsUpdate = ledMesh.instanceMatrix.needsUpdate = true;
+  bodyMesh.instanceMatrix.needsUpdate = faceMesh.instanceMatrix.needsUpdate = ledMesh.instanceMatrix.needsUpdate = edgeMesh.instanceMatrix.needsUpdate = true;
   if (ledMesh.instanceColor) ledMesh.instanceColor.needsUpdate = true;
-  parent.add(bodyMesh, faceMesh, ledMesh);
+  parent.add(bodyMesh, faceMesh, ledMesh, edgeMesh);
   return { leds: ledMesh, phases, on, dim };
 }
 function rackRow(x0, x1, step, z, ry) {
@@ -860,13 +866,13 @@ function furnishArchive(g, def, dyn, R) {
     }
   }
   R.rackLeds = archiveRacks(g, slots);
-  const secretSpot = new THREE.SpotLight('#FFF1DE', 0.10, 5, 0.60, 0.80, 2);
+  const secretSpot = new THREE.SpotLight('#FFF1DE', 0.10, 5, 0.75, 0.80, 2);
   secretSpot.position.set(2.00, 2.20, 2.05);
   secretSpot.target.position.set(2.00, 0, 2.05);
   g.add(secretSpot, secretSpot.target);
   if (!g.userData.lightProfiles) g.userData.lightProfiles = [];
   const archiveSpots = [
-    { light: secretSpot, dayIntensity: 0.10, nightIntensity: 0.55 },
+    { light: secretSpot, dayIntensity: 0.10, nightIntensity: 0.75 },
   ];
   for (const s of [
     { x: -2.90, z: 0, day: 0.10, night: 0.50 },
@@ -881,6 +887,12 @@ function furnishArchive(g, def, dyn, R) {
   g.userData.lightProfiles.push(...archiveSpots);
   const afl = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.2, D - 0.2), M('#242430', { r: .8, m: 0 }));
   afl.rotation.x = -Math.PI / 2; afl.position.y = 0.012; afl.receiveShadow = true; afl.polygonOffset = true; afl.polygonOffsetFactor = -1; g.add(afl);
+  const secW = W / 2 - splitX - 0.35;
+  const secD = D / 2 - 0.28;
+  const secFloor = new THREE.Mesh(new THREE.PlaneGeometry(secW, secD), M('#3E4A5C', { r: .72, m: 0 }));
+  secFloor.rotation.x = -Math.PI / 2;
+  secFloor.position.set(splitX + 0.18 + secW / 2, 0.02, D / 4);
+  secFloor.receiveShadow = true; secFloor.polygonOffset = true; secFloor.polygonOffsetFactor = -2; g.add(secFloor);
   pendant(g, splitX - 1.4, 0);
   seed = savedSeed;
 }
