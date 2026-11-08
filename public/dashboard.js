@@ -6,20 +6,34 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const FONT = '"PingFang SC","Hiragino Sans GB","WenQuanYi Micro Hei","Droid Sans Fallback",sans-serif';
   const GOLD_SERIES = ['#D0B993', '#E6D8C3', '#A98B5E', '#8A7049', '#C7B596', '#F4EFE6'];
-  const SHAPES = ['circle', 'rect', 'triangle', 'rectRot', 'cross', 'star'];
-  function shapeFor(id) {
-    let h = 2166136261;
-    const s = String(id || '');
-    for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-    return SHAPES[(h >>> 0) % SHAPES.length];
+  const MARKS = {
+    ed: { shape: 'circle', fill: true }, ED: { shape: 'circle', fill: true },
+    corpfin: { shape: 'circle', fill: false }, '会计部': { shape: 'circle', fill: false },
+    invest: { shape: 'rect', fill: true }, '投资部': { shape: 'rect', fill: true },
+    '规划部(已并入投资部)': { shape: 'rect', fill: false },
+    legal: { shape: 'triangle', fill: true }, '法务部': { shape: 'triangle', fill: true },
+    market: { shape: 'triangle', fill: false }, '市场部': { shape: 'triangle', fill: false },
+    info: { shape: 'rectRot', fill: true }, '信息部': { shape: 'rectRot', fill: true },
+    privfin: { shape: 'rectRot', fill: false }, '私密': { shape: 'rectRot', fill: false },
+    logistics: { shape: 'star', fill: true }, '物流部': { shape: 'star', fill: true },
+    design: { shape: 'star', fill: false }, '设计部': { shape: 'star', fill: false },
+    review: { shape: 'cross', fill: true }, '审查部': { shape: 'cross', fill: true },
+    it: { shape: 'cross', fill: false }, '科技部': { shape: 'cross', fill: false },
+    '已用': { shape: 'circle', fill: true }, '按百分比剩下的部分': { shape: 'circle', fill: false },
+  };
+  function markFor(id, index) {
+    if (MARKS[id]) return MARKS[id];
+    const shapes = ['circle', 'rect', 'triangle', 'rectRot', 'star', 'cross'];
+    return { shape: shapes[(index || 0) % shapes.length], fill: (index || 0) % 2 === 0 };
   }
+  function shapeFor(id) { return markFor(id, 0).shape; }
   function tone(i) { return GOLD_SERIES[i % GOLD_SERIES.length]; }
-  function drawMark(ctx, shape, x, y, r, color) {
+  function drawMark(ctx, shape, x, y, r, color, fill) {
     ctx.save();
     ctx.translate(x, y);
     ctx.fillStyle = color;
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.6;
+    ctx.lineWidth = fill ? 1.6 : 1.5;
     ctx.beginPath();
     if (shape === 'rect') ctx.rect(-r, -r, r * 2, r * 2);
     else if (shape === 'rectRot') {
@@ -27,6 +41,7 @@
     } else if (shape === 'triangle') {
       ctx.moveTo(0, -r); ctx.lineTo(r, r * 0.9); ctx.lineTo(-r, r * 0.9); ctx.closePath();
     } else if (shape === 'cross') {
+      ctx.lineWidth = fill ? 3 : 1.4;
       ctx.moveTo(-r, 0); ctx.lineTo(r, 0); ctx.moveTo(0, -r); ctx.lineTo(0, r);
     } else if (shape === 'star') {
       let rot = -Math.PI / 2;
@@ -40,9 +55,22 @@
       }
       ctx.closePath();
     } else ctx.arc(0, 0, r, 0, Math.PI * 2);
-    if (shape === 'cross') ctx.stroke();
+    if (shape === 'cross' || !fill) ctx.stroke();
     else ctx.fill();
     ctx.restore();
+  }
+  function markSvg(id, index) {
+    const mark = markFor(id, index);
+    const ink = '#1a140c';
+    const fill = mark.fill ? ink : 'none';
+    let body = '';
+    if (mark.shape === 'rect') body = `<rect x="3" y="3" width="10" height="10" fill="${fill}" stroke="${ink}" stroke-width="1.6"/>`;
+    else if (mark.shape === 'rectRot') body = `<path d="M8 1.6 L14.4 8 L8 14.4 L1.6 8 Z" fill="${fill}" stroke="${ink}" stroke-width="1.6"/>`;
+    else if (mark.shape === 'triangle') body = `<path d="M8 2.2 L14 13.6 L2 13.6 Z" fill="${fill}" stroke="${ink}" stroke-width="1.6"/>`;
+    else if (mark.shape === 'star') body = `<path d="M8 1.4 L9.8 6.1 L14.8 6.2 L10.8 9.2 L12.2 14.1 L8 11.4 L3.8 14.1 L5.2 9.2 L1.2 6.2 L6.2 6.1 Z" fill="${fill}" stroke="${ink}" stroke-width="1.2"/>`;
+    else if (mark.shape === 'cross') body = `<path d="M3 8 H13 M8 3 V13" fill="none" stroke="${ink}" stroke-width="${mark.fill ? 3 : 1.4}" stroke-linecap="round"/>`;
+    else body = `<circle cx="8" cy="8" r="5" fill="${fill}" stroke="${ink}" stroke-width="1.6"/>`;
+    return `<svg class="mk" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">${body}</svg>`;
   }
   const PHASE = { done: '已完成', upcoming: '即将到来', today: '今天', overdue: '已到期，结果尚未回写' };
   const COLS = [['todo', '待开始'], ['doing', '进行中'], ['done', '已完成']];
@@ -82,22 +110,54 @@
             if (!meta || meta.hidden) return;
             meta.data.forEach((el, i) => {
               const id = ds.shapeIds?.[i] || chart.data.shapeIds?.[i] || chart.data.labels?.[i] || ds.label;
-              const color = Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : (ds.borderColor || '#E6D8C3');
               if (type === 'doughnut' || type === 'pie') {
                 const mid = ((el.startAngle || 0) + (el.endAngle || 0)) / 2;
+                const span = Math.abs((el.endAngle || 0) - (el.startAngle || 0));
                 const rad = ((el.outerRadius || 0) + (el.innerRadius || 0)) / 2;
                 const mx = el.x + Math.cos(mid) * rad;
                 const my = el.y + Math.sin(mid) * rad;
+                const mark = markFor(id, i);
                 ctx.save();
                 ctx.fillStyle = '#F4EFE6';
                 ctx.beginPath();
                 ctx.arc(mx, my, 7, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
-                drawMark(ctx, shapeFor(id), mx, my, 4.5, '#1a140c');
+                drawMark(ctx, mark.shape, mx, my, 4.5, '#1a140c', mark.fill);
+                const values = (ds.data || []).map((n) => Number(n) || 0);
+                const total = values.reduce((sum, n) => sum + n, 0);
+                const raw = values[i] || 0;
+                const pct = total ? Math.round((raw / total) * 1000) / 10 : 0;
+                const pctText = Number.isInteger(pct) ? String(pct) : pct.toFixed(1);
+                const name = String(chart.data.labels?.[i] || '').replace(/\(已并入投资部\)/, '');
+                const text = `${name} ${pctText}%`;
+                const outer = el.outerRadius || rad;
+                const small = span < 0.55;
+                const reach = outer + (small ? 18 + (i % 3) * 8 : 6);
+                const lx = el.x + Math.cos(mid) * reach;
+                const ly = el.y + Math.sin(mid) * reach;
+                ctx.save();
+                ctx.font = '12px ' + FONT;
+                ctx.fillStyle = '#F4EFE6';
+                ctx.strokeStyle = '#E6D8C3';
+                ctx.lineWidth = 1;
+                if (small) {
+                  const elbow = el.x + Math.cos(mid) * (outer + 10);
+                  const ey = el.y + Math.sin(mid) * (outer + 10);
+                  ctx.beginPath();
+                  ctx.moveTo(el.x + Math.cos(mid) * outer, el.y + Math.sin(mid) * outer);
+                  ctx.lineTo(elbow, ey);
+                  ctx.lineTo(lx, ly);
+                  ctx.stroke();
+                }
+                ctx.textAlign = Math.cos(mid) >= 0 ? 'left' : 'right';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, lx + (Math.cos(mid) >= 0 ? 4 : -4), ly);
+                ctx.restore();
               } else {
                 const p = el.getProps(['x', 'y'], true);
-                drawMark(ctx, shapeFor(id), p.x, p.y, 5, color || '#E6D8C3');
+                const mark = markFor(id, i);
+                drawMark(ctx, mark.shape, p.x, p.y, 5, '#1a140c', mark.fill);
               }
             });
           });
@@ -366,7 +426,11 @@
           borderColor: line,
           backgroundColor: 'rgba(208,185,147,.18)',
           fill: true,
-          pointRadius: 0,
+          pointRadius: 3,
+          pointHoverRadius: 4,
+          pointBackgroundColor: line,
+          pointBorderColor: '#1a140c',
+          pointBorderWidth: 1,
           borderWidth: 2,
         }],
       },
@@ -644,7 +708,7 @@
     }
     const depts = Array.isArray(report.departments) ? report.departments : [];
     const sum = Math.round(depts.reduce((n, row) => n + (Number(row.pct) || 0), 0) * 10) / 10;
-    const rows = depts.map((row, i) => `<tr><td><i class="swatch" style="background:${tone(i)}"></i>${esc(row.name)}</td><td>${esc(row.pct)}%</td><td>${esc(row.note || '')}</td></tr>`).join('');
+    const rows = depts.map((row, i) => `<tr><td>${markSvg(row.name, i)}${esc(row.name)}</td><td>${esc(row.pct)}%</td><td>${esc(row.note || '')}</td></tr>`).join('');
     const sumNote = sum === 100 ? '' : `<p class="note">部门份额合计 ${sum}%，与 100% 不一致。页面没有改这些数字。</p>`;
     const used = Number(report.weekUsedPct);
     const rest = Number.isFinite(used) ? Number((100 - used).toFixed(1)) : null;
@@ -677,7 +741,7 @@
         labels: ['已用', '按百分比剩下的部分'],
         datasets: [{ data: [used, rest], backgroundColor: ['#D0B993', 'rgba(255,255,255,.16)'], borderWidth: 0 }],
       },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '74%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } } },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '74%', layout: { padding: 36 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } } },
     });
     charts.donut = new Chart(document.getElementById('donut'), {
       type: 'doughnut',
@@ -689,7 +753,8 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '62%',
+        cutout: '58%',
+        layout: { padding: 42 },
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } },
       },
     });

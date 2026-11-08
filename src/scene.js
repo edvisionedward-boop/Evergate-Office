@@ -1315,7 +1315,6 @@ export function buildOffice(scene, teams) {
     });
   };
   absorbLights(staticG);
-  for (const R of Object.values(rooms)) absorbLights(R.group);
   const loungeLight = new THREE.PointLight('#FFF1DE', 0.18, 6.2, 2);
   loungeLight.position.set(lounge.def.x, 3.1, 0.4); root.add(loungeLight);
   lightProfiles.push({ light: loungeLight, dayIntensity: 0.18, nightIntensity: 16 });

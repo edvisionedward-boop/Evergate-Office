@@ -37,13 +37,29 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 await page.goto(base, { waitUntil: 'load' });
 await page.waitForFunction(() => navigator.serviceWorker.ready.then((reg) => !!(reg && reg.active)), null, { timeout: 20000 });
+const dash = await ctx.newPage();
+await dash.goto(base + 'dashboard.html', { waitUntil: 'load' });
+await dash.waitForFunction(() => {
+  const canvas = document.querySelector('canvas');
+  return !!(canvas && window.Chart && Chart.getChart(canvas));
+}, null, { timeout: 20000 });
 await page.reload({ waitUntil: 'load' });
 await page.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 20000 });
 await ctx.setOffline(true);
-const home = await page.reload({ waitUntil: 'load' }).then(() => page.title()).catch((err) => { throw new Error('offline index.html failed: ' + err.message); });
-const dash = await ctx.newPage();
-const dashTitle = await dash.goto(base + 'dashboard.html', { waitUntil: 'load' }).then(() => dash.title()).catch((err) => { throw new Error('offline dashboard.html failed: ' + err.message); });
+await page.reload({ waitUntil: 'load' });
+await page.waitForFunction(() => window.__ready === true, null, { timeout: 20000 });
+const manifest = await page.evaluate(async () => {
+  const res = await fetch(new URL('manifest.webmanifest', location.href));
+  if (!res.ok) throw new Error('manifest ' + res.status);
+  const json = await res.json();
+  if (!json || typeof json.name !== 'string' || !json.icons) throw new Error('manifest did not parse');
+  return json.name;
+});
+await dash.reload({ waitUntil: 'load' });
+await dash.waitForFunction(() => {
+  const canvas = document.querySelector('canvas');
+  return !!(canvas && window.Chart && Chart.getChart(canvas));
+}, null, { timeout: 20000 });
 await browser.close();
 preview.kill('SIGTERM');
-if (!home || !dashTitle) throw new Error('offline page had no title');
-console.log(JSON.stringify({ ok: true, cache: 'evergate-office-v73', offline: { index: home, dashboard: dashTitle }, errors }));
+console.log(JSON.stringify({ ok: true, cache: 'evergate-office-v73', offline: { ready: true, manifest, chart: true }, errors }));

@@ -120,6 +120,62 @@ function safeOverviewRect() {
   }
   return { l: 8, t: top + 8, r: Math.max(48, viewW - 8), b: Math.max(top + 80, bottom - 8) };
 }
+function rectArea(r) { return Math.max(0, r.r - r.l) * Math.max(0, r.b - r.t); }
+function chromeSafeRect() {
+  const top = ($('#topbar')?.getBoundingClientRect().bottom || 0) + 8;
+  let bottom = viewH - 8;
+  for (const sel of ['#quickbar', '#legend', '#feedToggle']) {
+    const r = $(sel)?.getBoundingClientRect();
+    if (r && r.height > 2 && r.top > top + 24) bottom = Math.min(bottom, r.top - 8);
+  }
+  const full = { l: 8, t: top, r: Math.max(48, viewW - 8), b: Math.max(top + 48, bottom) };
+  let best = full;
+  for (const sel of ['#panel', '#directory']) {
+    const el = $(sel);
+    if (!el || el.classList.contains('hidden')) continue;
+    const b = el.getBoundingClientRect();
+    if (b.width < 2 || b.height < 2) continue;
+    const options = [];
+    if (b.top - best.t > 48) options.push({ ...best, b: Math.min(best.b, b.top - 8) });
+    if (best.b - b.bottom > 48) options.push({ ...best, t: Math.max(best.t, b.bottom + 8) });
+    if (b.left - best.l > 80) options.push({ ...best, r: Math.min(best.r, b.left - 8) });
+    if (best.r - b.right > 80) options.push({ ...best, l: Math.max(best.l, b.right + 8) });
+    if (options.length) best = options.sort((a, c) => rectArea(c) - rectArea(a))[0];
+  }
+  if (best.r - best.l < 64 || best.b - best.t < 64) return full;
+  return best;
+}
+function roomFitCorners(def) {
+  const pad = 0.4;
+  return cornersOf(new THREE.Box3(
+    new THREE.Vector3(def.x - def.w / 2 - pad, 0, def.z - def.d / 2 - pad),
+    new THREE.Vector3(def.x + def.w / 2 + pad, 5.6, def.z + def.d / 2 + pad),
+  ));
+}
+function holdCamera(run) {
+  const target = controls.target.clone();
+  const position = camera.position.clone();
+  const pose = run();
+  controls.target.copy(target);
+  camera.position.copy(position);
+  camera.up.set(0, 1, 0);
+  return pose;
+}
+function focusRoom(id, anim = true) {
+  const R = office.rooms[id];
+  if (!R?.def?.w) return;
+  homeFraming = 0;
+  const safe = chromeSafeRect();
+  const pose = holdCamera(() => fitPose(roomFitCorners(R.def), safe, 1.04));
+  controls.maxDistance = Math.max(80, pose.dist * 1.4);
+  camera.far = Math.max(300, pose.dist + 160);
+  camera.updateProjectionMatrix();
+  if (anim) flyTo(pose.target, pose.dist, pose.dir, 0.7);
+  else {
+    controls.target.copy(pose.target);
+    camera.position.copy(pose.target).addScaledVector(pose.dir, pose.dist);
+  }
+}
 const _proj = new THREE.Vector3();
 function roomCorners() {
   const box = campusSpan();
@@ -313,12 +369,23 @@ function syncView() {
   if (composer) { composer.setPixelRatio(pr); composer.setSize(w, h); bloom.resolution.set(w / 2, h / 2); }
   applyFitLimits();
   if (!viewReady) { viewReady = true; goHome(false); }
+  else scheduleRefit();
   return true;
+}
+let refitTimer = 0;
+function scheduleRefit() {
+  clearTimeout(refitTimer);
+  refitTimer = setTimeout(() => {
+    if (!viewReady) return;
+    measureChrome();
+    if (state.selected && office.rooms[state.selected]) focusRoom(state.selected, false);
+    else goHome(false);
+  }, 180);
 }
 const viewBox = canvas.parentElement || canvas;
 if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => syncView()).observe(viewBox);
 window.addEventListener('resize', syncView);
-window.addEventListener('orientationchange', syncView);
+window.addEventListener('orientationchange', () => { syncView(); scheduleRefit(); });
 if (window.visualViewport) {
   visualViewport.addEventListener('resize', syncView);
   visualViewport.addEventListener('scroll', syncView);
@@ -783,8 +850,21 @@ function renderPanel(id) {
     `<div class="sec"><h4>考核</h4><div class="card"><div class="snote">${esc(workRuleLine())}</div></div>${staff ? `<ul class="staff">${staff}</ul>` : ''}</div>` +
     `<div class="sec"><h4>最后更新</h4><div class="card"><div class="cur">${esc(fmtTime(teamUpdatedAt(t)))} (UTC+8)</div></div></div>`;
 }
+let panelOpener = null;
+function rememberOpener() {
+  const el = document.activeElement;
+  if (el instanceof HTMLElement && !el.closest('#panel')) panelOpener = el;
+}
+function restoreOpener() {
+  const el = panelOpener;
+  panelOpener = null;
+  const box = el?.getBoundingClientRect?.();
+  if (el && el.isConnected && box && box.width > 0 && box.height > 0) el.focus();
+  else ($('#homeBtn') || $('#feedToggle'))?.focus();
+}
 function selectRoom(id, source, staffId) {
   const wideDir = source === 'directory' && viewW > 760 && !$('#directory').classList.contains('hidden');
+  rememberOpener();
   state.selected = id;
   state.staffId = staffId || null;
   if (!wideDir) {
@@ -801,15 +881,7 @@ function selectRoom(id, source, staffId) {
   Object.values(office.rooms).forEach(R => R.labelEl.classList.toggle('sel', R.id === id));
   const R = office.rooms[id];
   if (!R) return;
-  const tgt = R.center.clone();
-  const portrait = camera.aspect < 0.8;
-  // shift target so the room sits in the visible area (beside the open frame / above the bottom sheet)
-  const right = new THREE.Vector3(HOME_DIR.z, 0, -HOME_DIR.x).normalize();
-  const fwd = new THREE.Vector3(-HOME_DIR.x, 0, -HOME_DIR.z).normalize();
-  if (wideDir) tgt.addScaledVector(right, -4.4).addScaledVector(fwd, -0.4);
-  else if (portrait) tgt.addScaledVector(fwd, -2.2);
-  else if (viewW > 760) tgt.addScaledVector(right, 3.6).addScaledVector(fwd, -0.6);
-  flyTo(tgt, portrait ? 31 : 22, HOME_DIR);
+  focusRoom(id, true);
   renderQuick();
 }
 function measureChrome() {
@@ -823,6 +895,8 @@ function measureChrome() {
     bottomTop = Math.min(bottomTop, r.top);
   }
   document.documentElement.style.setProperty('--safe-bottom-controls', `${Math.max(72, Math.ceil(viewH - bottomTop + 8))}px`);
+  const quick = $('#quickbar')?.getBoundingClientRect();
+  if (quick && quick.height > 2) document.documentElement.style.setProperty('--quick-h', `${Math.ceil(viewH - quick.top)}px`);
 }
 function syncPanelChrome() {
   measureChrome();
@@ -843,13 +917,15 @@ function closePanel() {
   Object.values(office.rooms).forEach(R => R.labelEl.classList.remove('sel'));
   renderQuick();
   goHome(true);
+  restoreOpener();
 }
-$('#panelClose').addEventListener('click', () => { closePanel(); $('#panelClose').blur(); });
+$('#panelClose').addEventListener('click', () => closePanel());
 $('#panelExpand')?.addEventListener('click', () => {
   const open = $('#panel').classList.toggle('open');
   $('#panelExpand').setAttribute('aria-expanded', open ? 'true' : 'false');
   $('#panelExpand').textContent = open ? '收起' : '展开';
   measureChrome();
+  if (state.selected) focusRoom(state.selected, true);
 });
 
 function teamCounts(team) {
@@ -1075,10 +1151,7 @@ $('#feedToggle')?.addEventListener('click', () => {
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
   if (activeBubbles.length) $('#feedToggle')?.click();
-  if (!$('#panel').classList.contains('hidden')) {
-    closePanel();
-    ($('#homeBtn') || $('#feedToggle'))?.focus();
-  }
+  if (!$('#panel').classList.contains('hidden')) closePanel();
 });
 
 /* ---------- speech bubbles ---------- */
