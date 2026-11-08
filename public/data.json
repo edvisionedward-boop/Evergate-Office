@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-08T22:08:11+08:00",
+  "updatedAt": "2026-11-08T23:03:56+08:00",
   "workRules": {
     "taskPoints": 1.0,
     "mistakePoints": -0.3,
@@ -267,9 +267,9 @@
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null,
-          "tasksDone": 1,
+          "tasksDone": 2,
           "mistakes": 0,
-          "workScore": 1.0,
+          "workScore": 2.0,
           "extraPenalty": 0,
           "overtimeHours": 0,
           "consecutiveFailures": 0
