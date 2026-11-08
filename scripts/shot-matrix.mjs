@@ -80,7 +80,7 @@ async function bootOffice(w, h, now) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, serviceWorkers: 'block' });
   const page = await ctx.newPage();
   page.setDefaultTimeout(90000);
-  await page.goto(base + '?now=' + encodeURIComponent(now), { waitUntil: 'load' });
+  await page.goto(base + '?snap=1&now=' + encodeURIComponent(now), { waitUntil: 'load' });
   await page.waitForFunction(() => window.__ready, null, { timeout: 90000 });
   return { ctx, page };
 }

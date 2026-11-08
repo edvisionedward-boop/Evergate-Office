@@ -305,9 +305,16 @@ function refineOverview() {
 let tween = null;
 function flyTo(target, dist, dir, dur = 0.9) {
   const curDir = camera.position.clone().sub(controls.target).normalize();
+  const toP = target.clone().add((dir ?? curDir).clone().multiplyScalar(dist));
+  if (qs.get('snap') === '1') {
+    tween = null;
+    window.__flying = false;
+    controls.target.copy(target);
+    camera.position.copy(toP);
+    return;
+  }
   window.__flying = true;
-  tween = { t: 0, dur, fromT: controls.target.clone(), toT: target.clone(), fromP: camera.position.clone(),
-    toP: target.clone().add((dir ?? curDir).clone().multiplyScalar(dist)) };
+  tween = { t: 0, dur, fromT: controls.target.clone(), toT: target.clone(), fromP: camera.position.clone(), toP };
 }
 function applyFitLimits() {
   const d = fitDistance();
