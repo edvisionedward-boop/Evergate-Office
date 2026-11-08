@@ -21,10 +21,13 @@
     it: { shape: 'cross', fill: false }, '科技部': { shape: 'cross', fill: false },
     '已用': { shape: 'circle', fill: true }, '按百分比剩下的部分': { shape: 'circle', fill: false },
   };
-  function markFor(id, index) {
+  function markFor(id) {
     if (MARKS[id]) return MARKS[id];
     const shapes = ['circle', 'rect', 'triangle', 'rectRot', 'star', 'cross'];
-    return { shape: shapes[(index || 0) % shapes.length], fill: (index || 0) % 2 === 0 };
+    let hash = 0;
+    const key = String(id || '');
+    for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+    return { shape: shapes[hash % shapes.length], fill: hash % 2 === 0 };
   }
   function shapeFor(id) { return markFor(id, 0).shape; }
   function tone(i) { return GOLD_SERIES[i % GOLD_SERIES.length]; }
@@ -88,17 +91,19 @@
     const right = [];
     for (const src of labels) {
       const item = { ...src, w: ctx.measureText(src.text).width };
-      (Math.cos(src.mid) >= 0 ? right : left).push(item);
+      (Math.cos(src.mid) >= 0 || item.w > 140 ? right : left).push(item);
     }
     const stack = (arr, side) => {
       arr.sort((a, b) => Math.sin(a.mid) - Math.sin(b.mid));
-      const gap = 22;
-      let y = Math.max(16, (chart.height - gap * Math.max(arr.length - 1, 0)) / 2);
+      const room = Math.max(16, chart.height - 32);
+      const gap = Math.max(18, Math.min(26, room / Math.max(arr.length, 1)));
+      let y = 16 + gap / 2;
       for (const item of arr) {
-        item.y = Math.min(chart.height - 16, y);
+        item.y = Math.max(16, Math.min(chart.height - 16, y));
         y += gap;
         item.side = side;
-        item.x = side > 0 ? Math.max(item.w + 8, chart.width - 8 - item.w) : Math.min(chart.width - item.w - 8, 8 + item.w);
+        const inset = item.w + 8;
+        item.x = side > 0 ? Math.max(inset, chart.width - 8 - item.w) : Math.min(chart.width - inset, inset);
         placed.push(item);
       }
     };
@@ -116,7 +121,10 @@
       ctx.stroke();
       ctx.textAlign = lab.side > 0 ? 'left' : 'right';
       ctx.textBaseline = 'middle';
-      ctx.fillText(lab.text, lab.side > 0 ? lab.x + 4 : lab.x - 4, lab.y);
+      const textX = lab.side > 0
+        ? Math.min(chart.width - lab.w - 4, lab.x + 4)
+        : Math.max(lab.w + 4, lab.x - 4);
+      ctx.fillText(lab.text, textX, lab.y);
     }
     ctx.restore();
   }
@@ -779,7 +787,7 @@
         labels: ['已用', '按百分比剩下的部分'],
         datasets: [{ data: [used, rest], backgroundColor: ['#D0B993', 'rgba(255,255,255,.16)'], borderWidth: 0 }],
       },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '74%', layout: { padding: isPhone() ? 8 : { top: 18, right: 16, bottom: 18, left: 168 } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } } },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '74%', layout: { padding: isPhone() ? 8 : 18 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } } },
     });
     charts.donut = new Chart(document.getElementById('donut'), {
       type: 'doughnut',
@@ -792,7 +800,7 @@
         responsive: true,
         maintainAspectRatio: false,
         cutout: '58%',
-        layout: { padding: isPhone() ? 8 : 56 },
+        layout: { padding: isPhone() ? 8 : { top: 24, right: 200, bottom: 24, left: 132 } },
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } },
       },
     });

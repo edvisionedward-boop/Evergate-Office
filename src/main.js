@@ -372,33 +372,33 @@ function homeDir() {
   return HOME_DIR;
 }
 function goHome(anim = true) {
+  window.__userAimed = false;
+  controls.minDistance = 9;
+  controls.enableDamping = true;
+  const fromT = controls.target.clone();
+  const fromP = camera.position.clone();
   applyFitLimits();
+  const pose = phoneLayout()
+    ? overviewPose()
+    : fitPose(cornersOf(campusSpan()), safeOverviewRect(), 1.06);
+  controls.maxDistance = Math.max(140, pose.dist * 1.2);
+  camera.far = Math.max(400, pose.dist + 180);
+  camera.updateProjectionMatrix();
   if (phoneLayout()) {
-    const pose = overviewPose();
-    controls.maxDistance = Math.max(120, pose.dist * 1.1);
-    camera.far = Math.max(300, pose.dist + 150);
-    camera.updateProjectionMatrix();
     if (scene.fog) scene.fog.far = Math.max(220, pose.dist + 120);
     homeFraming = 12;
-    if (anim) flyTo(pose.target, pose.dist, pose.dir);
-    else {
-      tween = null;
-      window.__flying = false;
-      controls.target.copy(pose.target);
-      camera.position.copy(pose.target).addScaledVector(pose.dir, pose.dist);
-    }
-    return;
-  }
-  const center = campusSpan().getCenter(new THREE.Vector3());
-  const tgt = new THREE.Vector3(center.x, 0, center.z);
-  const dir = homeDir();
-  if (anim) flyTo(tgt, homeDistance(), dir);
-  else {
+  } else homeFraming = 0;
+  const snap = !anim || qs.get('snap') === '1';
+  if (snap) {
     tween = null;
     window.__flying = false;
-    controls.target.copy(tgt);
-    camera.position.copy(tgt).add(dir.clone().multiplyScalar(homeDistance()));
+    controls.target.copy(pose.target);
+    camera.position.copy(pose.target).addScaledVector(pose.dir, pose.dist);
+    return;
   }
+  controls.target.copy(fromT);
+  camera.position.copy(fromP);
+  flyTo(pose.target, pose.dist, pose.dir);
 }
 
 /* post */
@@ -442,7 +442,7 @@ function scheduleRefit() {
     if (window.__holdCam && !state.selected) return;
     measureChrome();
     if (state.selected && office.rooms[state.selected]) focusRoom(state.selected, false);
-    else goHome(false);
+    else if (!window.__userAimed) goHome(false);
   }, 180);
 }
 const viewBox = canvas.parentElement || canvas;
@@ -459,7 +459,7 @@ syncView();
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 const hits = Object.values(office.rooms).map(r => r.hit);
 let down = null;
-canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId }; tween = null; homeFraming = 0; });
+canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId }; tween = null; homeFraming = 0; window.__userAimed = true; });
 canvas.addEventListener('pointerup', e => {
   if (!down || e.pointerId !== down.id) return;
   const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), dt = performance.now() - down.t; down = null;
@@ -918,11 +918,16 @@ function rememberOpener() {
   const el = document.activeElement;
   if (el instanceof HTMLElement && !el.closest('#panel')) panelOpener = el;
 }
+function canTakeFocus(el) {
+  if (!(el instanceof HTMLElement) || !el.isConnected || el.closest('#panel')) return false;
+  if (!el.matches('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')) return false;
+  const box = el.getBoundingClientRect();
+  return box.width > 0 && box.height > 0 && getComputedStyle(el).visibility !== 'hidden';
+}
 function restoreOpener() {
   const el = panelOpener;
   panelOpener = null;
-  const box = el?.getBoundingClientRect?.();
-  if (el && el.isConnected && box && box.width > 0 && box.height > 0) el.focus();
+  if (canTakeFocus(el)) el.focus();
   else ($('#homeBtn') || $('#feedToggle'))?.focus();
 }
 function selectRoom(id, source, staffId) {
@@ -1480,7 +1485,10 @@ function layoutEdBubble(el) {
     }
     if (!placed) { for (let i = 0; i < 8 && hits(left, top); i++) top -= 22; }
   }
-  top = Math.max(8, top);
+  const pad = 8;
+  const topLimit = ($('#topbar')?.getBoundingClientRect().bottom || 0) + 4;
+  left = Math.min(Math.max(pad, left), Math.max(pad, viewW - pad - br.width));
+  top = Math.min(Math.max(topLimit, top), Math.max(topLimit, viewH - pad - br.height));
   el.style.left = `${Math.round(left - originX)}px`;
   el.style.top = `${Math.round(top - originY)}px`;
 }
@@ -1675,7 +1683,8 @@ function frame() {
   // keep target inside the office
   controls.target.x = THREE.MathUtils.clamp(controls.target.x, -40, 48);
   controls.target.z = THREE.MathUtils.clamp(controls.target.z, -28, 24);
-  controls.target.y = 0;
+  if (window.__holdCam) controls.minDistance = 1.2;
+  else controls.target.y = 0;
   office.update(t, dt, state);
   tickBubbles(dt);
   refreshWorkBars();

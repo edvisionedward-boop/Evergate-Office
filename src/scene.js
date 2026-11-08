@@ -1119,6 +1119,8 @@ function windows(g, def) {
 function labelEl(def) {
   const el = document.createElement('div');
   el.className = 'rlabel' + (def.minor ? ' minor' : '');
+  el.tabIndex = 0;
+  el.setAttribute('role', 'button');
   el.style.setProperty('--c', def.color);
   el.dataset.room = def.id;
   el.innerHTML = def.minor ? `<div class="nm">${def.label}</div>` :
@@ -2096,9 +2098,10 @@ function furnishRestrooms(parent) {
     box(g, 0.56, 0.045, 1.12, bx, 0.80, bz, stone, { cast: false });
     cyl(g, 0.18, 0.16, 0.035, bx + 0.04, 0.825, bz, steel, 18, { cast: false });
     cyl(g, 0.10, 0.09, 0.02, bx + 0.04, 0.86, bz, M('#1e293b', { m: .35, r: .18 }), 16, { cast: false });
-    cyl(g, 0.018, 0.018, 0.18, bx + 0.2, 0.825, bz - 0.02, steel, 8, { cast: false });
-    const spout = cyl(g, 0.014, 0.014, 0.14, bx + 0.1, 0.98, bz - 0.02, steel, 8, { cast: false });
+    cyl(g, 0.03, 0.03, 0.26, bx + 0.18, 0.92, bz - 0.02, steel, 10, { cast: false });
+    const spout = cyl(g, 0.022, 0.022, 0.2, bx + 0.06, 1.06, bz - 0.02, steel, 10, { cast: false });
     spout.rotation.z = Math.PI / 2;
+    doorSign(g, bx + 0.15, 1.22, bz - 0.48, '男洗手', 'MEN', 0);
   }
   const fl = new THREE.Mesh(new THREE.PlaneGeometry(xE - 0.1, zH * 2 - 0.1), M('#242430', { r: .8, m: 0 }));
   fl.rotation.x = -Math.PI / 2; fl.position.set(xE / 2, 0.012, 0); fl.receiveShadow = true;
