@@ -75,7 +75,11 @@ a.tab{text-decoration:none;color:var(--mut)}
   -webkit-transform:translateZ(0);transform:translateZ(0)}
 #panel .grab{display:none}
 .close{position:absolute;right:12px;top:12px;width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.05);cursor:pointer;font-size:14px}
-.feedtog{position:fixed;z-index:47;left:calc(12px + var(--sal));bottom:calc(64px + var(--sab));width:44px;height:44px;border-radius:12px;border:1px solid var(--gold);background:#242430;color:var(--gold);font-size:11px;line-height:1.1;cursor:pointer}
+.feedtog{position:fixed;z-index:47;left:calc(12px + var(--sal));bottom:calc(112px + env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:12px;border:1px solid var(--gold);background:#242430;color:var(--gold);font-size:11px;line-height:1.15;padding:2px;cursor:pointer;overflow:hidden;display:grid;place-items:center;text-align:center}
+.rlabel.icononly{padding:4px;gap:0}
+.rlabel.icononly .nmrow,.rlabel.icononly .st{display:none}
+.rlabel.packed-hide{visibility:hidden;pointer-events:none}
+.rlabel .st[hidden]{display:none}
 .bubble{max-width:220px}
 .ph{display:flex;gap:12px;align-items:center;padding-right:40px}
 .ph .ic{width:44px;height:44px;border-radius:13px;background:var(--c);display:grid;place-items:center;font-weight:800;font-size:15px;color:var(--ink);box-shadow:0 0 22px color-mix(in srgb,var(--c) 55%,transparent);flex:none}

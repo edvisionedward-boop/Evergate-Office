@@ -85,12 +85,149 @@ function fitDistance() {
   const size = campusSpan().getSize(new THREE.Vector3());
   const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
   const hf = Math.atan(Math.tan(vf) * camera.aspect);
-  const radius = Math.max(size.x, size.z) * 0.55;
-  const d = Math.max(radius / Math.tan(vf), radius / Math.tan(hf));
+  const radiusX = size.x * 0.5;
+  const radiusZ = size.z * 0.5;
+  const d = Math.max(radiusX / Math.tan(hf), radiusZ / Math.tan(vf));
   return d * 1.08;
 }
 function homeDistance() {
   return fitDistance();
+}
+function safeOverviewRect() {
+  const top = $('#topbar')?.getBoundingClientRect().bottom || 0;
+  let bottom = viewH;
+  for (const sel of ['#quickbar', '#legend', '#feedToggle']) {
+    const r = $(sel)?.getBoundingClientRect();
+    if (r && r.height > 2 && r.top > top + 40) bottom = Math.min(bottom, r.top);
+  }
+  return { l: 8, t: top + 8, r: Math.max(48, viewW - 8), b: Math.max(top + 80, bottom - 8) };
+}
+const _proj = new THREE.Vector3();
+function roomCorners() {
+  const box = campusSpan();
+  const pts = [];
+  for (const x of [box.min.x, box.max.x]) {
+    for (const y of [box.min.y, box.max.y]) {
+      for (const z of [box.min.z, box.max.z]) pts.push(new THREE.Vector3(x, y, z));
+    }
+  }
+  return pts;
+}
+function projectedBounds(corners) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of corners) {
+    _proj.copy(p).project(camera);
+    const x = (_proj.x * 0.5 + 0.5) * viewW;
+    const y = (-_proj.y * 0.5 + 0.5) * viewH;
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+  return { minX, minY, maxX, maxY, w: maxX - minX, h: maxY - minY };
+}
+function placeOverview(dir, dist, target) {
+  controls.target.copy(target);
+  camera.position.copy(target).addScaledVector(dir, dist);
+  camera.up.set(0, 1, 0);
+  camera.lookAt(target);
+  camera.updateMatrixWorld();
+}
+function cornersOf(box) {
+  const pts = [];
+  for (const x of [box.min.x, box.max.x]) {
+    for (const y of [box.min.y, box.max.y]) {
+      for (const z of [box.min.z, box.max.z]) pts.push(new THREE.Vector3(x, y, z));
+    }
+  }
+  return pts;
+}
+function fitPose(corners, safe) {
+  const sw = Math.max(40, safe.r - safe.l);
+  const sh = Math.max(40, safe.b - safe.t);
+  const margin = 1.08;
+  const limitW = sw / margin;
+  const limitH = sh / margin;
+  const center = new THREE.Box3().setFromPoints(corners).getCenter(new THREE.Vector3());
+  center.y = 0;
+  let best = null;
+  for (const elev of [0.58, 0.78, 1.02, 1.3]) {
+    const dir = new THREE.Vector3(0.55, elev, 0.7).normalize();
+    let lo = 14;
+    let hi = 420;
+    for (let i = 0; i < 16; i++) {
+      const mid = (lo + hi) / 2;
+      placeOverview(dir, mid, center);
+      const p = projectedBounds(corners);
+      if (p.w <= limitW && p.h <= limitH) hi = mid;
+      else lo = mid;
+    }
+    placeOverview(dir, hi, center);
+    const p = projectedBounds(corners);
+    const fill = Math.min(p.w / sw, p.h / sh);
+    if (!best || fill > best.fill) best = { dir, dist: hi, fill, center };
+  }
+  const dir = best.dir;
+  let dist = best.dist;
+  const target = best.center.clone();
+  for (let n = 0; n < 5; n++) {
+    placeOverview(dir, dist, target);
+    const p = projectedBounds(corners);
+    const pcx = (p.minX + p.maxX) / 2;
+    const pcy = (p.minY + p.maxY) / 2;
+    const scx = (safe.l + safe.r) / 2;
+    const scy = (safe.t + safe.b) / 2;
+    const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+    const hf = Math.atan(Math.tan(vf) * camera.aspect);
+    const px = (viewW / 2) / Math.max(1, dist * Math.tan(hf));
+    const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+    right.y = 0;
+    if (right.lengthSq() > 1e-6) right.normalize();
+    const toward = new THREE.Vector3(dir.x, 0, dir.z);
+    if (toward.lengthSq() > 1e-6) toward.normalize();
+    target.addScaledVector(right, (scx - pcx) / px);
+    target.addScaledVector(toward, (pcy - scy) / px);
+    target.y = 0;
+    target.x = THREE.MathUtils.clamp(target.x, -40, 30);
+    target.z = THREE.MathUtils.clamp(target.z, -28, 24);
+  }
+  for (let guard = 0; guard < 8; guard++) {
+    placeOverview(dir, dist, target);
+    const p = projectedBounds(corners);
+    if (p.w <= limitW && p.h <= limitH) break;
+    dist *= 1.06;
+  }
+  placeOverview(dir, dist, target);
+  const p = projectedBounds(corners);
+  const fill = Math.min(p.w / sw, p.h / sh);
+  return { dir, dist, target, fill };
+}
+function overviewPose() {
+  const safe = safeOverviewRect();
+  const ids = Object.keys(office.rooms).filter(id => office.rooms[id]?.def?.w);
+  let keep = ids.slice();
+  let pose = fitPose(cornersOf(campusSpan()), safe);
+  while (pose.fill < 0.72 && keep.length > 8) {
+    const xs = keep.map(id => office.rooms[id].def.x).sort((a, b) => a - b);
+    const mid = xs[Math.floor(xs.length / 2)];
+    let drop = keep[0];
+    let far = -1;
+    for (const id of keep) {
+      const dx = Math.abs(office.rooms[id].def.x - mid);
+      if (dx > far) { far = dx; drop = id; }
+    }
+    keep = keep.filter(id => id !== drop);
+    const box = new THREE.Box3();
+    for (const id of keep) {
+      const d = office.rooms[id].def;
+      box.expandByPoint(new THREE.Vector3(d.x - d.w / 2, 0, d.z - d.d / 2));
+      box.expandByPoint(new THREE.Vector3(d.x + d.w / 2, 3.2, d.z + d.d / 2));
+    }
+    const next = fitPose(cornersOf(box), safe);
+    if (next.fill + 0.02 < pose.fill) break;
+    pose = next;
+  }
+  return pose;
 }
 let tween = null;
 function flyTo(target, dist, dir, dur = 0.9) {
@@ -104,11 +241,30 @@ function applyFitLimits() {
   camera.far = Math.max(300, d + 150);
   camera.updateProjectionMatrix();
 }
+function homeDir() {
+  if (camera.aspect < 0.8) return new THREE.Vector3(0.42, 1.65, 0.55).normalize();
+  return HOME_DIR;
+}
 function goHome(anim = true) {
   applyFitLimits();
-  const tgt = camera.aspect < 0.8 ? new THREE.Vector3(1.6, 0, 3.2) : new THREE.Vector3(0, 0, 1.5);
-  if (anim) flyTo(tgt, homeDistance(), HOME_DIR);
-  else { controls.target.copy(tgt); camera.position.copy(tgt).add(HOME_DIR.clone().multiplyScalar(homeDistance())); }
+  if (camera.aspect < 0.8) {
+    const pose = overviewPose();
+    controls.maxDistance = Math.max(120, pose.dist * 1.1);
+    camera.far = Math.max(300, pose.dist + 150);
+    camera.updateProjectionMatrix();
+    if (scene.fog) scene.fog.far = Math.max(220, pose.dist + 120);
+    if (anim) flyTo(pose.target, pose.dist, pose.dir);
+    else {
+      controls.target.copy(pose.target);
+      camera.position.copy(pose.target).addScaledVector(pose.dir, pose.dist);
+    }
+    return;
+  }
+  const center = campusSpan().getCenter(new THREE.Vector3());
+  const tgt = new THREE.Vector3(center.x, 0, center.z);
+  const dir = homeDir();
+  if (anim) flyTo(tgt, homeDistance(), dir);
+  else { controls.target.copy(tgt); camera.position.copy(tgt).add(dir.clone().multiplyScalar(homeDistance())); }
 }
 
 /* post */
@@ -915,6 +1071,77 @@ function popBubble() {
   const b = { o, el, agent, life: 6, ed: t.id === 'ed' }; activeBubbles.push(b);
 }
 const labelNudge = {};
+function labelRank(R) {
+  const order = { ed: 100, market: 90, invest: 88, legal: 80, info: 78, it: 70, design: 68, corpfin: 60, logistics: 58, review: 50, privfin: 48, meeting: 20, lounge: 18, archive: 16, showroom: 14, news: 8 };
+  if (order[R.id] != null) return order[R.id];
+  if (R.labelEl?.classList.contains('minor') || R.def?.minor) return 4;
+  return 30;
+}
+function rectsOverlap(a, b) {
+  return a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+}
+function labelRankEl(el) {
+  const room = office.rooms[el.dataset.room];
+  let rank = room ? labelRank(room) : 6;
+  if (el.classList.contains('minor')) rank = Math.min(rank, 3);
+  return rank;
+}
+function packNarrowLabels() {
+  const list = [...document.querySelectorAll('.rlabel')];
+  for (const el of list) {
+    el.classList.remove('icononly', 'packed-hide');
+    el.style.marginLeft = '';
+    el.style.marginTop = '';
+    const st = el.querySelector('.st');
+    if (st) st.hidden = false;
+  }
+  if (viewW > 760) return false;
+  for (const el of list) {
+    const st = el.querySelector('.st');
+    if (st) st.hidden = true;
+  }
+  const boxes = () => list
+    .filter(el => !el.classList.contains('packed-hide'))
+    .map(el => ({ el, r: el.getBoundingClientRect() }))
+    .filter(x => x.r.width > 2 && x.r.height > 2);
+  const loser = (a, b) => (labelRankEl(a.el) === labelRankEl(b.el) ? (a.r.top > b.r.top ? a : b) : (labelRankEl(a.el) < labelRankEl(b.el) ? a : b));
+  const collide = (items) => {
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        if (rectsOverlap(items[i].r, items[j].r)) return [items[i], items[j]];
+      }
+    }
+    return null;
+  };
+  for (let pass = 0; pass < list.length; pass++) {
+    const pair = collide(boxes());
+    if (!pair) break;
+    const low = loser(pair[0], pair[1]);
+    if (low.el.classList.contains('icononly')) break;
+    low.el.classList.add('icononly');
+  }
+  for (let pass = 0; pass < list.length; pass++) {
+    const pair = collide(boxes());
+    if (!pair) break;
+    loser(pair[0], pair[1]).el.classList.add('packed-hide');
+  }
+  return true;
+}
+function separateChrome() {
+  const feed = $('#feedToggle');
+  const home = $('#homeBtn');
+  if (!feed || !home) return;
+  if (viewW > 760) {
+    feed.style.top = '';
+    feed.style.bottom = '';
+    return;
+  }
+  const hr = home.getBoundingClientRect();
+  const gap = 8;
+  const top = Math.max(8, Math.round(hr.top - gap - 44));
+  feed.style.bottom = 'auto';
+  feed.style.top = `${top}px`;
+}
 function separateLabels() {
   const list = Object.values(office.rooms).filter(R => R.labelEl);
   if (list.length < 2) return;
@@ -1186,6 +1413,16 @@ function frame() {
     if (tween.t >= 1) tween = null;
   }
   controls.update();
+  if (scene.fog) {
+    const dist = camera.position.distanceTo(controls.target);
+    if (dist > 70) {
+      scene.fog.near = Math.max(78, dist * 0.72);
+      scene.fog.far = dist + 180;
+    } else {
+      scene.fog.near = 78;
+      scene.fog.far = 220;
+    }
+  }
   // keep target inside the office
   controls.target.x = THREE.MathUtils.clamp(controls.target.x, -40, 30);
   controls.target.z = THREE.MathUtils.clamp(controls.target.z, -28, 24);
@@ -1195,7 +1432,8 @@ function frame() {
   refreshWorkBars();
   if (composer) composer.render(); else renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
-  separateLabels();
+  if (!packNarrowLabels()) separateLabels();
+  separateChrome();
   settleStaffTags();
   for (const b of activeBubbles) if (b.ed) layoutEdBubble(b.el);
   if ((T % 0.5) < dt) applyClock();

@@ -1303,9 +1303,9 @@ export function buildOffice(scene, teams) {
   };
   absorbLights(staticG);
   for (const R of Object.values(rooms)) absorbLights(R.group);
-  const loungeLight = new THREE.PointLight('#FFF1DE', 0.18, 8, 2);
+  const loungeLight = new THREE.PointLight('#FFF1DE', 0.18, 6.2, 2);
   loungeLight.position.set(lounge.def.x, 3.1, 0.4); root.add(loungeLight);
-  lightProfiles.push({ light: loungeLight, dayIntensity: 0.18, nightIntensity: 0.70 });
+  lightProfiles.push({ light: loungeLight, dayIntensity: 0.18, nightIntensity: 16 });
   const stSpan = lounge.labelEl?.querySelector('.st span');
   if (stSpan) stSpan.textContent = '暂无成员';
   lounge.occupancy = 0;
@@ -1959,6 +1959,8 @@ function furnishPantry(g, W) {
 }
 function furnishLounge(g, def) {
   const W = def.w, D = def.d;
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.2, D - 0.2), M('#242430', { r: .8, m: 0 }));
+  fl.rotation.x = -Math.PI / 2; fl.position.y = 0.012; fl.receiveShadow = true; fl.polygonOffset = true; fl.polygonOffsetFactor = -1; g.add(fl);
   const sofaM = M('#b45309', { r: .82 });
   const sofa = (x, z, ry) => {
     const s = new THREE.Group(); s.position.set(x, 0, z); s.rotation.y = ry; g.add(s);
@@ -1982,6 +1984,10 @@ function furnishLounge(g, def) {
   chair(g, dineX - 1.05, dineZ, -Math.PI / 2, '#44403c');
   chair(g, dineX + 1.05, dineZ, Math.PI / 2, '#44403c');
   furnishPantry(g, W);
+  const sofaFill = new THREE.PointLight('#FFF1DE', 0.06, 3.8, 2);
+  sofaFill.position.set(0, 2.15, -3.2);
+  g.add(sofaFill);
+  g.userData.lightProfiles.push({ light: sofaFill, dayIntensity: 0.06, nightIntensity: 1.5 });
   // east + south walls, door stays on the west
   const wallMat = smokeGlass();
   const gold = goldFrame();
@@ -2067,11 +2073,11 @@ function furnishRestrooms(parent) {
   const fl = new THREE.Mesh(new THREE.PlaneGeometry(xE - 0.1, zH * 2 - 0.1), M('#242430', { r: .8, m: 0 }));
   fl.rotation.x = -Math.PI / 2; fl.position.set(xE / 2, 0.012, 0); fl.receiveShadow = true; fl.polygonOffset = true; fl.polygonOffsetFactor = -1; g.add(fl);
   const spots = [
-    { x: 3.65, z: -2.75, day: 0.16, night: 0.65 },
-    { x: 3.65, z: 2.75, day: 0.16, night: 0.65 },
+    { x: 3.65, z: -2.75, day: 0.16, night: 0.75 },
+    { x: 3.65, z: 2.75, day: 0.16, night: 0.75 },
   ];
   g.userData.lightProfiles = spots.map((s) => {
-    const light = new THREE.SpotLight('#FFF1DE', s.day, 5, 0.65, 0.85, 2);
+    const light = new THREE.SpotLight('#FFF1DE', s.day, 5, 0.70, 0.85, 2);
     light.position.set(s.x, 2.20, s.z);
     light.target.position.set(s.x, 0, s.z);
     g.add(light, light.target);
