@@ -195,7 +195,7 @@ function fitPose(corners, safe) {
     target.addScaledVector(right, (pcx - scx) / px);
     target.addScaledVector(toward, (pcy - scy) / py);
     target.y = 0;
-    target.x = THREE.MathUtils.clamp(target.x, -40, 30);
+    target.x = THREE.MathUtils.clamp(target.x, -40, 48);
     target.z = THREE.MathUtils.clamp(target.z, -28, 24);
     const outside = p.minX < safe.l - 1 || p.maxX > safe.r + 1 || p.minY < safe.t - 1 || p.maxY > safe.b + 1;
     if (outside) dist *= 1.05;
@@ -1419,7 +1419,7 @@ function frame() {
     }
   }
   // keep target inside the office
-  controls.target.x = THREE.MathUtils.clamp(controls.target.x, -40, 30);
+  controls.target.x = THREE.MathUtils.clamp(controls.target.x, -40, 48);
   controls.target.z = THREE.MathUtils.clamp(controls.target.z, -28, 24);
   controls.target.y = 0;
   office.update(t, dt, state);
