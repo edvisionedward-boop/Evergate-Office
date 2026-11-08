@@ -79,6 +79,11 @@ function campusSpan() {
   }
   box.expandByPoint(new THREE.Vector3(30.2, 0, -5.6));
   box.expandByPoint(new THREE.Vector3(35.8, 3.2, 5.6));
+  const news = office.rooms.news?.center;
+  if (news) {
+    box.expandByPoint(new THREE.Vector3(news.x - 6, 0, news.z - 1));
+    box.expandByPoint(new THREE.Vector3(news.x + 6, 4.2, news.z + 1));
+  }
   return box;
 }
 function fitDistance() {
@@ -170,64 +175,53 @@ function fitPose(corners, safe) {
   const dir = best.dir;
   let dist = best.dist;
   const target = best.center.clone();
-  for (let n = 0; n < 5; n++) {
+  const scx = (safe.l + safe.r) / 2;
+  const scy = (safe.t + safe.b) / 2;
+  for (let n = 0; n < 8; n++) {
     placeOverview(dir, dist, target);
     const p = projectedBounds(corners);
     const pcx = (p.minX + p.maxX) / 2;
     const pcy = (p.minY + p.maxY) / 2;
-    const scx = (safe.l + safe.r) / 2;
-    const scy = (safe.t + safe.b) / 2;
     const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
     const hf = Math.atan(Math.tan(vf) * camera.aspect);
     const px = (viewW / 2) / Math.max(1, dist * Math.tan(hf));
+    const py = (viewH / 2) / Math.max(1, dist * Math.tan(vf));
     const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
     right.y = 0;
     if (right.lengthSq() > 1e-6) right.normalize();
     const toward = new THREE.Vector3(dir.x, 0, dir.z);
     if (toward.lengthSq() > 1e-6) toward.normalize();
-    target.addScaledVector(right, (scx - pcx) / px);
-    target.addScaledVector(toward, (pcy - scy) / px);
+    // Sliding the target along camera-right moves the subject the other way on screen.
+    target.addScaledVector(right, (pcx - scx) / px);
+    target.addScaledVector(toward, (pcy - scy) / py);
     target.y = 0;
     target.x = THREE.MathUtils.clamp(target.x, -40, 30);
     target.z = THREE.MathUtils.clamp(target.z, -28, 24);
-  }
-  for (let guard = 0; guard < 8; guard++) {
-    placeOverview(dir, dist, target);
-    const p = projectedBounds(corners);
-    if (p.w <= limitW && p.h <= limitH) break;
-    dist *= 1.06;
+    const outside = p.minX < safe.l - 1 || p.maxX > safe.r + 1 || p.minY < safe.t - 1 || p.maxY > safe.b + 1;
+    if (outside) dist *= 1.05;
+    else if (Math.abs(pcx - scx) < 3 && Math.abs(pcy - scy) < 3) break;
   }
   placeOverview(dir, dist, target);
   const p = projectedBounds(corners);
   const fill = Math.min(p.w / sw, p.h / sh);
-  return { dir, dist, target, fill };
+  return { dir, dist, target, fill, bounds: p };
 }
 function overviewPose() {
   const safe = safeOverviewRect();
-  const ids = Object.keys(office.rooms).filter(id => office.rooms[id]?.def?.w);
-  let keep = ids.slice();
-  let pose = fitPose(cornersOf(campusSpan()), safe);
-  while (pose.fill < 0.72 && keep.length > 8) {
-    const xs = keep.map(id => office.rooms[id].def.x).sort((a, b) => a - b);
-    const mid = xs[Math.floor(xs.length / 2)];
-    let drop = keep[0];
-    let far = -1;
-    for (const id of keep) {
-      const dx = Math.abs(office.rooms[id].def.x - mid);
-      if (dx > far) { far = dx; drop = id; }
-    }
-    keep = keep.filter(id => id !== drop);
-    const box = new THREE.Box3();
-    for (const id of keep) {
-      const d = office.rooms[id].def;
-      box.expandByPoint(new THREE.Vector3(d.x - d.w / 2, 0, d.z - d.d / 2));
-      box.expandByPoint(new THREE.Vector3(d.x + d.w / 2, 3.2, d.z + d.d / 2));
-    }
-    const next = fitPose(cornersOf(box), safe);
-    if (next.fill + 0.02 < pose.fill) break;
-    pose = next;
-  }
-  return pose;
+  const padX = Math.min(48, Math.max(18, viewW * 0.1));
+  const inner = { l: safe.l + padX, t: safe.t + 6, r: safe.r - padX, b: safe.b - 6 };
+  return fitPose(cornersOf(campusSpan()), inner);
+}
+let homeFraming = 0;
+function refineOverview() {
+  if (camera.aspect >= 0.8 || tween || homeFraming <= 0) return;
+  homeFraming -= 1;
+  const pose = overviewPose();
+  controls.maxDistance = Math.max(120, pose.dist * 1.1);
+  camera.far = Math.max(300, pose.dist + 150);
+  camera.updateProjectionMatrix();
+  controls.target.copy(pose.target);
+  camera.position.copy(pose.target).addScaledVector(pose.dir, pose.dist);
 }
 let tween = null;
 function flyTo(target, dist, dir, dur = 0.9) {
@@ -253,6 +247,7 @@ function goHome(anim = true) {
     camera.far = Math.max(300, pose.dist + 150);
     camera.updateProjectionMatrix();
     if (scene.fog) scene.fog.far = Math.max(220, pose.dist + 120);
+    homeFraming = 12;
     if (anim) flyTo(pose.target, pose.dist, pose.dir);
     else {
       controls.target.copy(pose.target);
@@ -313,7 +308,7 @@ syncView();
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 const hits = Object.values(office.rooms).map(r => r.hit);
 let down = null;
-canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId }; tween = null; });
+canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId }; tween = null; homeFraming = 0; });
 canvas.addEventListener('pointerup', e => {
   if (!down || e.pointerId !== down.id) return;
   const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), dt = performance.now() - down.t; down = null;
@@ -1416,8 +1411,8 @@ function frame() {
   if (scene.fog) {
     const dist = camera.position.distanceTo(controls.target);
     if (dist > 70) {
-      scene.fog.near = Math.max(78, dist * 0.72);
-      scene.fog.far = dist + 180;
+      scene.fog.near = dist + 70;
+      scene.fog.far = dist + 240;
     } else {
       scene.fog.near = 78;
       scene.fog.far = 220;
@@ -1434,6 +1429,7 @@ function frame() {
   labelRenderer.render(scene, camera);
   if (!packNarrowLabels()) separateLabels();
   separateChrome();
+  refineOverview();
   settleStaffTags();
   for (const b of activeBubbles) if (b.ed) layoutEdBubble(b.el);
   if ((T % 0.5) < dt) applyClock();
