@@ -105,6 +105,32 @@ function screenMat(kind, accent, dim) {
   }
   return screenMats.get(k);
 }
+// Same artwork as screenMat, held at a normal exposure so a wide panel does not bloom.
+function calmScreenMat(kind, accent, dim) {
+  const k = 'calm|' + kind + accent + dim;
+  if (!screenMats.has(k)) {
+    const m = new THREE.MeshBasicMaterial({ map: screenTexture(kind, accent, dim), toneMapped: false });
+    m.color.setScalar(dim ? 0.7 : 1);
+    screenMats.set(k, m);
+  }
+  return screenMats.get(k);
+}
+function portraitScreenMat(kind, accent) {
+  const k = 'port|' + kind + accent;
+  if (!screenMats.has(k)) {
+    const c = document.createElement('canvas'); c.width = 160; c.height = 280;
+    const g = c.getContext('2d');
+    g.fillStyle = '#0b1222'; g.fillRect(0, 0, 160, 280);
+    g.fillStyle = accent || '#7EB6D6'; g.globalAlpha = .85;
+    for (let i = 0; i < 15; i++) g.fillRect(14, 16 + i * 17, 36 + ((i * 29) % 96), 6);
+    g.globalAlpha = .45; g.fillStyle = '#D0B993'; g.fillRect(14, 248, 90, 8);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 2;
+    const m = new THREE.MeshBasicMaterial({ map: t, toneMapped: false });
+    m.color.setScalar(1);
+    screenMats.set(k, m);
+  }
+  return screenMats.get(k);
+}
 
 function signTexture(text, sub, color) {
   const c = document.createElement('canvas'); c.width = 512; c.height = 128;
@@ -443,15 +469,24 @@ function deskSet(parent, x, z, ry, team, opt = {}) {
   const kinds = opt.kinds ?? ['code', 'chart'];
   const n = opt.monitors ?? 2;
   const mStand = M('#111522', { r: .4, m: .3 });
-  const mw = opt.wide ? 1.15 : 0.6, mh = opt.wide ? 0.64 : 0.37;
-  const sw = opt.wide ? 1.05 : 0.56, sh = opt.wide ? 0.56 : 0.33;
+  const ports = opt.portrait || [];
   for (let i = 0; i < n; i++) {
-    const mx = n === 1 ? 0 : (i - (n - 1) / 2) * 0.62, ang = n === 1 ? 0 : (i - (n - 1) / 2) * -0.35;
+    const port = !!ports[i];
+    const wide = !!opt.wide && !port;
+    const mw = port ? 0.38 : (wide ? 1.15 : 0.6), mh = port ? 0.62 : (wide ? 0.64 : 0.37);
+    const sw = port ? 0.32 : (wide ? 1.05 : 0.56), sh = port ? 0.54 : (wide ? 0.56 : 0.33);
+    const lift = wide ? 0.28 : 0.18;
+    const mx = n === 1 ? 0 : (i - (n - 1) / 2) * 0.62;
+    const ang = n === 1 ? 0 : (i - (n - 1) / 2) * (opt.inward ? 0.22 : -0.35);
     const mg = new THREE.Group(); mg.position.set(mx, 0.77, -0.18); mg.rotation.y = ang; mg.userData.deskScreen = 1; g.add(mg);
-    box(mg, 0.18, 0.015, 0.14, 0, 0, 0, mStand); box(mg, 0.04, opt.wide ? 0.28 : 0.22, 0.03, 0, 0, -0.03, mStand);
-    box(mg, mw, mh, 0.035, 0, opt.wide ? 0.28 : 0.18, 0, mStand, { round: 0.012 });
-    const s = new THREE.Mesh(G('scr' + (opt.wide ? 'w' : ''), () => new THREE.PlaneGeometry(sw, sh)), screenMat(kinds[i % kinds.length], team.color, opt.dim));
-    s.position.set(0, (opt.wide ? 0.28 : 0.18) + mh / 2 - 0.01, 0.019); mg.add(s);
+    box(mg, 0.18, 0.015, 0.14, 0, 0, 0, mStand); box(mg, 0.04, port ? 0.32 : (wide ? 0.28 : 0.22), 0.03, 0, 0, -0.03, mStand);
+    box(mg, mw, mh, 0.035, 0, lift, 0, mStand, { round: 0.012 });
+    const geo = port ? 'scrp' : (wide ? 'scrw' : 'scr');
+    const face = port
+      ? portraitScreenMat(kinds[i % kinds.length], team.color)
+      : (opt.calm ? calmScreenMat(kinds[i % kinds.length], team.color, opt.dim) : screenMat(kinds[i % kinds.length], team.color, opt.dim));
+    const s = new THREE.Mesh(G(geo, () => new THREE.PlaneGeometry(sw, sh)), face);
+    s.position.set(0, lift + mh / 2 - 0.01, 0.019); mg.add(s);
   }
   if (opt.tablet) {
     box(g, 0.38, 0.02, 0.26, 0.38, 0.76, 0.1, M('#0f172a', { r: .28 }), { ry: -0.4 });
@@ -467,6 +502,7 @@ function deskSet(parent, x, z, ry, team, opt = {}) {
   if (opt.privacy) box(g, 1.15, 0.045, 0.1, 0, 1.18, -0.28, M('#1a1f2b', { r: .35 }), { cast: false });
   if (opt.plant !== false) plant(g, opt.papers ? -0.42 : 0.55, 0.18, 0.32, 1, 0.775);
   const ch = chair(g, 0, 0.62, 0, opt.chair ?? '#2b3142');
+  if (opt.lockScreens) g.userData.lockScreens = true;
   return { group: g, seat: new THREE.Vector3(0, 0, 0.58) };
 }
 function staffRng(id) {
@@ -482,6 +518,8 @@ function staffRng(id) {
 }
 function personalizeDesk(g, staff, team) {
   if (!g || !staff?.id) return;
+  // A designed room lists its own monitors. Skip the random hide-and-replace.
+  if (g.userData.lockScreens) return;
   const rnd = staffRng(staff.id);
   const screens = [];
   let keys = null;
@@ -1290,7 +1328,7 @@ export function buildOffice(scene, teams) {
     legal: { out: wv(-20.9, -8), inn: wv(-22.2, -8), node: 'nW', extra: [wv(-20.9, -6.15)] },
     info: { out: wv(13.2, 4.85), inn: wv(13.2, 3.55), node: 'sE', extra: [wv(13.2, 5.5), wv(7, 5.5)] },
     corpfin: { out: wv(-8.0, 9.28), inn: wv(-9.35, 9.28), node: 'cCorp' },
-    it: { out: wv(-13.5, 5.35), inn: wv(-13.5, 3.5), node: 'cIt' },
+    it: { out: wv(-14.6, 5.15), inn: wv(-14.6, 3.55), node: 'cIt' },
     logistics: { out: wv(6.2, 9.95), inn: wv(4.65, 9.95), node: 'cLog' },
     review: { out: wv(-8.0, 19.55), inn: wv(-9.7, 19.55), node: 'cRev' },
     design: { out: wv(20.3, 13.05), inn: wv(22.05, 13.05), node: 'oDes' },
@@ -1327,7 +1365,13 @@ export function buildOffice(scene, teams) {
     if (id === 'logistics') return [w(3.65, Math.min(lz, -0.4)), w(3.65, -3.9)];
     if (id === 'review') return [w(3.6, lz), w(3.6, 0)];
     if (id === 'design') return [w(-5.15, lz), w(-5.15, 0)];
-    if (id === 'it') return [w(0, lz), w(0, 3.5)];
+    if (id === 'it') {
+      // Out through the south door, along the N-S aisle, then the E-W aisle. Not through the meeting table.
+      const aisleZ = -0.8, aisleX = -1.1, doorZ = 3.55;
+      if (lz < -1.2) return [w(lx, aisleZ), w(aisleX, aisleZ), w(aisleX, doorZ)];
+      const sideX = lx < -0.4 ? -2.15 : aisleX;
+      return [w(sideX, lz), w(sideX, aisleZ), w(aisleX, aisleZ), w(aisleX, doorZ)];
+    }
     return [];
   }
   function fullPath(person, destId, stand) {
@@ -2235,6 +2279,142 @@ function furnishInvest(g, t, accent, W, D) {
 }
 
 /* ---------------- per-room decoration ---------------- */
+function furnishTechnology(g, t) {
+  // Approved 科技部 v2. Local metres from the room centre. North is -z.
+  // E-W aisle z=-1.50…-0.10 and N-S aisle x=-1.80…-0.40 stay empty, as does
+  // the turning band south of the meeting chairs. No glass office, no floor racks.
+  const wood = '#3A2416', chairC = '#1C2130';
+  const base = { top: wood, chair: chairC, mug: false, plant: false, calm: true, lockScreens: true };
+  const desks = [
+    deskSet(g, -3.20, 0.80, 0, t, { ...base, monitors: 2, inward: true, kinds: ['dash', 'doc'] }),
+    deskSet(g, -3.20, -2.50, 0, t, { ...base, monitors: 2, kinds: ['code', 'code'] }),
+    deskSet(g, -1.10, -2.50, 0, t, { ...base, monitors: 1, wide: true, kinds: ['dash'] }),
+    deskSet(g, 1.10, -2.50, 0, t, { ...base, monitors: 2, kinds: ['chart', 'doc'] }),
+    deskSet(g, 3.20, -2.50, 0, t, { ...base, monitors: 2, portrait: [false, true], kinds: ['code', 'doc'] }),
+  ];
+  const paper = (parent, x, z, w, d, draw, ry = 0.12) => {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#f4efe6'; ctx.fillRect(0, 0, 256, 256);
+    draw(ctx);
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const holder = new THREE.Group(); holder.position.set(x, 0.786, z); holder.rotation.y = ry; parent.add(holder);
+    const sheet = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+    sheet.rotation.x = -Math.PI / 2; sheet.userData.keep = true; holder.add(sheet);
+    box(parent, w, 0.008, d, x, 0.772, z, M('#e7e0d4', { r: .85 }), { ry, cast: false });
+  };
+  const lines = (ctx) => {
+    ctx.strokeStyle = '#c4b496'; ctx.lineWidth = 3;
+    for (let i = 0; i < 8; i++) { ctx.beginPath(); ctx.moveTo(28, 36 + i * 26); ctx.lineTo(228, 36 + i * 26); ctx.stroke(); }
+    ctx.strokeStyle = '#E87708'; ctx.beginPath(); ctx.moveTo(52, 18); ctx.lineTo(52, 238); ctx.stroke();
+  };
+  const checklist = (ctx) => {
+    ctx.strokeStyle = '#1C2130'; ctx.lineWidth = 6;
+    for (let i = 0; i < 5; i++) {
+      ctx.strokeRect(28, 36 + i * 40, 22, 22);
+      ctx.beginPath(); ctx.moveTo(64, 48 + i * 40); ctx.lineTo(220, 48 + i * 40); ctx.stroke();
+    }
+  };
+  const form = (ctx) => {
+    ctx.fillStyle = '#1C2130'; ctx.fillRect(24, 28, 130, 16);
+    for (let i = 0; i < 7; i++) ctx.fillRect(24, 64 + i * 24, 200 - (i % 3) * 36, 8);
+  };
+  const wire = (ctx) => {
+    ctx.strokeStyle = '#7EB6D6'; ctx.lineWidth = 5;
+    ctx.strokeRect(36, 28, 184, 120);
+    ctx.strokeRect(52, 46, 78, 46);
+    ctx.strokeRect(142, 46, 60, 86);
+    ctx.strokeRect(52, 104, 78, 28);
+    ctx.strokeStyle = '#c4b496'; ctx.lineWidth = 3;
+    for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(36, 168 + i * 20); ctx.lineTo(220, 168 + i * 20); ctx.stroke(); }
+  };
+  const folder = (parent, x, z, ry = -0.15) => {
+    box(parent, 0.22, 0.02, 0.20, x, 0.77, z, M('#D0B993', { r: .62 }), { ry, cast: false });
+    box(parent, 0.08, 0.006, 0.012, x, 0.792, z - 0.1, M('#f4efe6', { r: .8 }), { ry, cast: false });
+  };
+  const calc = (parent, x, z) => {
+    box(parent, 0.12, 0.016, 0.16, x, 0.77, z, M('#1C2130', { r: .4 }), { ry: 0.2, cast: false });
+    box(parent, 0.08, 0.004, 0.045, x, 0.786, z - 0.035, M('#163044', { r: .3 }), { ry: 0.2, cast: false });
+  };
+  const laptop = (parent, x, z, ry = 0.25) => {
+    box(parent, 0.32, 0.016, 0.22, x, 0.77, z, M('#1C2130', { r: .4, m: .3 }), { ry, cast: false });
+    box(parent, 0.32, 0.006, 0.22, x, 0.786, z, M('#111418', { r: .45, m: .25 }), { ry, cast: false });
+  };
+  const closedBook = (parent, x, z) => {
+    box(parent, 0.18, 0.035, 0.24, x, 0.77, z, M('#1C2130', { r: .55 }), { ry: 0.18, cast: false });
+    box(parent, 0.16, 0.006, 0.22, x, 0.805, z, M('#f4efe6', { r: .8 }), { ry: 0.18, cast: false });
+  };
+  const [director, dev, front, ops, security] = desks.map(d => d.group);
+  paper(director, -0.55, 0.16, 0.2, 0.16, lines, 0.2);
+  folder(director, 0.55, 0.18, -0.1);
+  calc(director, -0.55, -0.12);
+  laptop(director, 0.56, -0.04, -0.15);
+  laptop(dev, 0.46, 0.02, 0.15);
+  paper(dev, -0.48, 0.16, 0.2, 0.16, lines, -0.1);
+  paper(dev, 0.42, 0.22, 0.18, 0.14, checklist, 0.35);
+  paper(front, -0.50, 0.10, 0.2, 0.16, wire, 0.05);
+  box(front, 0.07, 0.012, 0.13, 0.52, 0.77, 0.20, M('#111418', { r: .3, m: .4 }), { ry: -0.4, cast: false });
+  box(front, 0.05, 0.004, 0.09, 0.52, 0.782, 0.20, M('#d5dbe3', { r: .25 }), { ry: -0.4, cast: false });
+  box(front, 0.22, 0.012, 0.15, 0.40, 0.77, -0.02, M('#1C2130', { r: .4 }), { ry: -0.25, cast: false });
+  box(front, 0.18, 0.004, 0.11, 0.40, 0.782, -0.02, M('#d5dbe3', { r: .3 }), { ry: -0.25, cast: false });
+  box(front, 0.11, 0.008, 0.012, 0.56, 0.77, 0.06, M('#E87708', { r: .4 }), { ry: 0.6, cast: false });
+  calc(ops, -0.50, -0.02);
+  paper(ops, 0.48, 0.14, 0.2, 0.16, lines, 0.15);
+  paper(ops, -0.46, 0.20, 0.18, 0.14, form, -0.2);
+  closedBook(security, -0.48, 0.14);
+  folder(security, 0.50, 0.14, 0.2);
+  box(security, 0.12, 0.05, 0.09, -0.48, 0.77, -0.10, M('#060606', { r: .4, m: .25 }), { ry: 0.1, cast: false });
+  box(security, 0.04, 0.008, 0.012, -0.48, 0.82, -0.07, M('#D0B993', { m: .35, r: .4 }), { ry: 0.1, cast: false });
+
+  const top = M(wood, { r: .48 });
+  const leg = M('#1C2130', { m: .35, r: .45 });
+  box(g, 2.40, 0.06, 0.80, 1.60, 0.72, 1.90, top, { round: 0.02 });
+  box(g, 2.24, 0.008, 0.035, 1.60, 0.778, 1.52, M('#D0B993', { m: .25, r: .4 }), { cast: false });
+  box(g, 2.24, 0.008, 0.035, 1.60, 0.778, 2.28, M('#D0B993', { m: .25, r: .4 }), { cast: false });
+  for (const [lx, lz] of [[-1.05, -0.28], [1.05, -0.28], [-1.05, 0.28], [1.05, 0.28]]) {
+    box(g, 0.07, 0.72, 0.07, 1.60 + lx, 0, 1.90 + lz, leg);
+  }
+  chair(g, 1.00, 1.20, Math.PI, chairC);
+  chair(g, 2.20, 1.20, Math.PI, chairC);
+  chair(g, 1.00, 2.60, 0, chairC);
+  chair(g, 2.20, 2.60, 0, chairC);
+
+  const cab = new THREE.Group(); cab.position.set(4.55, 0, 0.30); g.add(cab);
+  box(cab, 0.35, 0.80, 0.60, 0, 0.90, 0, M('#060606', { r: .45, m: .28 }), { cast: false });
+  box(cab, 0.012, 0.72, 0.50, -0.17, 0.94, 0, M('#1C2130', { r: .4 }), { cast: false });
+  for (let i = 0; i < 5; i++) box(cab, 0.008, 0.012, 0.42, -0.178, 1.02 + i * 0.12, 0, M('#D0B993', { m: .3, r: .45 }), { cast: false });
+  sph(cab, 0.012, -0.185, 1.62, 0.20, M('#7EB6D6', { e: '#7EB6D6', ei: 0.18 }), { cast: false });
+  sph(cab, 0.012, -0.185, 1.62, 0.14, M('#E87708', { e: '#E87708', ei: 0.15 }), { cast: false });
+
+  const locker = new THREE.Group(); locker.position.set(-4.55, 0, 0.30); g.add(locker);
+  box(locker, 0.35, 0.70, 0.60, 0, 0.95, 0, M('#1C2130', { r: .42, m: .3 }), { cast: false });
+  box(locker, 0.012, 0.02, 0.52, 0.17, 0.97, 0, M('#D0B993', { m: .3, r: .4 }), { cast: false });
+  box(locker, 0.012, 0.02, 0.52, 0.17, 1.59, 0, M('#D0B993', { m: .3, r: .4 }), { cast: false });
+  box(locker, 0.016, 0.58, 0.30, 0.175, 1.00, -0.08, M('#060606', { r: .35, m: .32 }), { cast: false });
+  box(locker, 0.008, 0.08, 0.012, 0.186, 1.24, 0.04, M('#D0B993', { m: .35, r: .4 }), { cast: false });
+
+  const panel = (x, title, marks) => {
+    box(g, 1.70, 0.70, 0.06, x, 1.30, -4.03, M('#060606', { r: .5, m: .2 }), { cast: false });
+    const c = document.createElement('canvas'); c.width = 680; c.height = 280;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#12161c'; ctx.fillRect(0, 0, 680, 280);
+    ctx.strokeStyle = '#D0B993'; ctx.lineWidth = 8; ctx.strokeRect(10, 10, 660, 260);
+    ctx.fillStyle = '#7EB6D6'; ctx.font = '600 40px sans-serif'; ctx.textBaseline = 'middle';
+    ctx.fillText(title, 36, 52);
+    ctx.fillStyle = '#2a3340';
+    marks.forEach((w, i) => ctx.fillRect(36, 96 + i * 32, w, 14));
+    ctx.fillStyle = '#3d5a48';
+    marks.forEach((_, i) => ctx.fillRect(560, 92 + i * 32, 18, 18));
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const mat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }); mat.color.setScalar(0.85);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(1.56, 0.56), mat);
+    face.position.set(x, 1.65, -3.996); face.userData.keep = true; g.add(face);
+  };
+  panel(-1.00, 'service health', [280, 210, 320, 160]);
+  panel(1.00, 'backup check', [240, 300, 180, 260]);
+  notePlate(g, -4.86, 1.52, 1.20, ['科技总监'], -Math.PI / 2, 0.46, 0.22);
+  return desks;
+}
 function decorate(R, dyn, teamById) {
   const { def, group: g } = R; const id = def.id;
   const t = teamById[id] ?? { color: def.color };
@@ -2359,8 +2539,7 @@ function decorate(R, dyn, teamById) {
   } else if (id === 'lounge') {
     furnishLounge(g, def);
   } else if (id === 'it') {
-    // Placeholder seats only. 科技部 will send its own room design later.
-    desks.push(...workstations(g, t, accentChair, W, D, 5));
+    desks.push(...furnishTechnology(g, t));
   } else if (id === 'archive') {
     furnishArchive(g, def, dyn, R);
   } else if (id === 'design') {
@@ -2391,7 +2570,7 @@ function decorate(R, dyn, teamById) {
   }
   // front glass partitions for open team rooms
   if (def.walls !== 'glass' && id !== 'lounge') {
-    const doorFrac = id === 'market' ? [[0.14, 0.3]] : id === 'legal' ? [[0.60, 0.73]] : [[0.4, 0.54]];
+    const doorFrac = id === 'market' ? [[0.14, 0.3]] : id === 'legal' ? [[0.60, 0.73]] : id === 'it' ? [[0.32, 0.46]] : [[0.4, 0.54]];
     const wing = id === 'design' || id === 'archive';
     const sideDoor = id === 'meeting';
     const meetDoor = 2.3;
@@ -2418,6 +2597,7 @@ function decorate(R, dyn, teamById) {
   else if (id === 'market') pendant(g, -3.2, 1.1);
   else if (id === 'legal') pendant(g, -1.2, 2.6);
   else if (id === 'invest') pendant(g, -4.7, -0.4);
+  else if (id === 'it') pendant(g, -4.15, -3.55);
   else if (id !== 'lounge' && id !== 'archive') pendant(g, id === 'ed' ? -1.4 : 0, 0.2);
   if (id === 'ed') pendant(g, 1.4, 0.2);
   const shirts = [shirtA, shirtB, '#e2e8f0'];
