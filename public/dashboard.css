@@ -394,6 +394,8 @@ h3.block { margin: 16px 0 8px; font-size: 16px; }
 .share td:nth-child(2) { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
 .mk { display: inline-block; vertical-align: -3px; margin-right: 6px; background: #F4EFE6; border-radius: 3px; }
+.slice-legend { display: none; list-style: none; margin: 10px 0 0; padding: 0; }
+.slice-legend li { display: flex; align-items: flex-start; gap: 8px; }
 .callout {
   margin-top: 12px;
   padding: 12px 14px;
@@ -515,6 +517,8 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
   .v { font-size: 34px; }
   .stat { min-height: 0; padding: 12px 12px 8px; }
   .sub, .note, .src, .kmeta, .when, .meta, .share td, .peopleCount, .explain, p, li { font-size: 16px; }
+  .slice-legend { display: flex; flex-direction: column; gap: 8px; }
+  .slice-legend li { font-size: 16px; line-height: 1.4; }
   .explain { display: block; margin: 0 0 12px; }
   .desk-note { display: none; }
   .explain summary {

@@ -87,12 +87,12 @@ async function bootOffice(w, h, now) {
 async function aim(page, target, pos) {
   await page.evaluate(({ target, pos }) => {
     document.querySelector('#scene').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 1, clientX: 4, clientY: 4 }));
-    window.__app.closePanel?.();
+    window.__app.hidePanel?.();
     window.__app.controls.target.set(target[0], target[1], target[2]);
     window.__app.camera.position.set(pos[0], pos[1], pos[2]);
     window.__app.controls.update();
   }, { target, pos });
-  await page.waitForTimeout(350);
+  await page.waitForTimeout(450);
 }
 async function home(page) {
   await page.evaluate(() => window.__app.closePanel?.());
@@ -102,10 +102,10 @@ async function home(page) {
 
 const rooms = ['ed', 'market', 'legal', 'invest', 'corpfin', 'logistics', 'review', 'design', 'info', 'it', 'privfin', 'lounge', 'meeting', 'showroom', 'archive'];
 const spaces = [
-  ['pantry', [29.6, 1.0, 2.2], [26.0, 5.0, 0.4]],
+  ['pantry', [29.7, 1.05, 2.25], [26.4, 4.2, 0.6]],
   ['restroom-f', [34.4, 0.6, -2.7], [31.0, 7.2, -2.2]],
   ['restroom-m', [33.8, 0.7, 2.8], [28.2, 8.4, 0.6]],
-  ['restroom-m-wash', [34.6, 0.5, 2.8], [31.1, 6.8, 2.5]],
+  ['restroom-m-wash', [31.05, 1.05, 3.5], [33.8, 3.1, 5.6]],
   ['archive-lobby', [22.7, 0.9, -12], [18.6, 6.4, -9.0]],
   ['archive-general', [27.4, 0.8, -14.05], [23.0, 6.6, -11.0]],
   ['archive-confidential', [27.4, 0.8, -9.95], [22.0, 7.4, -7.0]],
@@ -137,6 +137,7 @@ async function officeSet(device, w, h, mode, now) {
     await settle(page);
     await save(page, `${device}_${mode}_panel_collapsed`, { name: 'panel-collapsed', mode });
     await page.click('#panelExpand');
+    await page.waitForTimeout(1200);
     await settle(page);
     await save(page, `${device}_${mode}_panel_expanded`, { name: 'panel-expanded', mode });
     await page.evaluate(() => { const body = document.querySelector('#panelBody'); if (body) body.scrollTop = body.scrollHeight; });

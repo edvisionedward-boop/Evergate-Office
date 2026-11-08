@@ -121,28 +121,35 @@ function safeOverviewRect() {
   return { l: 8, t: top + 8, r: Math.max(48, viewW - 8), b: Math.max(top + 80, bottom - 8) };
 }
 function rectArea(r) { return Math.max(0, r.r - r.l) * Math.max(0, r.b - r.t); }
+function untransformedRect(el) {
+  const r = el.getBoundingClientRect();
+  const tr = getComputedStyle(el).transform;
+  const m = tr && tr.match(/^matrix\(([^)]+)\)$/);
+  if (!m) return r;
+  const n = m[1].split(',').map((s) => parseFloat(s));
+  const tx = n[4] || 0;
+  const ty = n[5] || 0;
+  return { top: r.top - ty, bottom: r.bottom - ty, left: r.left - tx, right: r.right - tx, width: r.width, height: r.height };
+}
 function chromeSafeRect() {
   const top = ($('#topbar')?.getBoundingClientRect().bottom || 0) + 8;
   let bottom = viewH - 8;
-  for (const sel of ['#quickbar', '#legend', '#feedToggle']) {
-    const r = $(sel)?.getBoundingClientRect();
-    if (r && r.height > 2 && r.top > top + 24) bottom = Math.min(bottom, r.top - 8);
-  }
+  const quick = $('#quickbar')?.getBoundingClientRect();
+  if (quick && quick.height > 2 && quick.top > top + 24) bottom = Math.min(bottom, quick.top - 8);
   const full = { l: 8, t: top, r: Math.max(48, viewW - 8), b: Math.max(top + 48, bottom) };
   let best = full;
   for (const sel of ['#panel', '#directory']) {
     const el = $(sel);
     if (!el || el.classList.contains('hidden')) continue;
-    const b = el.getBoundingClientRect();
+    const b = untransformedRect(el);
     if (b.width < 2 || b.height < 2) continue;
     const options = [];
-    if (b.top - best.t > 48) options.push({ ...best, b: Math.min(best.b, b.top - 8) });
-    if (best.b - b.bottom > 48) options.push({ ...best, t: Math.max(best.t, b.bottom + 8) });
-    if (b.left - best.l > 80) options.push({ ...best, r: Math.min(best.r, b.left - 8) });
-    if (best.r - b.right > 80) options.push({ ...best, l: Math.max(best.l, b.right + 8) });
+    if (b.top - best.t > 24) options.push({ ...best, b: Math.min(best.b, b.top - 8) });
+    if (best.b - b.bottom > 24) options.push({ ...best, t: Math.max(best.t, b.bottom + 8) });
+    if (b.left - best.l > 48) options.push({ ...best, r: Math.min(best.r, b.left - 8) });
+    if (best.r - b.right > 48) options.push({ ...best, l: Math.max(best.l, b.right + 8) });
     if (options.length) best = options.sort((a, c) => rectArea(c) - rectArea(a))[0];
   }
-  if (best.r - best.l < 64 || best.b - best.t < 64) return full;
   return best;
 }
 function roomFitCorners(def) {
@@ -170,13 +177,51 @@ function focusRoom(id, anim = true) {
   controls.maxDistance = Math.max(140, pose.dist * 1.6);
   camera.far = Math.max(300, pose.dist + 160);
   camera.updateProjectionMatrix();
-  if (anim) flyTo(pose.target, pose.dist, pose.dir, 0.7);
+  const dist = Math.min(pose.dist, safe.b - safe.t < 140 ? 72 : pose.dist);
+  if (anim) flyTo(pose.target, dist, pose.dir, 0.7);
   else {
     tween = null;
     window.__flying = false;
     controls.target.copy(pose.target);
-    camera.position.copy(pose.target).addScaledVector(pose.dir, pose.dist);
+    camera.position.copy(pose.target).addScaledVector(pose.dir, dist);
   }
+  if (safe.b - safe.t < 140) pinRoomAnchor(R.def, safe, dist);
+}
+function pinRoomAnchor(def, safe, dist) {
+  const anchor = new THREE.Vector3(def.x, def.id === 'ed' ? 5.4 : 4.3, def.z - def.d * 0.1);
+  const scx = (safe.l + safe.r) / 2;
+  const scy = safe.b - 8;
+  const flat = camera.position.clone().sub(controls.target);
+  flat.y = 0;
+  if (flat.lengthSq() < 1e-6) flat.set(1, 0, 1);
+  flat.normalize();
+  const dir = new THREE.Vector3(flat.x * Math.sin(0.42), Math.cos(0.42), flat.z * Math.sin(0.42)).normalize();
+  camera.position.copy(controls.target).addScaledVector(dir, dist);
+  camera.up.set(0, 1, 0);
+  camera.lookAt(controls.target);
+  for (let i = 0; i < 24; i++) {
+    camera.updateMatrixWorld();
+    const p = anchor.clone().project(camera);
+    const x = (p.x * 0.5 + 0.5) * viewW;
+    const y = (-p.y * 0.5 + 0.5) * viewH;
+    if (Math.abs(x - scx) < 12 && Math.abs(y - scy) < 8) break;
+    const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+    right.y = 0;
+    if (right.lengthSq() > 1e-6) right.normalize();
+    const toward = new THREE.Vector3(dir.x, 0, dir.z);
+    if (toward.lengthSq() > 1e-6) toward.normalize();
+    const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+    const hf = Math.atan(Math.tan(vf) * camera.aspect);
+    const px = (viewW / 2) / Math.max(1, dist * Math.tan(hf));
+    const py = (viewH / 2) / Math.max(1, dist * Math.tan(vf));
+    controls.target.addScaledVector(right, (x - scx) / px);
+    controls.target.addScaledVector(toward, ((y - scy) / py) * 1.6);
+    controls.target.y = 0;
+    camera.position.copy(controls.target).addScaledVector(dir, dist);
+    camera.up.set(0, 1, 0);
+    camera.lookAt(controls.target);
+  }
+  controls.update();
 }
 const _proj = new THREE.Vector3();
 function roomCorners() {
@@ -899,6 +944,7 @@ function selectRoom(id, source, staffId) {
   const R = office.rooms[id];
   if (!R) return;
   focusRoom(id, true);
+  refitWhenPanelSettles();
   renderQuick();
 }
 function measureChrome() {
@@ -927,22 +973,51 @@ function syncPanelChrome() {
   } else if (!panel.classList.contains('open')) panel.style.top = '';
 }
 window.addEventListener('resize', () => syncPanelChrome());
-function closePanel() {
-  if (!state.selected && $('#panel').classList.contains('hidden')) return;
-  state.selected = null; state.staffId = null; $('#panel').classList.add('hidden');
+function hidePanel() {
+  clearTimeout(refitTimer);
+  clearTimeout(panelFitTimer);
+  state.selected = null;
+  state.staffId = null;
+  $('#panel').classList.add('hidden');
   syncPanelChrome();
   Object.values(office.rooms).forEach(R => R.labelEl.classList.remove('sel'));
   renderQuick();
+}
+function closePanel() {
+  if (!state.selected && $('#panel').classList.contains('hidden')) return;
+  hidePanel();
   goHome(true);
   restoreOpener();
 }
 $('#panelClose').addEventListener('click', () => closePanel());
+let panelFitTimer = 0;
+function refitSelected() {
+  if (!state.selected || !office.rooms[state.selected]) return;
+  focusRoom(state.selected, qs.get('snap') !== '1');
+}
+function refitWhenPanelSettles() {
+  clearTimeout(panelFitTimer);
+  const started = performance.now();
+  const tick = () => {
+    const el = $('#panel');
+    const tr = el ? getComputedStyle(el).transform : 'none';
+    const settled = !el || el.classList.contains('hidden') || !tr || tr === 'none' || tr === 'matrix(1, 0, 0, 1, 0, 0)';
+    if (settled || performance.now() - started > 1500) refitSelected();
+    else panelFitTimer = setTimeout(tick, 60);
+  };
+  panelFitTimer = setTimeout(tick, 60);
+}
+$('#panel')?.addEventListener('transitionend', (event) => {
+  if (event.target !== $('#panel') || event.propertyName !== 'transform') return;
+  clearTimeout(panelFitTimer);
+  refitSelected();
+});
 $('#panelExpand')?.addEventListener('click', () => {
   const open = $('#panel').classList.toggle('open');
   $('#panelExpand').setAttribute('aria-expanded', open ? 'true' : 'false');
   $('#panelExpand').textContent = open ? '收起' : '展开';
   measureChrome();
-  if (state.selected) focusRoom(state.selected, true);
+  refitWhenPanelSettles();
 });
 
 function teamCounts(team) {
@@ -1256,7 +1331,7 @@ function packNarrowLabels() {
   }).filter(Boolean);
   const hitsChrome = (r) => chrome().some((c) => rectsOverlap(r, c));
   for (let pass = 0; pass < list.length; pass++) {
-    const hit = boxes().find((x) => hitsChrome(x.r));
+    const hit = boxes().find((x) => !x.el.classList.contains('sel') && hitsChrome(x.r));
     if (!hit) break;
     if (!hit.el.classList.contains('icononly')) hit.el.classList.add('icononly');
     else hit.el.classList.add('packed-hide');
@@ -1407,6 +1482,23 @@ function layoutEdBubble(el) {
   top = Math.max(8, top);
   el.style.left = `${Math.round(left - originX)}px`;
   el.style.top = `${Math.round(top - originY)}px`;
+}
+function clampBubble(el) {
+  const r = el.getBoundingClientRect();
+  if (r.width < 8 || r.height < 8) return;
+  const pad = 8;
+  const topLimit = ($('#topbar')?.getBoundingClientRect().bottom || 0) + 4;
+  const bottomLimit = Math.max(topLimit + 20, viewH - pad);
+  let dx = 0;
+  let dy = 0;
+  if (r.right > viewW - pad) dx -= r.right - (viewW - pad);
+  if (r.left + dx < pad) dx += pad - (r.left + dx);
+  if (r.bottom + dy > bottomLimit) dy -= r.bottom + dy - bottomLimit;
+  if (r.top + dy < topLimit) dy += topLimit - (r.top + dy);
+  if (!dx && !dy) return;
+  const cs = getComputedStyle(el);
+  el.style.left = `${Math.round((parseFloat(cs.left) || 0) + dx)}px`;
+  el.style.top = `${Math.round((parseFloat(cs.top) || 0) + dy)}px`;
 }
 function tickBubbles(dt) {
   bubbleTimer -= dt;
@@ -1593,12 +1685,15 @@ function frame() {
   measureChrome();
   refineOverview();
   settleStaffTags();
-  for (const b of activeBubbles) if (b.ed) layoutEdBubble(b.el);
+  for (const b of activeBubbles) {
+    if (b.ed) layoutEdBubble(b.el);
+    clampBubble(b.el);
+  }
   if ((T % 0.5) < dt) applyClock();
   if (first) { first = false; setTimeout(() => $('#loading').classList.add('gone'), 150); window.__ready = true; }
 }
 renderer.setAnimationLoop(frame);
-window.__app = { popBubble, selectRoom, closePanel, setTab, openView, office, camera, controls, renderer };
+window.__app = { popBubble, selectRoom, closePanel, hidePanel, setTab, openView, office, camera, controls, renderer };
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {});
 }

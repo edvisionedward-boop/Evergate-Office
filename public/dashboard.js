@@ -72,6 +72,51 @@
     else body = `<circle cx="8" cy="8" r="5" fill="${fill}" stroke="${ink}" stroke-width="1.6"/>`;
     return `<svg class="mk" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">${body}</svg>`;
   }
+  function sliceLegend(items) {
+    return `<ul class="slice-legend">${items.map((item, i) => `<li>${markSvg(item.id, i)}<span>${esc(item.name)} ${esc(item.pct)}%</span></li>`).join('')}</ul>`;
+  }
+  function drawSpreadLabels(chart, ctx) {
+    const labels = chart.$sliceLabels || [];
+    if (!labels.length) return;
+    ctx.save();
+    ctx.font = '12px ' + FONT;
+    ctx.fillStyle = '#F4EFE6';
+    ctx.strokeStyle = '#E6D8C3';
+    ctx.lineWidth = 1;
+    const placed = [];
+    const gap = 20;
+    for (const src of labels) {
+      const side = Math.cos(src.mid) >= 0 ? 1 : -1;
+      const width = ctx.measureText(src.text).width;
+      let x = src.cx + Math.cos(src.mid) * (src.outer + 36);
+      let y = src.cy + Math.sin(src.mid) * (src.outer + 36);
+      for (let n = 0; n < 18; n++) {
+        const hit = placed.find((p) => Math.abs(p.y - y) < gap && Math.abs(p.x - x) < (p.w + width) * 0.5 + 12);
+        if (!hit) break;
+        y += (y >= src.cy ? 1 : -1) * gap;
+      }
+      const left = side > 0 ? x : x - width;
+      if (left < 6) x += 6 - left;
+      if (left + width > chart.width - 6) x -= left + width - (chart.width - 6);
+      y = Math.max(12, Math.min(chart.height - 12, y));
+      placed.push({ ...src, x, y, side, w: width });
+    }
+    for (const lab of placed) {
+      const rimX = lab.cx + Math.cos(lab.mid) * lab.outer;
+      const rimY = lab.cy + Math.sin(lab.mid) * lab.outer;
+      const bendX = lab.cx + Math.cos(lab.mid) * (lab.outer + 14);
+      const bendY = lab.cy + Math.sin(lab.mid) * (lab.outer + 14);
+      ctx.beginPath();
+      ctx.moveTo(rimX, rimY);
+      ctx.lineTo(bendX, bendY);
+      ctx.lineTo(lab.x, lab.y);
+      ctx.stroke();
+      ctx.textAlign = lab.side > 0 ? 'left' : 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(lab.text, lab.side > 0 ? lab.x + 4 : lab.x - 4, lab.y);
+    }
+    ctx.restore();
+  }
   const PHASE = { done: '已完成', upcoming: '即将到来', today: '今天', overdue: '已到期，结果尚未回写' };
   const COLS = [['todo', '待开始'], ['doing', '进行中'], ['done', '已完成']];
   const charts = {};
@@ -89,6 +134,7 @@
         afterDatasetsDraw(chart) {
           const type = chart.config.type;
           const ctx = chart.ctx;
+          chart.$sliceLabels = [];
           if (type === 'line') {
             ctx.save();
             ctx.font = '12px ' + FONT;
@@ -112,48 +158,32 @@
               const id = ds.shapeIds?.[i] || chart.data.shapeIds?.[i] || chart.data.labels?.[i] || ds.label;
               if (type === 'doughnut' || type === 'pie') {
                 const mid = ((el.startAngle || 0) + (el.endAngle || 0)) / 2;
-                const span = Math.abs((el.endAngle || 0) - (el.startAngle || 0));
                 const rad = ((el.outerRadius || 0) + (el.innerRadius || 0)) / 2;
                 const mx = el.x + Math.cos(mid) * rad;
                 const my = el.y + Math.sin(mid) * rad;
                 const mark = markFor(id, i);
-                ctx.save();
-                ctx.fillStyle = '#F4EFE6';
-                ctx.beginPath();
-                ctx.arc(mx, my, 7, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-                drawMark(ctx, mark.shape, mx, my, 4.5, '#1a140c', mark.fill);
-                const values = (ds.data || []).map((n) => Number(n) || 0);
-                const total = values.reduce((sum, n) => sum + n, 0);
-                const raw = values[i] || 0;
-                const pct = total ? Math.round((raw / total) * 1000) / 10 : 0;
-                const pctText = Number.isInteger(pct) ? String(pct) : pct.toFixed(1);
-                const name = String(chart.data.labels?.[i] || '').replace(/\(已并入投资部\)/, '');
-                const text = `${name} ${pctText}%`;
-                const outer = el.outerRadius || rad;
-                const small = span < 0.55;
-                const reach = outer + (small ? 18 + (i % 3) * 8 : 6);
-                const lx = el.x + Math.cos(mid) * reach;
-                const ly = el.y + Math.sin(mid) * reach;
-                ctx.save();
-                ctx.font = '12px ' + FONT;
-                ctx.fillStyle = '#F4EFE6';
-                ctx.strokeStyle = '#E6D8C3';
-                ctx.lineWidth = 1;
-                if (small) {
-                  const elbow = el.x + Math.cos(mid) * (outer + 10);
-                  const ey = el.y + Math.sin(mid) * (outer + 10);
+                if (!isPhone()) {
+                  ctx.save();
+                  ctx.fillStyle = '#F4EFE6';
                   ctx.beginPath();
-                  ctx.moveTo(el.x + Math.cos(mid) * outer, el.y + Math.sin(mid) * outer);
-                  ctx.lineTo(elbow, ey);
-                  ctx.lineTo(lx, ly);
-                  ctx.stroke();
+                  ctx.arc(mx, my, 7, 0, Math.PI * 2);
+                  ctx.fill();
+                  ctx.restore();
+                  drawMark(ctx, mark.shape, mx, my, 4.5, '#1a140c', mark.fill);
                 }
-                ctx.textAlign = Math.cos(mid) >= 0 ? 'left' : 'right';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(text, lx + (Math.cos(mid) >= 0 ? 4 : -4), ly);
-                ctx.restore();
+                if (!chart.$sliceLabels) chart.$sliceLabels = [];
+                if (!isPhone()) {
+                  const values = (ds.data || []).map((n) => Number(n) || 0);
+                  const total = values.reduce((sum, n) => sum + n, 0);
+                  const raw = values[i] || 0;
+                  const pct = total ? Math.round((raw / total) * 1000) / 10 : 0;
+                  const pctText = Number.isInteger(pct) ? String(pct) : pct.toFixed(1);
+                  const name = String(chart.data.labels?.[i] || '');
+                  chart.$sliceLabels.push({
+                    text: `${name} ${pctText}%`,
+                    mid, cx: el.x, cy: el.y, outer: el.outerRadius || rad,
+                  });
+                }
               } else {
                 const p = el.getProps(['x', 'y'], true);
                 const mark = markFor(id, i);
@@ -161,6 +191,7 @@
               }
             });
           });
+          if (chart.$sliceLabels && chart.$sliceLabels.length) drawSpreadLabels(chart, ctx);
         },
       });
     }
@@ -720,13 +751,17 @@
           <span>重置 ${esc(whenText(report.resetAt))}（UTC+8）</span>
         </div>
         <div class="usage-grid">
-          <div class="gauge-wrap">
-            <canvas id="gauge"></canvas>
-            <div class="gauge-label"><b>${esc(report.weekUsedPct)}%</b><span>本周已用</span></div>
+          <div>
+            <div class="gauge-wrap">
+              <canvas id="gauge"></canvas>
+              <div class="gauge-label"><b>${esc(report.weekUsedPct)}%</b><span>本周已用</span></div>
+            </div>
+            ${sliceLegend([{ id: '已用', name: '已用', pct: used }, { id: '按百分比剩下的部分', name: '按百分比剩下的部分', pct: rest }])}
           </div>
           <div>
             <p class="note">${esc(report.weekUsedNote || '')}</p>
-            <div class="chartbox" style="height:240px"><canvas id="donut"></canvas></div>
+            <div class="chartbox" style="height:280px"><canvas id="donut"></canvas></div>
+            ${sliceLegend(depts.map((row) => ({ id: row.name, name: row.name, pct: row.pct })))}
           </div>
         </div>
         <table class="share">${rows}</table>
@@ -741,7 +776,7 @@
         labels: ['已用', '按百分比剩下的部分'],
         datasets: [{ data: [used, rest], backgroundColor: ['#D0B993', 'rgba(255,255,255,.16)'], borderWidth: 0 }],
       },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '74%', layout: { padding: 36 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } } },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '74%', layout: { padding: isPhone() ? 8 : 28 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } } },
     });
     charts.donut = new Chart(document.getElementById('donut'), {
       type: 'doughnut',
@@ -754,7 +789,7 @@
         responsive: true,
         maintainAspectRatio: false,
         cutout: '58%',
-        layout: { padding: 42 },
+        layout: { padding: isPhone() ? 8 : 56 },
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } },
       },
     });

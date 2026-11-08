@@ -2087,6 +2087,19 @@ function furnishRestrooms(parent) {
   doorSign(g, xV - 0.12, 2.05, -zH * 0.5, '女洗手', 'WOMEN', -Math.PI / 2);
   doorSign(g, xV - 0.12, 2.05, zH * 0.5, '男洗手', 'MEN', -Math.PI / 2);
   doorSign(g, 0.22, 2.05, 0, '前室', 'VESTIBULE', -Math.PI / 2);
+  // Men's washbasin in the open aisle, south of the vestibule. Not a stall.
+  {
+    const steel = M('#d7dde6', { m: .78, r: .24 });
+    const stone = M('#e7e5e4', { r: .34, m: .06 });
+    const bx = 0.48, bz = 3.55;
+    box(g, 0.52, 0.78, 1.05, bx, 0, bz, M('#C7B596', { r: .72 }), { cast: false });
+    box(g, 0.56, 0.045, 1.12, bx, 0.80, bz, stone, { cast: false });
+    cyl(g, 0.18, 0.16, 0.035, bx + 0.04, 0.825, bz, steel, 18, { cast: false });
+    cyl(g, 0.10, 0.09, 0.02, bx + 0.04, 0.86, bz, M('#1e293b', { m: .35, r: .18 }), 16, { cast: false });
+    cyl(g, 0.018, 0.018, 0.18, bx + 0.2, 0.825, bz - 0.02, steel, 8, { cast: false });
+    const spout = cyl(g, 0.014, 0.014, 0.14, bx + 0.1, 0.98, bz - 0.02, steel, 8, { cast: false });
+    spout.rotation.z = Math.PI / 2;
+  }
   const fl = new THREE.Mesh(new THREE.PlaneGeometry(xE - 0.1, zH * 2 - 0.1), M('#242430', { r: .8, m: 0 }));
   fl.rotation.x = -Math.PI / 2; fl.position.set(xE / 2, 0.012, 0); fl.receiveShadow = true;
   fl.material.polygonOffset = true; fl.material.polygonOffsetFactor = -1; fl.material.polygonOffsetUnits = 1; g.add(fl);
