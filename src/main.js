@@ -57,6 +57,7 @@ const fill = new THREE.DirectionalLight('#ffd8b0', 0.28); fill.position.set(22, 
 
 /* office */
 const office = buildOffice(scene, DATA.teams);
+const hue = (team) => window.EvergateBrand.teamColor(team);
 
 /* controls */
 const controls = new OrbitControls(camera, canvas);
@@ -68,11 +69,28 @@ controls.rotateSpeed = 0.6; controls.zoomSpeed = 0.9; controls.panSpeed = 0.9;
 controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
 const HOME_DIR = new THREE.Vector3(0.82, 1.05, 1).normalize();
 
-function homeDistance() {
-  const R = 46, vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+function campusSpan() {
+  const box = new THREE.Box3();
+  for (const R of Object.values(office.rooms)) {
+    const d = R.def;
+    if (!d?.w || !d?.d) continue;
+    box.expandByPoint(new THREE.Vector3(d.x - d.w / 2, 0, d.z - d.d / 2));
+    box.expandByPoint(new THREE.Vector3(d.x + d.w / 2, 3.2, d.z + d.d / 2));
+  }
+  box.expandByPoint(new THREE.Vector3(30.2, 0, -5.6));
+  box.expandByPoint(new THREE.Vector3(35.8, 3.2, 5.6));
+  return box;
+}
+function fitDistance() {
+  const size = campusSpan().getSize(new THREE.Vector3());
+  const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
   const hf = Math.atan(Math.tan(vf) * camera.aspect);
-  const d = Math.max(R * 0.78 / Math.tan(vf), R * 1.05 / Math.tan(hf));
-  return camera.aspect < 0.8 ? d * 0.72 : d;
+  const radius = Math.max(size.x, size.z) * 0.55;
+  const d = Math.max(radius / Math.tan(vf), radius / Math.tan(hf));
+  return d * 1.08;
+}
+function homeDistance() {
+  return fitDistance();
 }
 let tween = null;
 function flyTo(target, dist, dir, dur = 0.9) {
@@ -80,7 +98,14 @@ function flyTo(target, dist, dir, dur = 0.9) {
   tween = { t: 0, dur, fromT: controls.target.clone(), toT: target.clone(), fromP: camera.position.clone(),
     toP: target.clone().add((dir ?? curDir).clone().multiplyScalar(dist)) };
 }
+function applyFitLimits() {
+  const d = fitDistance();
+  controls.maxDistance = Math.max(120, d * 1.1);
+  camera.far = Math.max(300, d + 150);
+  camera.updateProjectionMatrix();
+}
 function goHome(anim = true) {
+  applyFitLimits();
   const tgt = camera.aspect < 0.8 ? new THREE.Vector3(1.6, 0, 3.2) : new THREE.Vector3(0, 0, 1.5);
   if (anim) flyTo(tgt, homeDistance(), HOME_DIR);
   else { controls.target.copy(tgt); camera.position.copy(tgt).add(HOME_DIR.clone().multiplyScalar(homeDistance())); }
@@ -114,6 +139,7 @@ function syncView() {
   renderer.setSize(w, h, false);
   labelRenderer.setSize(w, h);
   if (composer) { composer.setPixelRatio(pr); composer.setSize(w, h); bloom.resolution.set(w / 2, h / 2); }
+  applyFitLimits();
   if (!viewReady) { viewReady = true; goHome(false); }
   return true;
 }
@@ -555,7 +581,7 @@ function renderPanel(id) {
     const n = office.rooms.lounge?.occupancy ?? 0;
     const note = L.lastMeeting ? `<div class="sec"><h4>最新纪要</h4><div class="card"><div class="cur">${esc(L.lastMeeting)}</div></div></div>` : '';
     const pantry = L.pantry ? `<div class="sec"><div class="card"><div class="cur">${esc(L.pantry)}</div></div></div>` : '';
-    body.innerHTML = `<div class="ph" style="--c:#E87708"><div class="ic">休</div><div><h3>${esc(L.name || '休息室')}</h3><div class="sub">跨部门交流区 · 每周一 9:00 例会</div></div></div>` +
+    body.innerHTML = `<div class="ph" style="--c:#D0B993"><div class="ic">休</div><div><h3>${esc(L.name || '休息室')}</h3><div class="sub">跨部门交流区 · 每周一 9:00 例会</div></div></div>` +
       pantry +
       `<div class="sec"><h4>例会</h4><div class="card"><div class="cur">${esc(L.meeting || '每周一 9:00 跨部门例会')}</div></div></div>` +
       note +
@@ -568,7 +594,7 @@ function renderPanel(id) {
     return;
   }
   if (t.private) {
-    body.innerHTML = `<div class="ph" style="--c:${esc(t.color)}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '私')}</div><div><h3>私密</h3></div></div><div class="sec"><div class="card private"><div>私密</div></div></div>`;
+    body.innerHTML = `<div class="ph" style="--c:${esc(hue(t))}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '私')}</div><div><h3>私密</h3></div></div><div class="sec"><div class="card private"><div>私密</div></div></div>`;
     return;
   }
   const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
@@ -576,7 +602,7 @@ function renderPanel(id) {
   const doingItems = doing.length ? doing : (t.currentTask ? [{ status: 'doing', title: t.currentTask }] : []);
   const done = DATA.tasks.filter(x => x.team === id && x.status === 'done').sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 3);
   const staff = (t.staff || []).map(s => `<li class="srow${state.staffId === s.id ? ' on' : ''}" data-staff="${esc(s.id)}"><span class="sn">${esc(s.name)}${s.role ? `<span class="srole">${esc(s.role)}</span>` : ''}${statusBadgeHtml(s)}</span><span class="grow">${workBarHtml(s)}${workFactsHtml(s)}</span></li>`).join('');
-  const head = `<div class="ph" style="--c:${esc(t.color)}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '')}</div><div><h3>${esc(t.name)}</h3>
+  const head = `<div class="ph" style="--c:${esc(hue(t))}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '')}</div><div><h3>${esc(t.name)}</h3>
     <div class="sub"><span class="chip ${esc(t.status)}"><i class="dot ${esc(t.status)}"></i>${esc(lbl)}</span><span class="scorebit">${ringHtml(t.score)}</span></div></div></div>`;
   body.innerHTML = head +
     `<div class="sec"><h4>职责</h4><div class="card"><div class="cur">${esc(t.duty || '—')}</div></div></div>` +
@@ -633,7 +659,12 @@ function closePanel() {
   renderQuick();
   goHome(true);
 }
-$('#panelClose').addEventListener('click', closePanel);
+$('#panelClose').addEventListener('click', () => { closePanel(); $('#panelClose').blur(); });
+$('#panelExpand')?.addEventListener('click', () => {
+  const open = $('#panel').classList.toggle('open');
+  $('#panelExpand').setAttribute('aria-expanded', open ? 'true' : 'false');
+  $('#panelExpand').textContent = open ? '收起' : '展开';
+});
 
 function teamCounts(team) {
   const tasks = DATA.tasks.filter(x => x.team === team.id);
@@ -655,7 +686,7 @@ function renderBoard() {
     $('#boardStats').innerHTML = `<div class="bstotal">考核 <b>已评 ${scored}</b> · <b>待评 ${teams.length - scored}</b></div>`;
     $('#boardCols').innerHTML = `<div class="col grade-col">${teams.map(t => {
       const people = (t.staff || []).map(s => `<span class="smini"><b>${esc(s.name)}</b>${barHtml(s.score)}</span>`).join('');
-      return `<button type="button" class="gcard" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="top"><div class="bn">${esc(t.name)}</div>${barHtml(t.score)}</div><div class="snote">${esc(t.gradeNote || '')}</div>${t.gradedAt ? `<div class="gdate">${esc(fmtTime(t.gradedAt))}</div>` : ''}<div class="sminis">${people}</div></button>`;
+      return `<button type="button" class="gcard" data-team="${esc(t.id)}" style="--c:${esc(hue(t))}"><div class="top"><div class="bn">${esc(t.name)}</div>${barHtml(t.score)}</div><div class="snote">${esc(t.gradeNote || '')}</div>${t.gradedAt ? `<div class="gdate">${esc(fmtTime(t.gradedAt))}</div>` : ''}<div class="sminis">${people}</div></button>`;
     }).join('')}</div>`;
     return;
   }
@@ -667,7 +698,7 @@ function renderBoard() {
       const rows = t.private
         ? ''
         : (t.staff || []).map(s => `<span class="smini"><b>${esc(s.name)}</b>${workBarHtml(s)}</span>`).join('');
-      return `<button type="button" class="gcard" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="top"><div class="bn">${esc(t.private ? '私密' : t.name)}</div></div><div class="sminis">${rows}</div></button>`;
+      return `<button type="button" class="gcard" data-team="${esc(t.id)}" style="--c:${esc(hue(t))}"><div class="top"><div class="bn">${esc(t.private ? '私密' : t.name)}</div></div><div class="sminis">${rows}</div></button>`;
     }).join('')}</div>`;
     return;
   }
@@ -680,7 +711,7 @@ function renderBoard() {
       : `<div class="bc"><span>进行中 ${c.doing}</span><span>等你确认 ${c.confirm}</span><span>已完成 ${c.done}</span></div><div class="bt">共 ${c.total} 项</div>`;
     const who = t.private ? '私密' : t.name;
     const count = t.private ? '' : `<div class="bm">成员 ${c.members} 人</div>`;
-    return `<button type="button" class="bschip" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="top"><span class="ic">${esc(icon)}</span><span class="bn">${esc(who)}</span></div>${count}${stats}</button>`;
+    return `<button type="button" class="bschip" data-team="${esc(t.id)}" style="--c:${esc(hue(t))}"><div class="top"><span class="ic">${esc(icon)}</span><span class="bn">${esc(who)}</span></div>${count}${stats}</button>`;
   }).join('');
   $('#boardStats').innerHTML = `<div class="bstotal">全公司 <b>成员 ${members}</b> / <b>任务 ${DATA.tasks.length}</b></div><div class="bsrow">${chips}</div>`;
   const cols = [['doing', '进行中', 'busy'], ['confirm', '等你确认', 'confirm'], ['done', '已完成', 'idle']];
@@ -690,7 +721,7 @@ function renderBoard() {
       const t = teamOf(x.team) ?? { name: x.team, color: '#D0B993' };
       const title = t.private ? '私密' : esc(x.title);
       const teamName = t.private ? '私密' : t.name;
-      return `<div class="tcard ${k}" data-team="${esc(x.team)}" style="--c:${esc(t.color)}"><div class="tm"><i></i>${esc(teamName)} · ${fmtTime(x.updatedAt)}</div><div class="tt">${title}</div></div>`;
+      return `<div class="tcard ${k}" data-team="${esc(x.team)}" style="--c:${esc(hue(t))}"><div class="tm"><i></i>${esc(teamName)} · ${fmtTime(x.updatedAt)}</div><div class="tt">${title}</div></div>`;
     }).join('') || '<div class="empty" style="padding:6px 4px">暂无</div>'}</div>`;
   }).join('');
 }
@@ -746,9 +777,10 @@ function renderQuick() {
     const icon = office.rooms[t.id]?.def.icon ?? (t.private ? '私' : '·');
     const on = state.selected === t.id ? ' on' : '';
     const label = t.private ? '私密' : (t.short || t.name);
-    return `<button type="button" class="qchip${on}" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><span class="qi">${esc(icon)}</span><span>${esc(label)}</span></button>`;
+    return `<button type="button" class="qchip${on}" data-team="${esc(t.id)}" style="--c:${esc(hue(t))}"><span class="qi">${esc(icon)}</span><span>${esc(label)}</span></button>`;
   }).join('');
 }
+$('#moreDepts')?.addEventListener('click', () => openView('directory'));
 $('#homeBtn')?.addEventListener('click', () => {
   state.selected = null; state.staffId = null;
   $('#panel').classList.add('hidden');
@@ -780,14 +812,14 @@ function deptCard(t) {
   const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status] || '';
   const sel = state.selected === t.id ? ' sel' : '';
   if (t.private) {
-    return `<button type="button" class="dcard${sel}" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="dtop"><span class="ic">${esc(icon)}</span><div class="nm">私密</div></div><div class="dlock">私密</div></button>`;
+    return `<button type="button" class="dcard${sel}" data-team="${esc(t.id)}" style="--c:${esc(hue(t))}"><div class="dtop"><span class="ic">${esc(icon)}</span><div class="nm">私密</div></div><div class="dlock">私密</div></button>`;
   }
   const head = `<div class="dtop"><span class="ic">${esc(icon)}</span><div><div class="nm">${esc(t.name)}</div><div class="sub"><i class="dot ${esc(t.status)}"></i>${esc(lbl)} · ${t.agents ?? 0} 位成员</div></div></div>`;
   const tasks = directoryTasks(t);
   const body = tasks.length
     ? `<ul class="dtasks">${tasks.map(x => `<li>${chip(x.status)}<span>${esc(x.title)}</span></li>`).join('')}</ul>`
     : '<div class="dnone">暂无任务</div>';
-  return `<button type="button" class="dcard${sel}" data-team="${esc(t.id)}" style="--c:${esc(t.color)}">${head}${body}</button>`;
+  return `<button type="button" class="dcard${sel}" data-team="${esc(t.id)}" style="--c:${esc(hue(t))}">${head}${body}</button>`;
 }
 function renderDirectory() {
   const root = $('#dirBody');
@@ -825,7 +857,7 @@ function sharedSpaceCard() {
   const n = office.rooms.lounge?.occupancy ?? 0;
   const sel = (id) => state.selected === id ? ' sel' : '';
   const extra = [L.pantry, L.meeting, L.lastMeeting].filter(Boolean).map(s => `<div class="dnone">${esc(s)}</div>`).join('');
-  const lounge = `<button type="button" class="dcard${sel('lounge')}" data-team="lounge" style="--c:#E87708"><div class="dtop"><span class="ic">休</span><div><div class="nm">${esc(L.name || '休息室')}</div><div class="sub">共享空间 · ${n} 人在此</div></div></div>${extra}</button>`;
+  const lounge = `<button type="button" class="dcard${sel('lounge')}" data-team="lounge" style="--c:#D0B993"><div class="dtop"><span class="ic">休</span><div><div class="nm">${esc(L.name || '休息室')}</div><div class="sub">共享空间 · ${n} 人在此</div></div></div>${extra}</button>`;
   const archive = `<button type="button" class="dcard${sel('archive')}" data-team="archive" style="--c:#D0B993"><div class="dtop"><span class="ic">资</span><div><div class="nm">${esc(DATA.archive?.name || '资料库')}</div><div class="sub">客厅 · 普通文件房 · 机密文件房</div></div></div></button>`;
   const showroom = `<button type="button" class="dcard${sel('showroom')}" data-team="showroom" style="--c:#D0B993"><div class="dtop"><span class="ic">展</span><div><div class="nm">品牌展厅</div><div class="sub">展陈占位 · 非部门</div></div></div></button>`;
   const meeting = `<button type="button" class="dcard${sel('meeting')}" data-team="meeting" style="--c:#D0B993"><div class="dtop"><span class="ic">议</span><div><div class="nm">会议室</div><div class="sub">${esc(nextMeetingText(klNow()))}</div></div></div></button>`;
@@ -841,9 +873,27 @@ $('#dirMode').addEventListener('click', e => {
   renderDirectory();
 });
 $('#dirClose').addEventListener('click', () => { $('#directory').classList.add('hidden'); setTab('office'); });
+$('#feedToggle')?.addEventListener('click', () => {
+  const btn = $('#feedToggle');
+  if (activeBubbles.length) {
+    for (const b of activeBubbles) { b.o.parent?.remove(b.o); b.el.remove(); }
+    activeBubbles.length = 0;
+    bubbleArmed = false;
+    btn.setAttribute('aria-expanded', 'false');
+    return;
+  }
+  bubbleArmed = true;
+  bubbleTimer = 0;
+  btn.setAttribute('aria-expanded', 'true');
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  if (activeBubbles.length) $('#feedToggle')?.click();
+  if (!$('#panel').classList.contains('hidden')) { closePanel(); $('#panelClose')?.focus(); }
+});
 
 /* ---------- speech bubbles ---------- */
-let bubbleTimer = 2.5, bubbleIdx = 0;
+let bubbleTimer = 1e9, bubbleIdx = 0, bubbleArmed = false;
 const activeBubbles = [];
 function popBubble() {
   const cands = DATA.teams.filter(t => !t.private && DATA.feed.some(f => f.team === t.id));
@@ -856,13 +906,13 @@ function popBubble() {
   const agent = pool[Math.floor(Math.random() * pool.length)];
   const latest = DATA.feed.filter(f => f.team === t.id).sort((a, b) => new Date(b.time) - new Date(a.time))[0];
   if (activeBubbles.some(b => b.agent === agent)) return;
-  if (activeBubbles.length >= (viewW <= 760 ? 1 : 3)) return;
+  if (activeBubbles.length >= 1) return;
   const host = document.createElement('div'); host.className = 'bubble-host' + (t.id === 'ed' ? ' ed' : '');
-  const el = document.createElement('div'); el.className = 'bubble'; el.style.setProperty('--c', t.color);
+  const el = document.createElement('div'); el.className = 'bubble'; el.style.setProperty('--c', hue(t));
   el.innerHTML = `<b>${esc(t.name)}</b>${esc(latest.text)}`;
   host.appendChild(el);
   const o = new CSS2DObject(host); o.renderOrder = t.id === 'ed' ? 40 : 8; agent.userData.bubbleAnchor.add(o);
-  const b = { o, el, agent, life: 5.2, ed: t.id === 'ed' }; activeBubbles.push(b);
+  const b = { o, el, agent, life: 6, ed: t.id === 'ed' }; activeBubbles.push(b);
 }
 const labelNudge = {};
 function separateLabels() {
@@ -981,7 +1031,7 @@ function layoutEdBubble(el) {
 }
 function tickBubbles(dt) {
   bubbleTimer -= dt;
-  if (bubbleTimer <= 0) { popBubble(); bubbleTimer = 2.6 + Math.random() * 2; }
+  if (bubbleArmed && bubbleTimer <= 0) { popBubble(); bubbleArmed = false; bubbleTimer = 1e9; }
   for (let i = activeBubbles.length - 1; i >= 0; i--) {
     const b = activeBubbles[i]; b.life -= dt;
     if (b.life < 0.4 && !b.el.classList.contains('out')) b.el.classList.add('out');

@@ -5,7 +5,29 @@
   const $ = (sel) => document.querySelector(sel);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const FONT = '"PingFang SC","Hiragino Sans GB","WenQuanYi Micro Hei","Droid Sans Fallback",sans-serif';
-  const PALETTE = ['#60a5fa', '#38bdf8', '#818cf8', '#22d3ee', '#93c5fd', '#2563eb', '#a5b4fc', '#67e8f9', '#3b82f6', '#cbd5e1'];
+  const GOLD_SERIES = ['#D0B993', '#E6D8C3', '#A98B5E', '#8A7049', '#C7B596', '#F4EFE6'];
+  const SHAPES = ['circle', 'rect', 'triangle', 'rectRot', 'cross', 'star'];
+  function shapeFor(id) {
+    let h = 2166136261;
+    const s = String(id || '');
+    for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+    return SHAPES[(h >>> 0) % SHAPES.length];
+  }
+  function tone(i) { return GOLD_SERIES[i % GOLD_SERIES.length]; }
+  function drawMark(ctx, shape, x, y, r, color) {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (shape === 'rect' || shape === 'rectRot') ctx.rect(x - r, y - r, r * 2, r * 2);
+    else if (shape === 'triangle') { ctx.moveTo(x, y - r); ctx.lineTo(x + r, y + r); ctx.lineTo(x - r, y + r); ctx.closePath(); }
+    else if (shape === 'cross' || shape === 'star') { ctx.moveTo(x - r, y); ctx.lineTo(x + r, y); ctx.moveTo(x, y - r); ctx.lineTo(x, y + r); }
+    else ctx.arc(x, y, r, 0, Math.PI * 2);
+    if (shape === 'cross' || shape === 'star') ctx.stroke();
+    else ctx.fill();
+    ctx.restore();
+  }
   const PHASE = { done: '已完成', upcoming: '即将到来', today: '今天', overdue: '已到期，结果尚未回写' };
   const COLS = [['todo', '待开始'], ['doing', '进行中'], ['done', '已完成']];
   const charts = {};
@@ -17,6 +39,21 @@
     Chart.defaults.font.family = FONT;
     Chart.defaults.color = 'rgba(248,251,255,.86)';
     Chart.defaults.animation.duration = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 800;
+    if (!Chart.registry.plugins.get('brandShapes')) {
+      Chart.register({
+        id: 'brandShapes',
+        afterDatasetsDraw(chart) {
+          if (chart.config.type === 'line') return;
+          const meta = chart.getDatasetMeta(0);
+          if (!meta) return;
+          meta.data.forEach((el, i) => {
+            const id = chart.data.shapeIds?.[i] || chart.data.labels?.[i];
+            const p = el.getProps(['x', 'y'], true);
+            drawMark(chart.ctx, shapeFor(id), p.x, p.y, 5, '#E6D8C3');
+          });
+        },
+      });
+    }
   }
 
   function readClock() {
@@ -229,7 +266,7 @@
     const labels = ranks.map((r) => (narrow ? r.name : `${r.name} · ${r.n}人`));
     const data = ranks.map((r) => r.total);
     const maxVal = data.reduce((m, n) => Math.max(m, Number(n) || 0), 0);
-    const colors = ranks.map((_, i) => PALETTE[i % PALETTE.length]);
+    const colors = ranks.map((_, i) => tone(i));
     const x = { ...axis(), beginAtZero: true, ticks: { ...axis().ticks, maxTicksLimit: narrow ? 4 : 8 } };
     if (narrow) {
       x.grace = '18%';
@@ -244,7 +281,7 @@
     if (!charts.rankChart) {
       charts.rankChart = new Chart(document.getElementById('rankChart'), {
         type: 'bar',
-        data: { labels, datasets: [{ data, backgroundColor: colors, ...barStyle }] },
+        data: { labels, shapeIds: ranks.map((r) => r.id || r.name), datasets: [{ data, backgroundColor: colors, ...barStyle }] },
         options: {
           indexAxis: 'y',
           responsive: true,
@@ -554,7 +591,7 @@
     }
     const depts = Array.isArray(report.departments) ? report.departments : [];
     const sum = Math.round(depts.reduce((n, row) => n + (Number(row.pct) || 0), 0) * 10) / 10;
-    const rows = depts.map((row, i) => `<tr><td><i class="swatch" style="background:${PALETTE[i % PALETTE.length]}"></i>${esc(row.name)}</td><td>${esc(row.pct)}%</td><td>${esc(row.note || '')}</td></tr>`).join('');
+    const rows = depts.map((row, i) => `<tr><td><i class="swatch" style="background:${tone(i)}"></i>${esc(row.name)}</td><td>${esc(row.pct)}%</td><td>${esc(row.note || '')}</td></tr>`).join('');
     const sumNote = sum === 100 ? '' : `<p class="note">部门份额合计 ${sum}%，与 100% 不一致。页面没有改这些数字。</p>`;
     const used = Number(report.weekUsedPct);
     const rest = Number.isFinite(used) ? Number((100 - used).toFixed(1)) : null;
@@ -593,7 +630,8 @@
       type: 'doughnut',
       data: {
         labels: depts.map((row) => row.name),
-        datasets: [{ data: depts.map((row) => row.pct), backgroundColor: depts.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 0 }],
+        shapeIds: depts.map((row) => row.name),
+        datasets: [{ data: depts.map((row) => row.pct), backgroundColor: depts.map((_, i) => tone(i)), borderWidth: 0 }],
       },
       options: {
         responsive: true,
@@ -669,8 +707,11 @@
               const hit = rows.find((row) => row.employee === person.employee && row.date === date);
               return hit ? hit.score : null;
             }),
-            borderColor: PALETTE[i % PALETTE.length],
-            backgroundColor: PALETTE[i % PALETTE.length],
+            borderColor: tone(i),
+            backgroundColor: tone(i),
+            pointStyle: shapeFor(person.employee || person.name),
+            pointRadius: 4,
+            pointHoverRadius: 6,
             spanGaps: false,
             tension: 0,
           })),
@@ -826,6 +867,12 @@
     renderClients();
     renderSkills();
     bindNav();
+    const syncSticky = () => {
+      const nav = document.querySelector('.pills-wrap');
+      if (nav) document.documentElement.style.setProperty('--sticky-h', `${nav.offsetHeight}px`);
+    };
+    syncSticky();
+    window.addEventListener('resize', syncSticky);
     document.addEventListener('click', (event) => {
       const row = event.target.closest('.mrow');
       if (row && !row.classList.contains('mstatic')) {

@@ -28,7 +28,8 @@ if (which.includes('desk')) await run('desktop', { viewport: { width: 1440, heig
 if (which.includes('phone')) await run('iphone', { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' }, [
   ['home', null],
   ['privfin', async p => { await p.evaluate(() => window.__app.selectRoom('privfin')); await p.waitForTimeout(2500); }],
-  ['proposal', async p => { await p.evaluate(() => window.__app.selectRoom('proposal')); await p.waitForTimeout(2500); }],
+  ['it', async p => { await p.evaluate(() => window.__app.selectRoom('it')); await p.waitForTimeout(2500); }],
+  ['showroom', async p => { await p.evaluate(() => window.__app.selectRoom('showroom')); await p.waitForTimeout(2500); }],
   ['board', async p => { await p.evaluate(() => { window.__app.closePanel(); document.querySelector('[data-view=board]').click(); }); await p.waitForTimeout(1500); }],
 ]);
 await browser.close();

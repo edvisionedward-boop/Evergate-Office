@@ -1,11 +1,16 @@
 :root {
-  --ink: #f8fbff;
-  --muted: rgba(248, 251, 255, .76);
-  --line: rgba(255, 255, 255, .42);
-  --glass: rgba(15, 23, 42, .48);
-  --blue: #3b82f6;
-  --blue-2: #93c5fd;
-  --radius: 16px;
+  --ink: #E0E4E5;
+  --muted: #C7B596;
+  --line: #727C8A;
+  --glass: #242430;
+  --gold: #D0B993;
+  --gold-light: #E6D8C3;
+  --gold-dark: #8A7049;
+  --private: #AEB7C2;
+  --blue: #D0B993;
+  --blue-2: #C7B596;
+  --radius: 12px;
+  --sticky-h: 72px;
   --font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Noto Sans SC", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Microsoft YaHei", sans-serif;
   color-scheme: dark;
 }
@@ -14,17 +19,17 @@ html { overflow-x: clip; }
 html, body { margin: 0; min-height: 100%; }
 body {
   font-family: var(--font);
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.6;
   color: var(--ink);
-  background: #d5e4f2;
+  background: #060606;
   -webkit-text-size-adjust: 100%;
   overflow-wrap: break-word;
 }
 .bg {
   position: fixed;
   inset: 0;
-  background: #d5e4f2 url("./assets/dashboard-bg.jpg") center/cover no-repeat;
+  background: #060606;
   z-index: -2;
 }
 .veil {
@@ -32,8 +37,7 @@ body {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(15, 23, 42, .28), rgba(15, 23, 42, .08) 22%, rgba(15, 23, 42, .16) 100%);
+  background: none;
 }
 .app {
   display: grid;
@@ -73,15 +77,15 @@ body {
   width: 100%;
   min-width: 0;
   margin: 0 auto;
-  padding: max(18px, env(safe-area-inset-top)) 22px calc(36px + env(safe-area-inset-bottom)) 18px;
+  padding: max(24px, env(safe-area-inset-top)) 24px calc(36px + env(safe-area-inset-bottom)) 24px;
 }
 .glass {
-  background: var(--glass);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 16px 44px rgba(15, 23, 42, .16), inset 0 1px 0 rgba(255, 255, 255, .38);
-  backdrop-filter: blur(18px) saturate(1.45);
-  -webkit-backdrop-filter: blur(18px) saturate(1.45);
+  background: #242430;
+  border: 1px solid #727C8A;
+  border-radius: 12px;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass, .rail, .pills { background: rgba(15, 23, 42, .86); }
@@ -159,7 +163,7 @@ h1 { margin: 0; font-size: 26px; line-height: 1.25; font-weight: 700; letter-spa
   align-items: center;
 }
 .pills a.on { background: rgba(255, 255, 255, .94); color: #0f172a; }
-.sec { margin-top: 22px; scroll-margin-top: 78px; min-width: 0; max-width: 100%; }
+.sec { margin-top: 22px; scroll-margin-top: calc(var(--sticky-h) + 12px); min-width: 0; max-width: 100%; }
 h2 {
   display: inline-flex;
   margin: 0 0 12px;
@@ -563,7 +567,7 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
     font-size: 15px;
   }
   .mwho { flex: 1; min-width: 0; }
-  .mwho b { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mwho b { display: block; font-size: 16px; white-space: normal; overflow: visible; text-overflow: unset; }
   .dchip {
     display: inline-block;
     margin-top: 2px;

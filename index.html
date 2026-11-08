@@ -2,10 +2,10 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Evergate AI Office</title>
 <meta name="description" content="EVERGATE HOLDING SDN BHD · 3D AI 虚拟办公室" />
-<meta name="theme-color" content="#070b14" />
+<meta name="theme-color" content="#060606" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -39,10 +39,12 @@
   </header>
 
   <div id="quickbar">
-    <button type="button" id="homeBtn">回到总览</button>
+    <button type="button" id="homeBtn">回到全景</button>
+    <button type="button" id="moreDepts">更多部门</button>
     <div id="quickscroll"></div>
   </div>
 
+  <button type="button" id="feedToggle" class="feedtog" aria-expanded="false" aria-controls="feedTray">查看动态</button>
   <div id="legend">
     <span><i class="dot busy"></i>忙碌</span>
     <span><i class="dot confirm"></i>等你确认</span>
@@ -51,7 +53,7 @@
   </div>
 
   <aside id="panel" class="hidden" aria-live="polite">
-    <div class="grab"></div>
+    <button type="button" class="grab" id="panelExpand" aria-expanded="false">展开</button>
     <button class="close" id="panelClose" aria-label="关闭">✕</button>
     <div id="panelBody"></div>
   </aside>
@@ -93,6 +95,7 @@
 
   <div id="loading"><div class="spin"></div><div>正在布置办公室…</div></div>
 </div>
+<script src="%BASE_URL%brand-theme.js"></script>
 <script type="module" src="/src/main.js"></script>
 </body>
 </html>
