@@ -254,7 +254,6 @@ button{font:inherit;color:inherit}
 .ptag .pn{display:flex;flex-direction:column;align-items:flex-start;font-size:11px;font-weight:700;color:#f8f4ec;line-height:1.15}
 .ptag .prole{font-size:9px;font-weight:700;color:#E87708;letter-spacing:.04em}
 .wact{font-size:10px;font-weight:800;color:#1a1006;background:#E87708;border-radius:999px;padding:0 6px;line-height:1.5}
-.pantry-flag{pointer-events:none;padding:8px 16px;border-radius:999px;background:#E87708;color:#1a1006;font-size:22px;font-weight:800;letter-spacing:.08em;border:2px solid #fff7ed;box-shadow:0 0 22px rgba(232,119,8,.9);white-space:nowrap}
 .pstat{display:inline-block;font-size:9px;font-weight:800;border-radius:999px;padding:0 5px;line-height:1.55;white-space:nowrap;color:#1a1006}
 .st-busy{background:#E87708;color:#1a1006}
 .st-meet{background:#D0B993;color:#1a1006}
