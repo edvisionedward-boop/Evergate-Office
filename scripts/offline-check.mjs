@@ -40,8 +40,8 @@ await page.waitForFunction(() => navigator.serviceWorker.ready.then((reg) => !!(
 const dash = await ctx.newPage();
 await dash.goto(base + 'dashboard.html', { waitUntil: 'load' });
 await dash.waitForFunction(() => {
-  const canvas = document.querySelector('canvas');
-  return !!(canvas && window.Chart && Chart.getChart(canvas));
+  if (!window.Chart) return false;
+  return [...document.querySelectorAll('canvas')].some((canvas) => Chart.getChart(canvas));
 }, null, { timeout: 20000 });
 await page.reload({ waitUntil: 'load' });
 await page.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 20000 });
@@ -57,8 +57,8 @@ const manifest = await page.evaluate(async () => {
 });
 await dash.reload({ waitUntil: 'load' });
 await dash.waitForFunction(() => {
-  const canvas = document.querySelector('canvas');
-  return !!(canvas && window.Chart && Chart.getChart(canvas));
+  if (!window.Chart) return false;
+  return [...document.querySelectorAll('canvas')].some((canvas) => Chart.getChart(canvas));
 }, null, { timeout: 20000 });
 await browser.close();
 preview.kill('SIGTERM');
