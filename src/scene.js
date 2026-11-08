@@ -518,6 +518,12 @@ function personalizeDesk(g, staff, team) {
   const items = [];
   if (team?.id === 'corpfin' || /会计|财务/.test(blob)) items.push('calc');
   if (team?.id === 'legal' || team?.id === 'review' || /法务|审查/.test(blob)) items.push('folder');
+  if (team?.id === 'it') {
+    if (/安全|密钥/.test(blob)) items.push('folder');
+    else if (/运维|服务器/.test(blob)) items.push('notes');
+    else if (/前端|设计/.test(blob)) items.push('pen');
+    else items.push('phone');
+  }
   if (rnd() < 0.5) items.push(rnd() < 0.5 ? 'notes' : 'folder');
   if (rnd() < 0.55) items.push('mug');
   if (rnd() < 0.4) items.push('pen');
@@ -1057,8 +1063,8 @@ function labelEl(def) {
 export const LAYOUT = {
   // North street wall stays; only the outer north wall moves.
   market:   { x: -13.5, z: -14.475, w: 10, d: 13.45, icon: '市', sign: '市场部', signSub: 'MARKETING & RESEARCH' },
-  // Former 投资部 cell. Walled office, no department.
-  vacant:   { x: -13.5, z: 0, w: 10, d: 8.5, icon: '空', color: '#D0B993', minor: true, sign: '空置', signSub: 'EMPTY OFFICE', label: '空置' },
+  // Former 投资部 cell, the only office still empty. The old 法务部 cell north of ED is now 投资部.
+  it:       { x: -13.5, z: 0, w: 10, d: 8.5, icon: 'IT', sign: 'IT部', signSub: 'INFORMATION TECHNOLOGY' },
   legal:    { x: -30.2, z: -8, w: 17.2, d: 14.0, icon: '法', sign: '法务部', signSub: 'LEGAL' },
   // ED's column. South wall locked at z=-7.75. North wall lines up with 市场部 (-21.2).
   // Width stays 11 so the street width W does not change.
@@ -1209,7 +1215,7 @@ export function buildOffice(scene, teams) {
   const holoLight = new THREE.PointLight(HOLO, 0.45, 8, 1.6); holoLight.position.set(0, 3.2, 0); holo.add(holoLight);
 
   const arcs = [];
-  for (const id of ['market', 'legal', 'invest', 'info', 'corpfin', 'logistics', 'privfin', 'design', 'review']) {
+  for (const id of ['market', 'legal', 'invest', 'info', 'corpfin', 'logistics', 'privfin', 'design', 'review', 'it']) {
     const R = rooms[id]; const c = R.def;
     const a = new THREE.Vector3(c.x, 2.9, c.z - c.d * 0.1), b = new THREE.Vector3(0, 2.2 + FLOOR_H, 0);
     const m = a.clone().lerp(b, 0.5); m.y = 6.2;
@@ -1224,7 +1230,7 @@ export function buildOffice(scene, teams) {
 
   /* per-room soft colored lights */
   const roomLights = [];
-  for (const id of ['market', 'legal', 'corpfin', 'logistics', 'privfin', 'invest', 'info', 'design', 'review']) {
+  for (const id of ['market', 'legal', 'corpfin', 'logistics', 'privfin', 'invest', 'info', 'design', 'review', 'it']) {
     const R = rooms[id];
     const warm = R.def.color === ORANGE ? ORANGE : GOLD;
     const pl = new THREE.PointLight(warm, 0.16, 11, 1.6); pl.position.set(R.def.x + 1, 3.4, R.def.z + 1); root.add(pl);
@@ -1254,13 +1260,14 @@ export function buildOffice(scene, teams) {
   const GN = {
     nW: wv(-16.3, -6.15), nM: wv(-7, -6.15), n0: wv(0, -6.15), nE: wv(7, -6.15),
     sW: wv(-20.2, 6.15), sM: wv(-7, 6.15), s0: wv(0, 6.15), sE: wv(7, 6.15), sO: wv(19.7, 6.15),
-    cCorp: wv(-7, 9.3), cRev: wv(-7, 19.55), cLog: wv(7, 9.95),
+    cCorp: wv(-7, 9.3), cRev: wv(-7, 19.55), cLog: wv(7, 9.95), cIt: wv(-13.5, 6.15),
     oLou: wv(19.7, 0), oDes: wv(19.7, 13.05),
     edOut: wv(0, 5.2), edIn: wv(0, 3.75),
   };
   const ADJ = {
     nW: ['nM'], nM: ['nW', 'n0', 'sM'], n0: ['nM', 'nE'], nE: ['n0', 'sE'],
-    sW: ['sM'], sM: ['sW', 's0', 'nM', 'cCorp'], s0: ['sM', 'sE', 'edOut'], sE: ['s0', 'nE', 'sO', 'cLog'],
+    sW: ['sM', 'cIt'], sM: ['sW', 's0', 'nM', 'cCorp', 'cIt'], s0: ['sM', 'sE', 'edOut'], sE: ['s0', 'nE', 'sO', 'cLog'],
+    cIt: ['sW', 'sM'],
     sO: ['sE', 'oLou', 'oDes'], cCorp: ['sM', 'cRev'], cRev: ['cCorp'], cLog: ['sE'],
     oLou: ['sO'], oDes: ['sO'], edOut: ['s0', 'edIn'], edIn: ['edOut'],
   };
@@ -1289,6 +1296,7 @@ export function buildOffice(scene, teams) {
     legal: { out: wv(-20.9, -8), inn: wv(-22.2, -8), node: 'nW', extra: [wv(-20.9, -6.15)] },
     info: { out: wv(13.2, 4.85), inn: wv(13.2, 3.55), node: 'sE', extra: [wv(13.2, 5.5), wv(7, 5.5)] },
     corpfin: { out: wv(-8.0, 9.28), inn: wv(-9.35, 9.28), node: 'cCorp' },
+    it: { out: wv(-13.5, 5.35), inn: wv(-13.5, 3.5), node: 'cIt' },
     logistics: { out: wv(6.2, 9.95), inn: wv(4.65, 9.95), node: 'cLog' },
     review: { out: wv(-8.0, 19.55), inn: wv(-9.7, 19.55), node: 'cRev' },
     design: { out: wv(20.3, 13.05), inn: wv(22.05, 13.05), node: 'oDes' },
@@ -1325,6 +1333,7 @@ export function buildOffice(scene, teams) {
     if (id === 'logistics') return [w(3.65, Math.min(lz, -0.4)), w(3.65, -3.9)];
     if (id === 'review') return [w(3.6, lz), w(3.6, 0)];
     if (id === 'design') return [w(-5.15, lz), w(-5.15, 0)];
+    if (id === 'it') return [w(0, lz), w(0, 3.5)];
     return [];
   }
   function fullPath(person, destId, stand) {
@@ -2355,8 +2364,24 @@ function decorate(R, dyn, teamById) {
     R.lock = lk;
   } else if (id === 'lounge') {
     furnishLounge(g, def);
-  } else if (id === 'vacant') {
-    // Reserved office cell. Walls only, no department and no furniture.
+  } else if (id === 'it') {
+    // Head desk is staff[0], then four staff desks. Center aisle stays open to the south door.
+    const seats = [[-3.15, -2.55], [-3.15, -0.35], [2.55, -2.55], [-3.15, 1.55], [2.55, -0.45]];
+    const kinds = [['code', 'dash'], ['code', 'chart'], ['dash', 'doc'], ['chart', 'doc'], ['doc', 'code']];
+    seats.forEach(([x, z], i) => desks.push(deskSet(g, x, z, 0, t, { kinds: kinds[i], chair: accentChair, papers: i % 2 === 0 })));
+    const tx = 1.85, tz = 2.15;
+    box(g, 1.35, 0.08, 0.72, tx, 0.74, tz, M('#2a241c', { r: .45 }), { round: 0.03, cast: false });
+    for (const [lx, lz] of [[-0.5, -0.22], [0.5, -0.22], [-0.5, 0.22], [0.5, 0.22]]) {
+      cyl(g, 0.06, 0.07, 0.74, tx + lx, 0, tz + lz, M('#1a1a1a'), 8, { cast: false });
+    }
+    chair(g, tx - 0.45, tz - 0.82, Math.PI, accentChair);
+    chair(g, tx + 0.45, tz - 0.82, Math.PI, accentChair);
+    chair(g, tx - 0.45, tz + 0.82, 0, accentChair);
+    chair(g, tx + 0.45, tz + 0.82, 0, accentChair);
+    rug(g, 0, 1.15, 1.15, 4.4, '#102033');
+    serverRack(g, 4.15, 2.55, Math.PI / 2, []);
+    plant(g, -4.2, -3.5, 0.9, 1);
+    floorLamp(g, 0.15, -3.3);
   } else if (id === 'archive') {
     furnishArchive(g, def, dyn, R);
   } else if (id === 'design') {
@@ -2414,6 +2439,7 @@ function decorate(R, dyn, teamById) {
   else if (id === 'market') pendant(g, -3.2, 1.1);
   else if (id === 'legal') pendant(g, -1.2, 2.6);
   else if (id === 'invest') pendant(g, -4.7, -0.4);
+  else if (id === 'it') pendant(g, 3.5, -3.35);
   else if (id !== 'lounge' && id !== 'archive') pendant(g, id === 'ed' ? -1.4 : 0, 0.2);
   if (id === 'ed') pendant(g, 1.4, 0.2);
   const shirts = [shirtA, shirtB, '#e2e8f0'];

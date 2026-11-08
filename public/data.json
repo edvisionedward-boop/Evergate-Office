@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-08T21:42:22+08:00",
+  "updatedAt": "2026-11-08T22:00:48+08:00",
   "workRules": {
     "taskPoints": 1.0,
     "mistakePoints": -0.3,
@@ -204,7 +204,8 @@
           "corpfin",
           "legal",
           "logistics",
-          "review"
+          "review",
+          "it"
         ]
       },
       {
@@ -1121,6 +1122,98 @@
         }
       ],
       "score": null
+    },
+    {
+      "id": "it",
+      "name": "IT部",
+      "short": "IT",
+      "color": "#7eb6d6",
+      "status": "idle",
+      "statusNote": "空闲",
+      "agents": 5,
+      "private": false,
+      "duty": "技术方案、开发、运维与安全",
+      "gradeNote": "待周一例会后首次评定",
+      "gradedAt": null,
+      "staff": [
+        {
+          "id": "it-1",
+          "name": "IT总监",
+          "chip": "IT总监",
+          "role": "统筹与技术方案",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
+        },
+        {
+          "id": "it-2",
+          "name": "开发工程师",
+          "chip": "开发",
+          "role": "后端与工具部署",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
+        },
+        {
+          "id": "it-3",
+          "name": "前端设计工程师",
+          "chip": "前端",
+          "role": "3D办公室与Dashboard界面",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
+        },
+        {
+          "id": "it-4",
+          "name": "系统运维",
+          "chip": "运维",
+          "role": "服务器、部署与监控",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
+        },
+        {
+          "id": "it-5",
+          "name": "安全工程师",
+          "chip": "安全",
+          "role": "安全审查与密钥管理",
+          "gradeNote": "待周一例会后首次评定",
+          "gradedAt": null,
+          "score": null,
+          "tasksDone": 0,
+          "mistakes": 0,
+          "workScore": 0,
+          "extraPenalty": 0,
+          "overtimeHours": 0,
+          "consecutiveFailures": 0
+        }
+      ],
+      "score": null,
+      "note": "新设编制 5 人 · 11-08"
     }
   ],
   "tasks": [

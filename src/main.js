@@ -560,10 +560,6 @@ function renderPanel(id) {
       `<div class="sec"><div class="card empty">当前 ${n} 人在休息室</div></div>`;
     return;
   }
-  if (id === 'vacant') {
-    body.innerHTML = `<div class="ph" style="--c:#D0B993"><div class="ic">空</div><div><h3>空置</h3><div class="sub">空办公室 · 暂未分配部门</div></div></div><div class="sec"><div class="card empty">这间房暂时空着，还没有分配部门。</div></div>`;
-    return;
-  }
   if (!t) {
     const m = MINOR[id]; const c = office.rooms[id]?.def.color ?? '#D0B993';
     body.innerHTML = `<div class="ph" style="--c:${c}"><div class="ic">·</div><div><h3>${esc(m?.name ?? id)}</h3><div class="sub">公共区域</div></div></div><div class="sec"><div class="card empty">${esc(m?.text ?? '')}</div></div>`;
