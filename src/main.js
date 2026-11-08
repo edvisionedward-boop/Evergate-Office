@@ -439,6 +439,7 @@ function scheduleRefit() {
   clearTimeout(refitTimer);
   refitTimer = setTimeout(() => {
     if (!viewReady) return;
+    if (window.__holdCam && !state.selected) return;
     measureChrome();
     if (state.selected && office.rooms[state.selected]) focusRoom(state.selected, false);
     else goHome(false);

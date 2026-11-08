@@ -87,6 +87,7 @@ async function bootOffice(w, h, now) {
 async function aim(page, target, pos) {
   await page.evaluate(({ target, pos }) => {
     document.querySelector('#scene').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 1, clientX: 4, clientY: 4 }));
+    window.__holdCam = true;
     window.__app.hidePanel?.();
     window.__app.controls.target.set(target[0], target[1], target[2]);
     window.__app.camera.position.set(pos[0], pos[1], pos[2]);
