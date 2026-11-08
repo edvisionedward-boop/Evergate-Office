@@ -721,7 +721,7 @@ function openView(v) {
     $('#directory').classList.add('hidden');
   }
 }
-document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => openView(b.dataset.view)));
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { if (b.dataset.view) openView(b.dataset.view); }));
 $('#navfabBtn').addEventListener('click', () => {
   const menu = $('#navfabMenu');
   const open = menu.classList.toggle('hidden') === false;

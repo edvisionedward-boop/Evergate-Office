@@ -25,6 +25,7 @@ button{font:inherit;color:inherit}
 .t2{font-size:10.5px;color:var(--mut);letter-spacing:.6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tabs{margin-left:auto;display:flex;background:rgba(15,23,42,.8);border:1px solid var(--line);border-radius:12px;padding:3px}
 .tab{border:0;background:transparent;padding:7px 14px;border-radius:9px;font-size:13px;color:var(--mut);cursor:pointer;display:flex;align-items:center;gap:6px}
+a.tab{text-decoration:none}
 .tab.active{background:rgba(255,255,255,.09);color:var(--tx)}
 .badge{background:var(--confirm);color:#fff;font-size:10.5px;border-radius:9px;padding:1px 6px;font-weight:700}
 .daytog{border:1px solid var(--line);background:rgba(15,23,42,.82);color:var(--tx);border-radius:12px;padding:6px 10px;cursor:pointer;font-size:13px;pointer-events:auto}
@@ -161,8 +162,8 @@ button{font:inherit;color:inherit}
   display:flex;flex-direction:column;align-items:flex-end;gap:8px;-webkit-transform:translateZ(0);transform:translateZ(0)}
 #navfabBtn{width:48px;height:48px;border-radius:16px;border:1px solid var(--line);background:rgba(13,18,32,.94);color:#fff;font-size:18px;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.5)}
 #navfabMenu{display:flex;flex-direction:column;gap:6px;background:rgba(13,18,32,.96);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.45)}
-#navfabMenu button{border:0;background:transparent;color:var(--tx);text-align:left;padding:10px 14px;border-radius:10px;cursor:pointer;font-size:14px;min-width:132px}
-#navfabMenu button:active{background:rgba(255,255,255,.08)}
+#navfabMenu button,#navfabMenu a{border:0;background:transparent;color:var(--tx);text-align:left;padding:10px 14px;border-radius:10px;cursor:pointer;font-size:14px;min-width:132px;text-decoration:none}
+#navfabMenu button:active,#navfabMenu a:active{background:rgba(255,255,255,.08)}
 #navfabMenu.hidden{display:none}
 
 .hidden{opacity:0;pointer-events:none!important}
@@ -195,8 +196,8 @@ button{font:inherit;color:inherit}
   #topbar{flex-wrap:wrap;gap:8px 10px;padding-bottom:8px;z-index:48}
   .summary{display:flex}
   .summary .pill:not(.teams){display:none}
-  .tabs{margin-left:0;width:100%}
-  .tab{flex:1;justify-content:center;padding:6px 4px;font-size:12px}
+  .tabs{margin-left:0;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tab{flex:1 0 auto;justify-content:center;padding:6px 10px;font-size:12px;white-space:nowrap}
   .t1{font-size:14px}
   #legend{font-size:10.5px;gap:9px;padding:6px 10px;left:50%;transform:translateX(-50%);white-space:nowrap}
   #panel{top:auto;left:0;right:0;bottom:0;max-height:56vh;border-radius:22px 22px 0 0;padding:14px 16px calc(18px + var(--sab));border-bottom:0}

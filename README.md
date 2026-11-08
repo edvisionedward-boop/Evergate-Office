@@ -10,4 +10,5 @@
 - Build: `npm ci && npm run build` → `dist/index.html` (single file, all JS/CSS inlined, data.json embedded as fallback) + standalone `dist/data.json`, `dist/manifest.webmanifest`, `dist/icons/`
 - Host: GitHub Actions deploys `dist/` to GitHub Pages at https://edvisionedward-boop.github.io/Evergate-Office/ (Vite `base` is `/Evergate-Office/`). On iPhone Safari → Share → 添加到主屏幕.
 - Update data without code changes: edit `public/data.json` and push to `main`. The workflow republishes that file as `/Evergate-Office/data.json`. The app fetches it on load and again every 60 seconds.
+- Dashboard: `public/dashboard.html` is published as https://edvisionedward-boop.github.io/Evergate-Office/dashboard.html (a Dashboard link in the office top nav opens it). It reads `data.json` plus `data/progress.json`, `data/usage.json`, `data/exams.json`, and `data/pipeline.json`. Chart.js 4.4.6 (MIT) is vendored at `public/vendor/chart.umd.min.js`. The blurred interior background is original (`public/assets/dashboard-bg.jpg`, see `dashboard-bg.txt`).
 - Screenshots: `node scripts/shot.mjs http://127.0.0.1:4173/Evergate-Office/ screens desk,phone`

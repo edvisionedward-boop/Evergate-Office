@@ -1,0 +1,76 @@
+{
+  "timezone": "Asia/Kuala_Lumpur",
+  "updatedAt": "2026-11-08",
+  "milestones": [
+    {
+      "date": "2026-11-05",
+      "title": "公司完成改组，各部门 AI 团队上线",
+      "status": "done"
+    },
+    {
+      "date": "2026-11-06",
+      "title": "3D 办公室上线，开始自动计算工时分",
+      "status": "done"
+    },
+    {
+      "date": "2026-11-07",
+      "title": "茶水间与每周技能分享制度批准",
+      "status": "done"
+    },
+    {
+      "date": "2026-11-08",
+      "title": "第一批开源技能安装给信息部、投资部、市场部、物流部、设计部",
+      "status": "done"
+    },
+    {
+      "date": "2026-11-09",
+      "title": "复工，提交 Morphic 与 God's Eye View 评估方案",
+      "status": "planned"
+    },
+    {
+      "date": "2026-11-16",
+      "title": "考核评估与全员考核",
+      "status": "planned"
+    }
+  ],
+  "devTasks": [
+    {
+      "title": "3D 办公室工时分自动累加与人仔拟人化",
+      "status": "done",
+      "doneOn": "2026-11-08",
+      "pr": 25
+    },
+    {
+      "title": "茶水间还原与会议桌重排",
+      "status": "done",
+      "doneOn": "2026-11-08",
+      "pr": 26
+    },
+    {
+      "title": "公司 Dashboard",
+      "status": "doing",
+      "note": "本 PR"
+    },
+    {
+      "title": "Morphic 自建评估",
+      "status": "doing",
+      "due": "2026-11-09",
+      "owner": "ED"
+    },
+    {
+      "title": "God's Eye View 物流追踪评估与成本测算",
+      "status": "doing",
+      "owner": "会计部 + ED"
+    },
+    {
+      "title": "第二批技能（会计部、审查部、法务部）",
+      "status": "todo"
+    },
+    {
+      "title": "AI 网关选型 LiteLLM",
+      "status": "done",
+      "doneOn": "2026-11-08",
+      "note": "已完成调研"
+    }
+  ]
+}
