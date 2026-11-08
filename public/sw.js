@@ -1,6 +1,8 @@
 /* Bump this name to drop previously cached builds on the next visit. */
 const CACHE = 'evergate-office-v73';
 const PRECACHE = [
+  'index.html',
+  'manifest.webmanifest',
   'dashboard.html',
   'dashboard.css',
   'dashboard.js',

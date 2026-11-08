@@ -1075,7 +1075,10 @@ $('#feedToggle')?.addEventListener('click', () => {
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
   if (activeBubbles.length) $('#feedToggle')?.click();
-  if (!$('#panel').classList.contains('hidden')) { closePanel(); $('#panelClose')?.focus(); }
+  if (!$('#panel').classList.contains('hidden')) {
+    closePanel();
+    ($('#homeBtn') || $('#feedToggle'))?.focus();
+  }
 });
 
 /* ---------- speech bubbles ---------- */
@@ -1154,6 +1157,19 @@ function packNarrowLabels() {
     const pair = collide(boxes());
     if (!pair) break;
     loser(pair[0], pair[1]).el.classList.add('packed-hide');
+  }
+  const chrome = () => ['#topbar', '#quickbar', '#legend', '#feedToggle', '#panel'].map((sel) => {
+    const el = document.querySelector(sel);
+    if (!el || el.classList.contains('hidden')) return null;
+    const r = el.getBoundingClientRect();
+    return r.width > 2 && r.height > 2 ? r : null;
+  }).filter(Boolean);
+  const hitsChrome = (r) => chrome().some((c) => rectsOverlap(r, c));
+  for (let pass = 0; pass < list.length; pass++) {
+    const hit = boxes().find((x) => hitsChrome(x.r));
+    if (!hit) break;
+    if (!hit.el.classList.contains('icononly')) hit.el.classList.add('icononly');
+    else hit.el.classList.add('packed-hide');
   }
   for (let pass = 0; pass < list.length; pass++) {
     const items = boxes();
@@ -1310,6 +1326,7 @@ function tickBubbles(dt) {
     if (b.life < 0.4 && !b.el.classList.contains('out')) b.el.classList.add('out');
     if (b.life <= 0) { b.o.parent?.remove(b.o); b.el.remove(); activeBubbles.splice(i, 1); }
   }
+  if (!activeBubbles.length) $('#feedToggle')?.setAttribute('aria-expanded', 'false');
 }
 
 /* ---------- data loading ---------- */

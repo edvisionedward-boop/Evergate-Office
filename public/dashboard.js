@@ -16,15 +16,31 @@
   function tone(i) { return GOLD_SERIES[i % GOLD_SERIES.length]; }
   function drawMark(ctx, shape, x, y, r, color) {
     ctx.save();
+    ctx.translate(x, y);
     ctx.fillStyle = color;
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
-    if (shape === 'rect' || shape === 'rectRot') ctx.rect(x - r, y - r, r * 2, r * 2);
-    else if (shape === 'triangle') { ctx.moveTo(x, y - r); ctx.lineTo(x + r, y + r); ctx.lineTo(x - r, y + r); ctx.closePath(); }
-    else if (shape === 'cross' || shape === 'star') { ctx.moveTo(x - r, y); ctx.lineTo(x + r, y); ctx.moveTo(x, y - r); ctx.lineTo(x, y + r); }
-    else ctx.arc(x, y, r, 0, Math.PI * 2);
-    if (shape === 'cross' || shape === 'star') ctx.stroke();
+    if (shape === 'rect') ctx.rect(-r, -r, r * 2, r * 2);
+    else if (shape === 'rectRot') {
+      ctx.moveTo(0, -r * 1.3); ctx.lineTo(r * 1.3, 0); ctx.lineTo(0, r * 1.3); ctx.lineTo(-r * 1.3, 0); ctx.closePath();
+    } else if (shape === 'triangle') {
+      ctx.moveTo(0, -r); ctx.lineTo(r, r * 0.9); ctx.lineTo(-r, r * 0.9); ctx.closePath();
+    } else if (shape === 'cross') {
+      ctx.moveTo(-r, 0); ctx.lineTo(r, 0); ctx.moveTo(0, -r); ctx.lineTo(0, r);
+    } else if (shape === 'star') {
+      let rot = -Math.PI / 2;
+      const step = Math.PI / 5;
+      for (let i = 0; i < 10; i++) {
+        const rad = i % 2 === 0 ? r : r * 0.42;
+        const px = Math.cos(rot) * rad;
+        const py = Math.sin(rot) * rad;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        rot += step;
+      }
+      ctx.closePath();
+    } else ctx.arc(0, 0, r, 0, Math.PI * 2);
+    if (shape === 'cross') ctx.stroke();
     else ctx.fill();
     ctx.restore();
   }
@@ -43,13 +59,39 @@
       Chart.register({
         id: 'brandShapes',
         afterDatasetsDraw(chart) {
-          if (chart.config.type === 'line') return;
-          const meta = chart.getDatasetMeta(0);
-          if (!meta) return;
-          meta.data.forEach((el, i) => {
-            const id = chart.data.shapeIds?.[i] || chart.data.labels?.[i];
-            const p = el.getProps(['x', 'y'], true);
-            drawMark(chart.ctx, shapeFor(id), p.x, p.y, 5, '#E6D8C3');
+          const type = chart.config.type;
+          const ctx = chart.ctx;
+          if (type === 'line') {
+            ctx.save();
+            ctx.font = '12px ' + FONT;
+            ctx.textBaseline = 'middle';
+            chart.data.datasets.forEach((ds, di) => {
+              const meta = chart.getDatasetMeta(di);
+              if (!meta || meta.hidden) return;
+              const last = [...meta.data].reverse().find((pt) => pt && !pt.skip);
+              if (!last) return;
+              const p = last.getProps(['x', 'y'], true);
+              ctx.fillStyle = ds.borderColor || '#D0B993';
+              ctx.fillText(ds.label || '', p.x + 8, p.y);
+            });
+            ctx.restore();
+            return;
+          }
+          chart.data.datasets.forEach((ds, di) => {
+            const meta = chart.getDatasetMeta(di);
+            if (!meta || meta.hidden) return;
+            meta.data.forEach((el, i) => {
+              const id = ds.shapeIds?.[i] || chart.data.shapeIds?.[i] || chart.data.labels?.[i] || ds.label;
+              const color = Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : (ds.borderColor || '#E6D8C3');
+              if (type === 'doughnut' || type === 'pie') {
+                const mid = ((el.startAngle || 0) + (el.endAngle || 0)) / 2;
+                const rad = ((el.outerRadius || 0) + (el.innerRadius || 0)) / 2;
+                drawMark(ctx, shapeFor(id), el.x + Math.cos(mid) * rad, el.y + Math.sin(mid) * rad, 5, color || '#E6D8C3');
+              } else {
+                const p = el.getProps(['x', 'y'], true);
+                drawMark(ctx, shapeFor(id), p.x, p.y, 5, color || '#E6D8C3');
+              }
+            });
           });
         },
       });
@@ -212,7 +254,7 @@
     if (document.getElementById('sparkDone') && done.length) {
       const dLabels = done.map((task) => M.fmtKL(Date.parse(task.updatedAt)));
       const dValues = done.map((_, i) => i + 1);
-      upsert('sparkDone', () => sparkConfig(dLabels, dValues, '#34d399'));
+      upsert('sparkDone', () => sparkConfig(dLabels, dValues, '#D0B993', '完成'));
       setSeries('sparkDone', dLabels, dValues);
     }
     const ranks = M.departmentRanks(state.data.teams, rules, clock.nowMs);
@@ -237,8 +279,8 @@
               label: '公司总分',
               data: values,
               tension: 0,
-              borderColor: '#60a5fa',
-              backgroundColor: 'rgba(96,165,250,.2)',
+              borderColor: '#D0B993',
+              backgroundColor: 'rgba(208,185,147,.22)',
               fill: true,
               pointRadius: 2,
               pointBackgroundColor: '#fff',
@@ -248,6 +290,7 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: { padding: { right: 72 } },
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => M.fmtScore(c.raw) } } },
             scales: {
               x: { ...axis(), ticks: { ...axis().ticks, maxTicksLimit: 6, callback(v) { return String(this.getLabelForValue(v)).slice(5); } } },
@@ -302,17 +345,18 @@
     requestAnimationFrame(() => charts.rankChart && charts.rankChart.resize());
   }
 
-  function sparkConfig(labels, data, color) {
-    const line = color || '#93c5fd';
+  function sparkConfig(labels, data, color, name) {
+    const line = color || '#D0B993';
     return {
       type: 'line',
       data: {
         labels,
         datasets: [{
+          label: name || '总分',
           data,
           tension: 0.25,
           borderColor: line,
-          backgroundColor: 'rgba(147,197,253,.18)',
+          backgroundColor: 'rgba(208,185,147,.18)',
           fill: true,
           pointRadius: 0,
           borderWidth: 2,
@@ -322,6 +366,7 @@
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: Chart.defaults.animation.duration },
+        layout: { padding: { right: 36 } },
         plugins: { legend: { display: false }, tooltip: { enabled: false } },
         scales: { x: { display: false }, y: { display: false } },
       },
@@ -565,7 +610,7 @@
         type: 'bar',
         data: {
           labels: ['进行中', '等你确认', '已完成'],
-          datasets: [{ data: [counts.doing, counts.confirm, counts.done], backgroundColor: ['#3b82f6', '#D0B993', '#34d399'], borderRadius: 10, maxBarThickness: 48 }],
+          datasets: [{ data: [counts.doing, counts.confirm, counts.done], backgroundColor: ['#A98B5E', '#D0B993', '#E6D8C3'], borderRadius: 10, maxBarThickness: 48 }],
         },
         options: {
           responsive: true,
@@ -622,7 +667,7 @@
       type: 'doughnut',
       data: {
         labels: ['已用', '按百分比剩下的部分'],
-        datasets: [{ data: [used, rest], backgroundColor: ['#3b82f6', 'rgba(255,255,255,.16)'], borderWidth: 0 }],
+        datasets: [{ data: [used, rest], backgroundColor: ['#D0B993', 'rgba(255,255,255,.16)'], borderWidth: 0 }],
       },
       options: { responsive: true, maintainAspectRatio: false, cutout: '74%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } } },
     });
@@ -691,7 +736,7 @@
       type: 'bar',
       data: {
         labels: bars.map((row) => row.name),
-        datasets: [{ data: bars.map((row) => row.score), backgroundColor: '#60a5fa', borderRadius: 8, maxBarThickness: 28 }],
+        datasets: [{ data: bars.map((row) => row.score), backgroundColor: '#D0B993', borderRadius: 8, maxBarThickness: 28 }],
       },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ...axis(), grid: { display: false } }, y: axis() } },
     });
@@ -716,7 +761,7 @@
             tension: 0,
           })),
         },
-        options: { responsive: true, maintainAspectRatio: false, scales: { x: axis(), y: axis() } },
+        options: { responsive: true, maintainAspectRatio: false, layout: { padding: { right: 72 } }, scales: { x: axis(), y: axis() } },
       });
     } else {
       const canvas = document.getElementById('examLine');

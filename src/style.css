@@ -3,6 +3,8 @@
   --busy:#E87708; --confirm:#D0B993; --idle:#efe4cf; --gold:#D0B993; --gold-light:#E6D8C3; --gold-dark:#8A7049; --private:#AEB7C2; --ink:#1a140c;
   --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
   --sal:env(safe-area-inset-left,0px); --sar:env(safe-area-inset-right,0px);
+  --topbar-h:calc(72px + env(safe-area-inset-top,0px));
+  --safe-bottom-controls:calc(120px + env(safe-area-inset-bottom,0px));
   font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Noto Sans SC","Microsoft YaHei",sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -266,7 +268,7 @@ a.tab{text-decoration:none;color:var(--mut)}
 .pstat{display:inline-block;font-size:9px;font-weight:800;border-radius:999px;padding:0 5px;line-height:1.55;white-space:nowrap;color:#1a1006}
 .st-busy{background:#E87708;color:#1a1006}
 .st-meet{background:#D0B993;color:#1a1006}
-.st-report{background:#7eb6d6;color:#0c1824}
+.st-report{background:#C7B596;color:#1a140c}
 .st-errand{background:#c4b5fd;color:#1e1b4b}
 .st-coffee{background:#b45309;color:#fff7ed}
 .st-rest{background:#86efac;color:#052e16}

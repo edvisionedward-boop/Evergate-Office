@@ -1,10 +1,49 @@
+import { chromium } from 'playwright-core';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
+import net from 'node:net';
+
 const sw = fs.readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8');
-const index = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const dash = fs.readFileSync(new URL('../public/dashboard.html', import.meta.url), 'utf8');
 if (!sw.includes("const CACHE = 'evergate-office-v73'")) throw new Error('cache is not v73');
-if (!sw.includes('brand-theme.js')) throw new Error('theme missing from precache');
-if (!index.includes('brand-theme.js')) throw new Error('office page missing theme');
-if (!dash.includes('brand-theme.js')) throw new Error('dashboard missing theme');
-if (index.includes('user-scalable=no')) throw new Error('zoom lock still present');
-console.log(JSON.stringify({ ok: true, cache: 'evergate-office-v73', pages: ['index.html', 'dashboard.html'] }));
+if (!sw.includes('index.html')) throw new Error('index.html missing from precache');
+if (!sw.includes('manifest.webmanifest')) throw new Error('manifest missing from precache');
+
+const port = 4219;
+const base = `http://127.0.0.1:${port}/Evergate-Office/`;
+const preview = spawn('npx', ['vite', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
+  cwd: new URL('..', import.meta.url).pathname,
+  stdio: 'ignore',
+});
+function waitPort() {
+  return new Promise((resolve, reject) => {
+    const started = Date.now();
+    const tick = () => {
+      const socket = net.connect(port, '127.0.0.1');
+      socket.on('connect', () => { socket.end(); resolve(); });
+      socket.on('error', () => {
+        socket.destroy();
+        if (Date.now() - started > 20000) reject(new Error('preview did not start'));
+        else setTimeout(tick, 200);
+      });
+    };
+    tick();
+  });
+}
+await waitPort();
+const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'] });
+const ctx = await browser.newContext({ serviceWorkers: 'allow' });
+const page = await ctx.newPage();
+const errors = [];
+page.on('pageerror', (e) => errors.push(e.message));
+await page.goto(base, { waitUntil: 'load' });
+await page.waitForFunction(() => navigator.serviceWorker.ready.then((reg) => !!(reg && reg.active)), null, { timeout: 20000 });
+await page.reload({ waitUntil: 'load' });
+await page.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 20000 });
+await ctx.setOffline(true);
+const home = await page.reload({ waitUntil: 'load' }).then(() => page.title()).catch((err) => { throw new Error('offline index.html failed: ' + err.message); });
+const dash = await ctx.newPage();
+const dashTitle = await dash.goto(base + 'dashboard.html', { waitUntil: 'load' }).then(() => dash.title()).catch((err) => { throw new Error('offline dashboard.html failed: ' + err.message); });
+await browser.close();
+preview.kill('SIGTERM');
+if (!home || !dashTitle) throw new Error('offline page had no title');
+console.log(JSON.stringify({ ok: true, cache: 'evergate-office-v73', offline: { index: home, dashboard: dashTitle }, errors }));
