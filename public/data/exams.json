@@ -1,12 +1,9 @@
 {
-  "schemaVersion": 1,
-  "description": "全员考核成绩。每条记录是一名员工在某一天的分数。没有成绩就不要写入。私人助理不写入。",
+  "fields": ["employee", "date", "score"],
+  "employee": "data.json teams[].staff[].id",
+  "date": "考核日 YYYY-MM-DD，马来西亚时间",
+  "score": "成绩数字",
   "baselineDate": "2026-11-16",
-  "baselineNote": "首次全员考核 2026-11-16（周一），当天成绩为基准线，之后定期复测对比成长",
-  "records": [],
-  "recordShape": {
-    "employeeId": "data.json 里 teams[].staff[].id，不要写私人助理",
-    "date": "YYYY-MM-DD",
-    "score": "数字。基准日 2026-11-16 的分数作为之后对比的基准线"
-  }
+  "empty": "首次全员考核 2026-11-16（周一），当天成绩为基准线，之后定期复测对比成长",
+  "records": []
 }

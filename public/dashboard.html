@@ -1,87 +1,71 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>EVERGATE 公司 Dashboard</title>
-<meta name="description" content="EVERGATE 公司 Dashboard：分数与工时、任务、用量、考核与客户进度。" />
-<meta name="theme-color" content="#102033" />
-<meta name="color-scheme" content="dark" />
-<meta name="format-detection" content="telephone=no" />
-<link rel="icon" href="icons/favicon.png" />
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-<link rel="stylesheet" href="dashboard/app.css" />
+<meta name="description" content="EVERGATE 公司指挥台：进展、人员、任务、用量与考核。">
+<meta name="theme-color" content="#c5d8ea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<link rel="icon" href="./icons/favicon.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="stylesheet" href="./dashboard.css">
 </head>
 <body>
-<!-- Background photo: original generated lounge interior at dashboard/bg.jpg. Not hotlinked. -->
-<div class="bg" aria-hidden="true"></div>
-<div class="shade" aria-hidden="true"></div>
-
-<div class="shell">
-  <header class="top">
-    <div class="toprow">
-      <a class="back" href="index.html">返回 3D 办公室</a>
-      <p class="updated" id="updated">数据更新 — (UTC+8)</p>
+<div class="bg" role="presentation"></div>
+<div class="veil" role="presentation"></div>
+<div class="app">
+  <nav class="rail" aria-label="分区图标">
+    <a href="#overview" data-sec="overview" aria-label="总览" title="总览"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></a>
+    <a href="#progress" data-sec="progress" aria-label="公司进展" title="公司进展"><svg viewBox="0 0 24 24"><path d="M12 3v18"/><circle cx="12" cy="7" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="17" r="2.2"/></svg></a>
+    <a href="#people" data-sec="people" aria-label="人员进展" title="人员进展"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="16.5" cy="9" r="2.2"/><path d="M3.6 19c.7-3 3-4.6 5.4-4.6s4.7 1.6 5.4 4.6"/><path d="M14 14.7c1.7-.4 3.4.3 4.4 2.3"/></svg></a>
+    <a href="#dev" data-sec="dev" aria-label="开发任务" title="开发任务"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="16" rx="1.2"/><rect x="10" y="4" width="5" height="11" rx="1.2"/><rect x="17" y="4" width="4" height="14" rx="1.2"/></svg></a>
+    <a href="#tasks" data-sec="tasks" aria-label="任务与完成报告" title="任务与完成报告"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M8 12.4l2.4 2.4L16.2 9"/></svg></a>
+    <a href="#usage" data-sec="usage" aria-label="成本与 Token 用量" title="成本与 Token 用量"><svg viewBox="0 0 24 24"><path d="M5 16a8 8 0 1 1 14 0"/><path d="M12 16l4.2-5"/></svg></a>
+    <a href="#exams" data-sec="exams" aria-label="考核与技能成长" title="考核与技能成长"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="4.5"/><path d="M8.6 13.2L7.2 20.5 12 18.2l4.8 2.3-1.4-7.3"/></svg></a>
+    <a href="#clients" data-sec="clients" aria-label="客户开发" title="客户开发"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/><path d="M8 12h2M14 12h2"/></svg></a>
+  </nav>
+  <div class="main">
+    <header class="top glass">
+      <div>
+        <div class="brandline"><i class="mark" aria-hidden="true"></i><h1>EVERGATE 公司 Dashboard</h1></div>
+        <p class="hello" id="hello" aria-live="polite"></p>
+        <p class="sub" id="clock"></p>
+      </div>
+      <div class="top-meta">
+        <p class="updated" id="updated">数据更新 …（UTC+8）</p>
+        <a class="back" href="./index.html">返回 3D 办公室</a>
+      </div>
+    </header>
+    <div class="pills-wrap">
+      <nav class="pills" aria-label="分区">
+        <a href="#overview" data-sec="overview">总览</a>
+        <a href="#progress" data-sec="progress">公司进展</a>
+        <a href="#people" data-sec="people">人员进展</a>
+        <a href="#dev" data-sec="dev">开发任务</a>
+        <a href="#tasks" data-sec="tasks">任务与完成报告</a>
+        <a href="#usage" data-sec="usage">成本与 Token</a>
+        <a href="#exams" data-sec="exams">考核与技能</a>
+        <a href="#clients" data-sec="clients">客户开发</a>
+      </nav>
     </div>
-    <h1>EVERGATE 公司 Dashboard</h1>
-    <p class="hello" id="hello">您好，Edward</p>
-    <nav class="pills" aria-label="栏目">
-      <a href="#scores">分数与工时</a>
-      <a href="#tasks">任务进度</a>
-      <a href="#usage">用量</a>
-      <a href="#exams">考核</a>
-      <a href="#pipeline">客户</a>
-    </nav>
-  </header>
-
-  <aside class="side" aria-label="栏目">
-    <a href="#scores" aria-label="分数与工时" title="分数与工时"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg></a>
-    <a href="#tasks" aria-label="任务进度与完成报告" title="任务进度"><svg viewBox="0 0 24 24"><path d="M8 6h11M8 12h11M8 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg></a>
-    <a href="#usage" aria-label="成本与 Token 用量" title="用量"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-2"/></svg></a>
-    <a href="#exams" aria-label="考核成绩与技能成长" title="考核"><svg viewBox="0 0 24 24"><path d="M4 16l5-5 3 3 8-8"/><path d="M14 6h6v6"/></svg></a>
-    <a href="#pipeline" aria-label="客户开发进度" title="客户"><svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="2.2"/><circle cx="16" cy="9" r="2.2"/><path d="M4.5 18c.6-2.2 2.2-3.3 3.5-3.3S11 15.8 11.5 18M12.5 18c.6-2.2 2.2-3.3 3.5-3.3s2.9 1.1 3.5 3.3"/></svg></a>
-  </aside>
-
-  <main>
-    <section id="scores" class="block" aria-labelledby="scoresTitle">
-      <div class="block-h">
-        <h2 id="scoresTitle">分数与工时</h2>
-      </div>
-      <div id="scoreBody" class="slot" aria-live="polite">正在读取办公室数据…</div>
-    </section>
-
-    <section id="tasks" class="block" aria-labelledby="tasksTitle">
-      <div class="block-h">
-        <h2 id="tasksTitle">任务进度与完成报告</h2>
-      </div>
-      <div id="taskBody" class="slot" aria-live="polite">正在读取任务板…</div>
-    </section>
-
-    <section id="usage" class="block" aria-labelledby="usageTitle">
-      <div class="block-h">
-        <h2 id="usageTitle">成本与 Token 用量</h2>
-      </div>
-      <div id="usageBody" class="slot" aria-live="polite">正在读取用量日报…</div>
-    </section>
-
-    <section id="exams" class="block" aria-labelledby="examsTitle">
-      <div class="block-h">
-        <h2 id="examsTitle">考核成绩与技能成长</h2>
-      </div>
-      <div id="examBody" class="slot" aria-live="polite">正在读取考核档案…</div>
-    </section>
-
-    <section id="pipeline" class="block" aria-labelledby="pipeTitle">
-      <div class="block-h">
-        <h2 id="pipeTitle">客户开发进度</h2>
-      </div>
-      <div id="pipeBody" class="slot" aria-live="polite">正在读取客户进度…</div>
-    </section>
-
-    <p class="foot"><a href="index.html">返回 3D 办公室</a></p>
-  </main>
+    <noscript><p class="glass pad">需要打开 JavaScript 才能读取公司数据。</p></noscript>
+    <section class="sec" id="overview"><h2>总览</h2><div id="overviewBody" class="wait">正在读取公司数据…</div></section>
+    <section class="sec" id="progress"><h2>公司进展</h2><div id="progressBody" class="wait">正在读取公司数据…</div></section>
+    <section class="sec" id="people"><h2>人员进展</h2><div id="peopleBody" class="wait">正在读取公司数据…</div></section>
+    <section class="sec" id="dev"><h2>开发任务</h2><div id="devBody" class="wait">正在读取公司数据…</div></section>
+    <section class="sec" id="tasks"><h2>任务与完成报告</h2><div id="tasksBody" class="wait">正在读取公司数据…</div></section>
+    <section class="sec" id="usage"><h2>成本与 Token 用量</h2><div id="usageBody" class="wait">正在读取公司数据…</div></section>
+    <section class="sec" id="exams"><h2>考核与技能成长</h2><div id="examsBody" class="wait">正在读取公司数据…</div></section>
+    <section class="sec" id="clients"><h2>客户开发</h2><div id="clientsBody" class="wait">正在读取公司数据…</div></section>
+    <p class="foot"><a class="back" href="./index.html">返回 3D 办公室</a></p>
+  </div>
 </div>
-<noscript><p class="noscript">需要打开 JavaScript 才能读取办公室数据。本页不会自己编造数字。</p></noscript>
-<script type="module" src="dashboard/app.js"></script>
+<script src="./dashboard-model.js"></script>
+<script src="./vendor/chart.umd.min.js"></script>
+<script src="./dashboard.js"></script>
 </body>
 </html>
