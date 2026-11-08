@@ -689,6 +689,59 @@
     }
   }
 
+  function skillDeptLabel(team) {
+    return team.id === 'ed' ? 'ED' : team.name;
+  }
+  function skillDepartments() {
+    return (state.data?.teams || []).filter((team) => !team.private);
+  }
+  function skillApplies(skill, label) {
+    const depts = skill.depts || [];
+    return depts.includes('全公司') || depts.includes(label);
+  }
+  function renderSkills() {
+    const doc = state.skills;
+    const body = $('#skillsBody');
+    if (!doc || doc.__error || !Array.isArray(doc.skills) || !Array.isArray(doc.packs)) {
+      body.innerHTML = `<div class="glass pad">${emptyBlock('暂无数据', '技能清单还没有写入。')}</div>`;
+      return;
+    }
+    const packs = doc.packs;
+    const skills = doc.skills;
+    const packById = Object.fromEntries(packs.map((pack) => [pack.id, pack]));
+    const departments = skillDepartments();
+    const labels = departments.map(skillDeptLabel);
+    const ms = Date.parse(doc.updated || '');
+    const updated = Number.isFinite(ms) ? `清单更新 ${M.fmtKL(ms)}（UTC+8）` : '清单更新 暂无';
+    const cards = departments.map((team) => {
+      const label = skillDeptLabel(team);
+      const owned = skills.filter((skill) => skillApplies(skill, label));
+      const chips = owned.map((skill) => `<button type="button" class="skill-chip" data-skill="${esc(skill.id)}" data-dept="${esc(label)}" aria-expanded="false">${esc(skill.name)}</button>`).join('');
+      return `<article class="skill-card glass"><div class="skill-head"><h3>${esc(label)}</h3><b>${owned.length} 项</b></div><div class="skill-chips">${chips || '<p class="note">暂无技能</p>'}</div><div class="skill-pop" hidden></div></article>`;
+    }).join('');
+    const packRows = packs.map((pack) => {
+      const count = skills.filter((skill) => skill.pack === pack.id).length;
+      const repo = String(pack.repo || '');
+      const link = repo.startsWith('https://')
+        ? `<a href="${esc(repo)}" target="_blank" rel="noopener noreferrer">${esc(repo.replace(/^https:\/\//, ''))}</a>`
+        : '<span>无公开仓库</span>';
+      return `<article class="skill-row glass"><div class="skill-head"><b>${esc(pack.name)}</b><span>${count} 项</span></div><p>${esc(pack.license || '')}</p>${link}</article>`;
+    }).join('');
+    const reviewed = (doc.reviewed_not_installed || []).map((item) => `<article class="skill-row glass"><div class="skill-head"><b>${esc(item.name)}</b><time datetime="${esc(item.date || '')}">${esc(item.date || '')}</time></div><p>${esc(item.reason || '')}</p></article>`).join('');
+    const tools = (doc.tools_pending || []).map((item) => `<article class="skill-row glass"><div class="skill-head"><b>${esc(item.name)}</b></div><p>${esc(item.status || '')}</p></article>`).join('');
+    body.innerHTML = `<p class="note skill-updated">${esc(updated)}</p><h3 class="block">各部门技能</h3><div class="skill-grid">${cards}</div><h3 class="block">资源包</h3><div class="skill-list">${packRows}</div><h3 class="block">看过但未安装</h3><div class="skill-list">${reviewed || emptyBlock('暂无', '')}</div><h3 class="block">待批准工具</h3><div class="skill-list">${tools || emptyBlock('暂无', '')}</div>`;
+    body.dataset.labels = labels.join('\u0001');
+  }
+  function skillDetail(skill, current) {
+    const pack = (state.skills.packs || []).find((item) => item.id === skill.pack) || {};
+    const labels = ($('#skillsBody').dataset.labels || '').split('\u0001').filter(Boolean);
+    const others = labels.filter((label) => label !== current && skillApplies(skill, label));
+    const share = others.length ? others.join('、') : '仅本部门';
+    const company = (skill.depts || []).includes('全公司') ? '<p>全公司技能，每个部门都可使用。</p>' : '';
+    const note = skill.note ? `<p>${esc(skill.note)}</p>` : '';
+    const batch = Number.isFinite(Number(skill.batch)) ? `第 ${skill.batch} 批` : '批次未记录';
+    return `<p class="skill-pop-name">${esc(skill.name)}</p><p>来源 ${esc(pack.name || '未记录')}</p><p>许可 ${esc(pack.license || '未记录')} · ${esc(batch)}</p>${company}<p>同时用于：${esc(share)}</p>${note}`;
+  }
   function renderClients() {
     const doc = state.pipeline;
     if (!doc || doc.__error || !Array.isArray(doc.stages)) {
@@ -739,12 +792,13 @@
       document.querySelectorAll('.wait').forEach((el) => { el.textContent = '页面脚本不完整，暂时不能计算。'; });
       return;
     }
-    const [data, progress, usage, exams, pipeline] = await Promise.all([
+    const [data, progress, usage, exams, pipeline, skills] = await Promise.all([
       loadJson('./data.json'),
       loadJson('./data/progress.json'),
       loadJson('./data/usage.json'),
       loadJson('./data/exams.json'),
       loadJson('./data/pipeline.json'),
+      loadJson('./data/skills.json'),
     ]);
     if (!data || data.__error || !Array.isArray(data.teams)) {
       document.querySelectorAll('.wait').forEach((el) => { el.textContent = '暂时读不到公司数据。'; });
@@ -756,6 +810,7 @@
     state.usage = usage;
     state.exams = exams;
     state.pipeline = pipeline;
+    state.skills = skills;
     state.events = M.parseScoreEvents(data.feed, data.teams);
     state.mismatches = M.replayMismatches(data.teams, state.events, data.workRules || {});
     renderOverview();
@@ -766,6 +821,7 @@
     renderUsage();
     renderExams(exams);
     renderClients();
+    renderSkills();
     bindNav();
     document.addEventListener('click', (event) => {
       const row = event.target.closest('.mrow');
@@ -776,6 +832,25 @@
         row.setAttribute('aria-expanded', open ? 'true' : 'false');
         const detail = art.querySelector('.mdetail');
         if (detail) detail.hidden = !open;
+        return;
+      }
+      const chip = event.target.closest('.skill-chip');
+      if (chip) {
+        const card = chip.closest('.skill-card');
+        const pop = card.querySelector('.skill-pop');
+        const willOpen = chip.getAttribute('aria-expanded') !== 'true';
+        document.querySelectorAll('.skill-chip').forEach((el) => el.setAttribute('aria-expanded', 'false'));
+        document.querySelectorAll('.skill-chip').forEach((el) => el.classList.remove('on'));
+        document.querySelectorAll('.skill-pop').forEach((el) => { el.hidden = true; el.innerHTML = ''; });
+        if (willOpen) {
+          const skill = (state.skills?.skills || []).find((item) => item.id === chip.dataset.skill);
+          if (skill && pop) {
+            pop.innerHTML = skillDetail(skill, chip.dataset.dept || '');
+            pop.hidden = false;
+            chip.setAttribute('aria-expanded', 'true');
+            chip.classList.add('on');
+          }
+        }
         return;
       }
       const info = event.target.closest('.info');
