@@ -315,6 +315,7 @@
     })).join('');
     const rows = [];
     for (const team of teams) {
+      if (team.private) continue;
       for (const staff of team.staff || []) rows.push({ team, staff });
     }
     rows.sort((a, b) => {
