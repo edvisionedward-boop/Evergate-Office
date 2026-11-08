@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-06T20:19:00+08:00",
+  "updatedAt": "2026-11-08T10:57:05+08:00",
   "workRules": {
     "taskPoints": 1.0,
     "mistakePoints": -0.3,
@@ -17,7 +17,7 @@
     ],
     "asymptote": 8,
     "trackingStartedAt": "2026-11-06T09:56:00+08:00",
-    "summary": "部门完成任务后须向审查部提交完成报告。审查部判定达标或敷衍，并报告 ED，由 ED 记分。部门自行标完成不加分。私人助理不参与。达标才加完成分：日常 +1.00；特殊 = 基础 +1.00 再加星级加分（1☆ +1.00 合计 +2.00，2☆ +1.50 合计 +2.50，3☆ +2.00 合计 +3.00，4☆ +2.50 合计 +3.50，5☆ +3.00 合计 +4.00），未标星按 1☆。敷衍不加完成分，并按失败扣分：日常 −0.30；特殊只按星级表（1☆ −0.30，2☆ −0.60，3☆ −0.90，4☆ −1.20，5☆ −1.50），不再另扣 0.30；连续失败的特殊任务从第 2 次起 ×2，完成一项特殊任务后连败清零。日常任务的完成或失败都不改变连败。周一至周五 09:00–18:00（吉隆坡）+0.50/小时，从 trackingStartedAt 起计入。加班 +0.80/小时只记 Edward 交代且已完成的非上班时段工作。重大失职由 ED 按情节另扣。进度条不封顶、不升级。",
+    "summary": "部门完成任务后须向审查部提交完成报告。审查部判定达标或敷衍，并报告 ED，由 ED 记分。部门自行标完成不加分。私人助理不参与。达标才加完成分：日常 +1.00；特殊 = 基础 +1.00 再加星级加分（1☆ +1.00 合计 +2.00，2☆ +1.50 合计 +2.50，3☆ +2.00 合计 +3.00，4☆ +2.50 合计 +3.50，5☆ +3.00 合计 +4.00），未标星按 1☆。敷衍不加完成分，并按失败扣分：日常 −0.30；特殊只按星级表（1☆ −0.30，2☆ −0.60，3☆ −0.90，4☆ −1.20，5☆ −1.50），不再另扣 0.30；连续失败的特殊任务从第 2 次起 ×2，完成一项特殊任务后连败清零。日常任务的完成或失败都不改变连败。周一至周五 09:00–18:00（吉隆坡）+0.50/小时，从 trackingStartedAt 起计入。工时分自动按时钟计算。加班 +0.80/小时只记 Edward 交代且已完成的非上班时段工作。重大失职由 ED 按情节另扣。进度条不封顶、不升级。",
     "starPoints": {
       "1": 1.0,
       "2": 1.5,
@@ -37,7 +37,9 @@
     "starRulesApplyTo": "special",
     "specialCompletion": "taskPoints + starPoints",
     "specialFailure": "failurePointsByStar only",
-    "noWorkBarTeams": ["ed"]
+    "noWorkBarTeams": [
+      "ed"
+    ]
   },
   "office": {
     "title": "Evergate AI Office",
@@ -67,15 +69,22 @@
       "categories": [
         {
           "name": "调研资料",
-          "items": ["市场部任务完成报告", "信息部任务完成报告"]
+          "items": [
+            "市场部任务完成报告",
+            "信息部任务完成报告"
+          ]
         },
         {
           "name": "商业报告",
-          "items": ["物流部任务完成报告"]
+          "items": [
+            "物流部任务完成报告"
+          ]
         },
         {
           "name": "公司",
-          "items": ["公司简介 Corporate Profile"]
+          "items": [
+            "公司简介 Corporate Profile"
+          ]
         }
       ]
     },
@@ -86,15 +95,22 @@
       "categories": [
         {
           "name": "法务报告",
-          "items": ["项目法律备忘录"]
+          "items": [
+            "项目法律备忘录"
+          ]
         },
         {
           "name": "商业机密",
-          "items": ["土地收购计划书 V2.3"]
+          "items": [
+            "土地收购计划书 V2.3"
+          ]
         },
         {
           "name": "财务报表",
-          "items": ["2026 财务报告", "会计师资料清单"]
+          "items": [
+            "2026 财务报告",
+            "会计师资料清单"
+          ]
         }
       ]
     },
@@ -222,7 +238,8 @@
           "noWorkBar": true,
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
-          "score": null
+          "score": null,
+          "chip": "ED"
         }
       ],
       "score": null
@@ -666,9 +683,9 @@
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null,
-          "tasksDone": 0,
+          "tasksDone": 1,
           "mistakes": 0,
-          "workScore": 0,
+          "workScore": 2.0,
           "extraPenalty": 0,
           "overtimeHours": 0,
           "consecutiveFailures": 0
@@ -975,9 +992,9 @@
           "gradeNote": "待周一例会后首次评定",
           "gradedAt": null,
           "score": null,
-          "tasksDone": 0,
+          "tasksDone": 1,
           "mistakes": 0,
-          "workScore": 0,
+          "workScore": 1.0,
           "extraPenalty": 0,
           "overtimeHours": 0,
           "consecutiveFailures": 0
@@ -1357,6 +1374,16 @@
     }
   ],
   "feed": [
+    {
+      "team": "info",
+      "time": "2026-11-08T10:57:05+08:00",
+      "text": "资讯总监记入日常达标 1 项，工作条基数 1.00。工时分按时钟自动累加。"
+    },
+    {
+      "team": "review",
+      "time": "2026-11-08T10:57:05+08:00",
+      "text": "审查组长记入 1☆ 特殊达标，工作条基数 2.00。工时分按时钟自动累加。"
+    },
     {
       "team": "logistics",
       "time": "2026-11-06T20:19:00+08:00",

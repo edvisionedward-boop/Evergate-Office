@@ -276,7 +276,24 @@ function nameTag(agent, staff, roomId, slot = 0) {
   el.dataset.room = roomId;
   el.dataset.staff = staff.id;
   el.textContent = '';
-  const pn = document.createElement('span'); pn.className = 'pn'; pn.textContent = staff.chip || staff.name; el.appendChild(pn);
+  const pn = document.createElement('span'); pn.className = 'pn';
+  const plate = roomId === 'privfin' ? '私密' : roomId === 'ed' ? 'ED' : (staff.chip || staff.name);
+  const pnn = document.createElement('span'); pnn.className = 'pnn'; pnn.textContent = plate; pn.appendChild(pnn);
+  const rank = /总监|经理|组长/.exec(plate)?.[0];
+  if (rank && roomId !== 'ed' && roomId !== 'privfin') {
+    const sub = document.createElement('span');
+    sub.className = 'prole';
+    sub.textContent = rank;
+    pn.appendChild(sub);
+  }
+  el.appendChild(pn);
+  if (roomId !== 'privfin') {
+    const st = document.createElement('span');
+    st.className = 'pstat st-busy';
+    st.dataset.staff = staff.id;
+    st.textContent = '忙碌';
+    el.appendChild(st);
+  }
   if (!staff.noWorkBar && !noWorkBarRooms.has(roomId)) {
     const bar = document.createElement('span');
     bar.className = 'wbar';
@@ -430,7 +447,7 @@ function deskSet(parent, x, z, ry, team, opt = {}) {
   const sw = opt.wide ? 1.05 : 0.56, sh = opt.wide ? 0.56 : 0.33;
   for (let i = 0; i < n; i++) {
     const mx = n === 1 ? 0 : (i - (n - 1) / 2) * 0.62, ang = n === 1 ? 0 : (i - (n - 1) / 2) * -0.35;
-    const mg = new THREE.Group(); mg.position.set(mx, 0.77, -0.18); mg.rotation.y = ang; g.add(mg);
+    const mg = new THREE.Group(); mg.position.set(mx, 0.77, -0.18); mg.rotation.y = ang; mg.userData.deskScreen = 1; g.add(mg);
     box(mg, 0.18, 0.015, 0.14, 0, 0, 0, mStand); box(mg, 0.04, opt.wide ? 0.28 : 0.22, 0.03, 0, 0, -0.03, mStand);
     box(mg, mw, mh, 0.035, 0, opt.wide ? 0.28 : 0.18, 0, mStand, { round: 0.012 });
     const s = new THREE.Mesh(G('scr' + (opt.wide ? 'w' : ''), () => new THREE.PlaneGeometry(sw, sh)), screenMat(kinds[i % kinds.length], team.color, opt.dim));
@@ -443,7 +460,7 @@ function deskSet(parent, x, z, ry, team, opt = {}) {
   }
   box(g, 0.42, 0.012, 0.16, -0.02, 0.775, 0.14, M('#232a38', { r: .45 }), { cast: false });
   const keys = new THREE.Mesh(G('keys', () => new THREE.PlaneGeometry(0.4, 0.14)), new THREE.MeshBasicMaterial({ map: keyTexture(), toneMapped: false }));
-  keys.rotation.x = -Math.PI / 2; keys.position.set(-0.02, 0.786, 0.14); keys.userData.keep = true; g.add(keys);
+  keys.rotation.x = -Math.PI / 2; keys.position.set(-0.02, 0.786, 0.14); keys.userData.keep = true; keys.userData.deskKeys = 1; g.add(keys);
   box(g, 0.07, 0.02, 0.1, 0.36, 0.77, 0.14, M('#1a1f2b'), { cast: false });
   if (opt.mug !== false) cyl(g, 0.04, 0.035, 0.1, -0.55, 0.77, 0.1, M(team.color, { r: .4 }), 8);
   if (opt.papers) { box(g, 0.24, 0.04, 0.32, 0.55, 0.77, 0.05, M('#dde3ec', { r: .9 }), { ry: 0.2 }); }
@@ -451,6 +468,79 @@ function deskSet(parent, x, z, ry, team, opt = {}) {
   if (opt.plant !== false) plant(g, opt.papers ? -0.42 : 0.55, 0.18, 0.32, 1, 0.775);
   const ch = chair(g, 0, 0.62, 0, opt.chair ?? '#2b3142');
   return { group: g, seat: new THREE.Vector3(0, 0, 0.58) };
+}
+function staffRng(id) {
+  let h = 2166136261;
+  const s = String(id || '');
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return () => {
+    h |= 0; h = (h + 0x6D2B79F5) | 0;
+    let t = Math.imul(h ^ (h >>> 15), 1 | h);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function personalizeDesk(g, staff, team) {
+  if (!g || !staff?.id) return;
+  const rnd = staffRng(staff.id);
+  const screens = [];
+  let keys = null;
+  g.traverse(o => {
+    if (o.userData?.deskScreen) screens.push(o);
+    if (o.userData?.deskKeys) keys = o;
+  });
+  const align = rnd() < 0.34 ? -0.2 : rnd() < 0.67 ? 0.18 : 0;
+  const yaw = (rnd() - 0.5) * 0.5;
+  const laptop = rnd() < 0.3;
+  screens.forEach((s, i) => {
+    s.position.x += align;
+    s.rotation.y += yaw * (i % 2 ? -1 : 1);
+    if (laptop) s.visible = false;
+  });
+  if (keys) keys.position.x += align * 0.6;
+  if (laptop) {
+    if (keys) keys.visible = false;
+    const lap = new THREE.Group();
+    lap.position.set(align * 0.4, 0.748, 0.02);
+    lap.rotation.y = yaw;
+    g.add(lap);
+    box(lap, 0.38, 0.018, 0.26, 0, 0.01, 0.03, M('#1f2937', { r: .4, m: .35 }));
+    const lid = new THREE.Group();
+    lid.position.set(0, 0.02, -0.09);
+    lid.rotation.x = -1.05;
+    lap.add(lid);
+    box(lid, 0.38, 0.22, 0.012, 0, 0.11, 0, M('#111827', { r: .35, m: .4 }));
+    const glow = new THREE.Mesh(G('lapscr', () => new THREE.PlaneGeometry(0.32, 0.16)), screenMat('doc', team?.color || '#D0B993', false));
+    glow.position.set(0, 0.11, 0.008);
+    lid.add(glow);
+  }
+  const blob = `${team?.id || ''} ${staff.role || ''} ${staff.name || ''}`;
+  const items = [];
+  if (team?.id === 'corpfin' || /会计|财务/.test(blob)) items.push('calc');
+  if (team?.id === 'legal' || team?.id === 'review' || /法务|审查/.test(blob)) items.push('folder');
+  if (rnd() < 0.5) items.push(rnd() < 0.5 ? 'notes' : 'folder');
+  if (rnd() < 0.55) items.push('mug');
+  if (rnd() < 0.4) items.push('pen');
+  if (rnd() < 0.35) items.push('phone');
+  const slots = [[-0.56, 0.2], [0.55, 0.2], [-0.56, 0.0], [0.56, -0.02]];
+  items.slice(0, 3).forEach((kind, i) => {
+    const [x, z] = slots[i % slots.length];
+    const y = 0.758;
+    if (kind === 'calc') {
+      box(g, 0.16, 0.018, 0.2, x, y, z, M('#111827', { r: .4 }), { ry: 0.25 });
+      box(g, 0.11, 0.006, 0.06, x, y + 0.012, z - 0.04, M('#14532d', { e: '#166534', ei: 0.5 }), { ry: 0.25, cast: false });
+    } else if (kind === 'folder') {
+      box(g, 0.22, 0.028, 0.28, x, y, z, M(i % 2 ? '#1e3a5f' : '#c4a574', { r: .65 }), { ry: -0.2 });
+    } else if (kind === 'notes') {
+      box(g, 0.11, 0.006, 0.11, x, y, z, M('#fde68a', { r: .85 }), { ry: 0.35, cast: false });
+    } else if (kind === 'mug') {
+      cyl(g, 0.034, 0.03, 0.07, x, y, z, M('#f8fafc', { r: .35 }), 8);
+    } else if (kind === 'pen') {
+      box(g, 0.12, 0.01, 0.016, x, y, z, M('#1d4ed8', { r: .4 }), { ry: 0.7, cast: false });
+    } else if (kind === 'phone') {
+      box(g, 0.06, 0.01, 0.12, x, y, z, M('#0f172a', { r: .3, m: .45 }), { ry: -0.35 });
+    }
+  });
 }
 function bookshelf(parent, x, z, ry, w = 1.4, h = 1.9, accents = []) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; parent.add(g);
@@ -656,16 +746,6 @@ function fileCabinet(parent, x, z, ry, locked) {
   }
   return g;
 }
-function facilityTag(agent, name, status) {
-  const el = document.createElement('div');
-  el.className = 'ptag guard';
-  el.dataset.room = 'archive';
-  const pn = document.createElement('span'); pn.className = 'pn'; pn.textContent = name; el.appendChild(pn);
-  const st = document.createElement('span'); st.className = 'gduty'; st.textContent = status; el.appendChild(st);
-  const o = new CSS2DObject(el);
-  o.position.set(0.42, 1.42, 0.05); o.center.set(0, 1); agent.add(o);
-  agent.userData.badgeEl = el;
-}
 function furnishArchive(g, def, dyn, R) {
   const savedSeed = seed;
   const W = def.w, D = def.d;
@@ -725,17 +805,6 @@ function furnishArchive(g, def, dyn, R) {
 
   const gx = splitX - 0.95;
   chair(g, gx, 0, Math.PI / 2, '#111827');
-  const guard = makeAgent({ shirt: '#1e293b', pants: '#0f172a', tie: '#D0B993', hair: '#1f1a17', skin: '#e0ac85' });
-  g.updateMatrixWorld(true);
-  guard.position.set(def.x + gx, FLOOR_H + 0.05, def.z);
-  guard.rotation.y = -Math.PI / 2;
-  guard.userData.guard = true;
-  guard.userData.room = 'archive';
-  setSeated(guard);
-  guard.position.y = FLOOR_H + 0.05;
-  dyn.add(guard);
-  R.guard = guard;
-  facilityTag(guard, '保安', '值守中');
 
   // 普通文件房: shelves and locked cabinets. The door aisle stays clear.
   const shelfX = [0.05, 1.7, 3.2];
@@ -1014,7 +1083,7 @@ export const LAYOUT = {
 export function buildOffice(scene, teams) {
   seed = 11;
   noWorkBarRooms.clear();
-  for (const t of teams) if (t.noWorkBar) noWorkBarRooms.add(t.id);
+  for (const t of teams) if (t.noWorkBar || t.private) noWorkBarRooms.add(t.id);
   const root = new THREE.Group(); scene.add(root);
   const staticG = new THREE.Group(); root.add(staticG);
   const dyn = new THREE.Group(); root.add(dyn);
@@ -1162,22 +1231,7 @@ export function buildOffice(scene, teams) {
     roomLights.push(pl);
   }
 
-  /* walkers carrying documents to ED */
   const walkers = [];
-  const walkerDefs = [
-    { from: 'legal', path: [[-22.2, -8], [-16.5, -8], [-10.2, -6], [-6.75, -6], [-6.75, -1.2], [-4.2, -0.4]] },
-    { from: 'info', path: [[12.2, 2.4], [13.2, 4.2], [13.2, 6], [6.75, 6], [6.75, -0.3], [5.2, -0.3], [3.6, -0.3]] },
-    { from: 'market', path: [[-10.6, -9.2], [-10.4, -7.7], [-10.4, -6], [-6.75, -6], [-6.75, 0.3], [-5.2, 0.3], [-4.2, 0.3]] },
-  ];
-  for (const wd of walkerDefs) {
-    const t = teamById[wd.from]; if (!t) continue;
-    const a = makeAgent({ shirt: hex(mix(t.color, '#ffffff', 0.1)), pants: '#1e293b' });
-    const pts = wd.path.map(([x, z]) => new THREE.Vector3(x, FLOOR_H, z));
-    a.position.copy(pts[0]); a.userData.doc.visible = true; dyn.add(a);
-    walkers.push({ agent: a, team: wd.from, pts, i: 0, dir: 1, wait: 1 + rnd() * 5, speed: 1.25 });
-    rooms[wd.from].walkers.push(a);
-  }
-
   const lounge = rooms.lounge;
   furnishRestrooms(staticG);
   const loungeLight = new THREE.PointLight(ORANGE, 0.35, 9, 1.8);
@@ -1187,45 +1241,295 @@ export function buildOffice(scene, teams) {
   if (stSpan) stSpan.textContent = '暂无成员';
   lounge.occupancy = 0;
 
-  const lingerSpots = [
-    { pos: new THREE.Vector3(lounge.def.x - 1.4, FLOOR_H, lounge.def.z + 0.15), ry: Math.PI / 2 },
-    { pos: new THREE.Vector3(lounge.def.x + 0.2, FLOOR_H, lounge.def.z - 0.2), ry: 0 },
-  ];
-  function loungePath(room) {
-    const c = room.def, y = FLOOR_H;
-    const door = new THREE.Vector3(lounge.def.x - lounge.def.w / 2 + 0.9, y, 0.15);
-    if (c.x > 18) {
-      return [
-        new THREE.Vector3(c.x - c.w * 0.38, y, c.z),
-        new THREE.Vector3(20.2, y, c.z),
-        new THREE.Vector3(20.2, y, 0.15),
-        door,
-      ];
+  function wv(x, z) { return new THREE.Vector3(x, FLOOR_H, z); }
+  function dedupe(pts) {
+    const out = [];
+    for (const p of pts) {
+      const q = out[out.length - 1];
+      if (!q || Math.hypot(q.x - p.x, q.z - p.z) > 0.35) out.push(p);
     }
-    const aisleX = c.x < -2 ? -6.75 : (Math.abs(c.x) < 3 ? 0.5 : 6.75);
-    return [
-      new THREE.Vector3(c.x + Math.sign(aisleX - c.x) * c.w * 0.38, y, c.z),
-      new THREE.Vector3(aisleX, y, c.z),
-      new THREE.Vector3(aisleX, y, 0.35),
-      new THREE.Vector3(19.4, y, 0.35),
-      door,
-    ];
+    return out;
   }
-  const visitors = [];
-  for (let i = 0; i < 2; i++) {
-    const a = makeAgent({ shirt: i ? '#e7e5e4' : '#fed7aa', pants: '#1e293b' });
-    a.visible = false; dyn.add(a);
-    visitors.push({ agent: a, team: null, pts: [], i: 0, dir: 1, phase: 'idle', wait: 1.5 + i * 2.4, speed: 1.15, spot: i });
+  // Corridor graph. Segments stay in the open streets and through door gaps.
+  const GN = {
+    nW: wv(-16.3, -6.15), nM: wv(-7, -6.15), n0: wv(0, -6.15), nE: wv(7, -6.15),
+    sW: wv(-20.2, 6.15), sM: wv(-7, 6.15), s0: wv(0, 6.15), sE: wv(7, 6.15), sO: wv(19.7, 6.15),
+    cCorp: wv(-7, 9.3), cRev: wv(-7, 19.55), cLog: wv(7, 9.95),
+    oLou: wv(19.7, 0), oDes: wv(19.7, 13.05),
+    edOut: wv(0, 5.2), edIn: wv(0, 3.75),
+  };
+  const ADJ = {
+    nW: ['nM'], nM: ['nW', 'n0', 'sM'], n0: ['nM', 'nE'], nE: ['n0', 'sE'],
+    sW: ['sM'], sM: ['sW', 's0', 'nM', 'cCorp'], s0: ['sM', 'sE', 'edOut'], sE: ['s0', 'nE', 'sO', 'cLog'],
+    sO: ['sE', 'oLou', 'oDes'], cCorp: ['sM', 'cRev'], cRev: ['cCorp'], cLog: ['sE'],
+    oLou: ['sO'], oDes: ['sO'], edOut: ['s0', 'edIn'], edIn: ['edOut'],
+  };
+  function route(a, b) {
+    if (a === b) return [GN[a].clone()];
+    const q = [a];
+    const prev = { [a]: '' };
+    while (q.length) {
+      const u = q.shift();
+      for (const v of ADJ[u] || []) {
+        if (v in prev) continue;
+        prev[v] = u;
+        if (v === b) {
+          const path = [];
+          for (let x = b; x; x = prev[x]) path.push(GN[x].clone());
+          return path.reverse();
+        }
+        q.push(v);
+      }
+    }
+    return [GN[b].clone()];
   }
-  const meetRoom = rooms.meeting;
-  const meetSeats = [[-2.7, -1.78], [0, -1.78], [-1.35, 1.78], [1.35, 1.78]].map(([x, z]) => new THREE.Vector3(meetRoom.def.x + x, FLOOR_H, meetRoom.def.z + z));
-  const meeters = [];
-  const meetFrom = ['market', 'invest', 'logistics', 'design'];
-  for (let i = 0; i < meetSeats.length; i++) {
-    const tid = meetFrom[i];
-    const a = makeAgent({ shirt: rooms[tid]?.def.color || '#bfdbfe', pants: '#1e293b' });
-    a.visible = false; dyn.add(a);
-    meeters.push({ agent: a, seat: meetSeats[i], phase: 'away', team: tid });
+  const portal = {
+    market: { out: wv(-16.3, -7.35), inn: wv(-16.3, -8.4), node: 'nW' },
+    invest: { out: wv(-0.33, -7.35), inn: wv(-0.33, -8.4), node: 'n0' },
+    legal: { out: wv(-20.9, -8), inn: wv(-22.2, -8), node: 'nW', extra: [wv(-20.9, -6.15)] },
+    info: { out: wv(13.2, 4.85), inn: wv(13.2, 3.55), node: 'sE', extra: [wv(13.2, 5.5), wv(7, 5.5)] },
+    corpfin: { out: wv(-8.0, 9.28), inn: wv(-9.35, 9.28), node: 'cCorp' },
+    logistics: { out: wv(6.2, 9.95), inn: wv(4.65, 9.95), node: 'cLog' },
+    review: { out: wv(-8.0, 19.55), inn: wv(-9.7, 19.55), node: 'cRev' },
+    design: { out: wv(20.3, 13.05), inn: wv(22.05, 13.05), node: 'oDes' },
+    meeting: { out: wv(-20.55, 8), inn: wv(-22.5, 8), node: 'sW', extra: [wv(-20.55, 6.15)] },
+    ed: { out: wv(0, 5.2), inn: wv(0, 3.85), node: 'edOut' },
+    lounge: { out: wv(20.35, 0), inn: wv(22.3, 0), node: 'oLou' },
+  };
+  const coffeeSpot = wv(28.55, 2.35);
+  const restSpot = wv(26.3, -1.65);
+  function localW(id, x, z) {
+    const d = rooms[id].def;
+    return wv(d.x + x, d.z + z);
+  }
+  function interiorExit(id, pos) {
+    const d = rooms[id]?.def;
+    if (!d) return [];
+    const lx = pos.x - d.x, lz = pos.z - d.z;
+    const w = (x, z) => localW(id, x, z);
+    if (id === 'market') {
+      if (lx > 1.4 && lz < 2.25) return [w(1.6, 0.55), w(0.55, 0.55), w(-2.8, 0.55), w(-2.8, 6.05)];
+      if (lx > 1.4) return [w(1.6, 4.0), w(0.55, 4.0), w(0.55, 0.55), w(-2.8, 0.55), w(-2.8, 6.05)];
+      return [w(-4.15, lz), w(-4.15, 6.05), w(-2.8, 6.05)];
+    }
+    if (id === 'legal') {
+      if (lz > 3.4 && lx > 4.3) return [w(6.2, 3.85), w(6.2, 1.7), w(7.5, 1.7), w(7.5, 0)];
+      if (lz > 3.4) return [w(2.4, 3.85), w(2.4, 1.7), w(7.5, 1.7), w(7.5, 0)];
+      return [w(Math.min(lx, 6.5), 1.7), w(7.5, 1.7), w(7.5, 0)];
+    }
+    if (id === 'invest') return [w(-4.55, lz), w(-4.55, 5.55), w(-0.35, 5.55)];
+    if (id === 'info') return [w(4.15, lz), w(4.15, 9.3), w(-0.3, 9.3)];
+    if (id === 'corpfin') return [w(4.15, lz), w(4.15, -2.7)];
+    if (id === 'logistics') return [w(3.65, Math.min(lz, -0.4)), w(3.65, -3.9)];
+    if (id === 'review') return [w(3.6, lz), w(3.6, 0)];
+    if (id === 'design') return [w(-5.15, lz), w(-5.15, 0)];
+    return [];
+  }
+  function fullPath(person, destId, stand) {
+    const a = person.agent;
+    const from = person.roomId;
+    const A = portal[from], B = portal[destId];
+    const pts = [wv(a.position.x, a.position.z), ...interiorExit(from, a.position), A.inn.clone(), A.out.clone()];
+    if (A.extra) pts.push(...A.extra.map(p => p.clone()));
+    pts.push(...route(A.node, B.node));
+    if (B.extra) pts.push(...[...B.extra].reverse().map(p => p.clone()));
+    pts.push(B.out.clone(), B.inn.clone());
+    if (stand) pts.push(stand.clone());
+    return dedupe(pts);
+  }
+  // Department head is staff[0]. Heads report to ED. Everyone else reports to that head.
+  // review-2's role names 审查组长, which is review-1, the same head. No other role text names a different boss.
+  const people = [];
+  for (const R of Object.values(rooms)) {
+    if (!R.team || R.team.private || R.id === 'privfin') continue;
+    const staff = R.team.staff || [];
+    const bodies = R.id === 'ed' && R.boss ? [R.boss] : (R.agents || []);
+    bodies.forEach((agent, index) => {
+      if (!agent?.userData?.staffId) return;
+      const s = staff.find(x => x.id === agent.userData.staffId) || staff[index];
+      agent.userData.activity = 'desk';
+      people.push({ agent, roomId: R.id, index, staff: s, tasksDone: Number(s?.tasksDone) || 0 });
+    });
+  }
+  const trips = [];
+  const MAX_OUT = 5;
+  let cool = 0.3;
+  let boot = 0;
+  const seen = { coffee: false, rest: false, errand: false, meet: false, report: false };
+  function standOnFloor(agent) {
+    const u = agent.userData;
+    u.mode = 'stand';
+    u.legs?.forEach(l => { l.rotation.x = 0; });
+    agent.position.y = FLOOR_H;
+  }
+  function recallTrip(s) {
+    const a = s.agent;
+    a.position.set(s.home.x, s.home.y, s.home.z);
+    a.rotation.y = s.home.ry;
+    setSeated(a);
+    a.position.y = s.home.y;
+    a.userData.out = false;
+    a.userData.activity = 'desk';
+  }
+  function freePeople() { return people.filter(p => p.roomId !== 'ed' && !p.agent.userData.out); }
+  function beginTrip(person, pts, key, hold) {
+    const a = person.agent;
+    if (!a || a.userData.out || pts.length < 2) return false;
+    a.userData.out = true;
+    a.userData.activity = key;
+    standOnFloor(a);
+    trips.push({
+      agent: a, key, pts, i: 0, dir: 1, phase: 'go', hold, speed: 1.7,
+      home: { x: a.position.x, y: a.position.y, z: a.position.z, ry: a.rotation.y },
+    });
+    return true;
+  }
+  function startCoffee() {
+    const pool = freePeople();
+    const p = pool[Math.floor(rnd() * pool.length)];
+    if (!p) return;
+    const pts = fullPath(p, 'lounge', wv(27.2, 0.45));
+    pts.push(coffeeSpot);
+    beginTrip(p, dedupe(pts), 'coffee', 6);
+  }
+  function startRest() {
+    const pool = freePeople();
+    const p = pool[Math.floor(rnd() * pool.length)];
+    if (!p) return;
+    beginTrip(p, fullPath(p, 'lounge', restSpot), 'rest', 8);
+  }
+  function startErrand() {
+    const pool = freePeople().filter(p => p.roomId !== 'review');
+    pool.sort((a, b) => (b.tasksDone - a.tasksDone) || (a.index - b.index));
+    const p = pool.find(x => x.tasksDone > 0) || pool.find(x => x.index === 0) || pool[0];
+    if (!p) return;
+    beginTrip(p, fullPath(p, 'review', wv(-9.7, 19.2 + rnd() * 0.8)), 'errand', 5);
+  }
+  function startReport() {
+    const members = freePeople().filter(p => p.index !== 0);
+    const heads = freePeople().filter(p => p.index === 0);
+    if ((rnd() < 0.4 || !members.length) && heads.length) {
+      const h = heads[Math.floor(rnd() * heads.length)];
+      beginTrip(h, fullPath(h, 'ed', wv(-0.8 + rnd() * 1.6, 3.5)), 'report', 7);
+      return;
+    }
+    const m = members[Math.floor(rnd() * members.length)];
+    if (!m) return;
+    const head = people.find(p => p.roomId === m.roomId && p.index === 0);
+    const spot = m.roomId === 'market' ? localW('market', 0.55, 0.55)
+      : m.roomId === 'legal' ? localW('legal', 6.2, 3.15)
+      : head ? wv(Math.min(head.agent.position.x + 1.05, rooms[m.roomId].def.x + rooms[m.roomId].def.w / 2 - 0.8), head.agent.position.z)
+      : portal[m.roomId].inn.clone();
+    const pts = dedupe([wv(m.agent.position.x, m.agent.position.z), ...interiorExit(m.roomId, m.agent.position).slice(0, 2), spot]);
+    beginTrip(m, pts, 'report', 6);
+    if (head && !head.agent.userData.out) head.agent.userData.activity = 'report';
+  }
+  function startMeeting() {
+    const heads = freePeople().filter(p => p.index === 0);
+    if (heads.length < 2 || trips.length > 3) return;
+    const n = Math.min(heads.length, 2);
+    for (let i = 0; i < n; i++) {
+      const h = heads.splice(Math.floor(rnd() * heads.length), 1)[0];
+      beginTrip(h, fullPath(h, 'ed', wv(-1.3 + i * 1.2, 3.45)), 'meeting', 11);
+    }
+    if (rooms.ed.boss && !rooms.ed.boss.userData.out) rooms.ed.boss.userData.activity = 'meeting';
+  }
+  function startTeam() {
+    const ids = [...new Set(freePeople().map(p => p.roomId))];
+    if (!ids.length) return;
+    const id = ids[Math.floor(rnd() * ids.length)];
+    const group = freePeople().filter(p => p.roomId === id);
+    const head = group.find(p => p.index === 0);
+    const members = group.filter(p => p !== head);
+    if (!members.length) return;
+    const anchor = head ? head.agent.position : members[0].agent.position;
+    const n = Math.min(members.length, 1 + Math.floor(rnd() * 2));
+    for (let i = 0; i < n; i++) {
+      const m = members[i];
+      const spot = wv(anchor.x + 0.9, anchor.z + (i - 0.5) * 0.7);
+      const pts = dedupe([wv(m.agent.position.x, m.agent.position.z), ...interiorExit(id, m.agent.position).slice(0, 1), spot]);
+      beginTrip(m, pts, 'meeting', 8);
+    }
+    if (head && !head.agent.userData.out) head.agent.userData.activity = 'meeting';
+  }
+  function stepTrip(s, t, dt) {
+    const a = s.agent, u = a.userData;
+    if (s.phase === 'linger') {
+      u.mode = 'stand';
+      s.hold -= dt;
+      animateAgent(a, t, dt);
+      a.position.y = FLOOR_H;
+      if (s.hold <= 0) { s.phase = 'back'; s.dir = -1; }
+      return false;
+    }
+    const target = s.pts[s.i + s.dir];
+    if (!target) {
+      if (s.dir > 0) { s.phase = 'linger'; u.mode = 'stand'; return false; }
+      return true;
+    }
+    u.mode = 'walk';
+    tmp.subVectors(target, a.position); tmp.y = 0;
+    const dist = tmp.length();
+    const stp = s.speed * dt;
+    if (dist <= stp) { a.position.x = target.x; a.position.z = target.z; s.i += s.dir; }
+    else {
+      tmp.multiplyScalar(stp / dist);
+      a.position.x += tmp.x; a.position.z += tmp.z;
+      const ang = Math.atan2(tmp.x, tmp.z);
+      let da = ang - a.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
+      a.rotation.y += da * Math.min(1, dt * 10);
+    }
+    animateAgent(a, t, dt);
+    a.position.y = FLOOR_H + Math.abs(Math.cos(t * 8 + (u.phase || 0))) * 0.04;
+    return false;
+  }
+  function syncIdle(working) {
+    const hosts = new Set();
+    for (const tr of trips) {
+      if (tr.key === 'meeting' && tr.phase !== 'back') hosts.add('ed');
+    }
+    for (const p of people) {
+      if (p.agent.userData.out) continue;
+      if (!working) { p.agent.userData.activity = 'off'; continue; }
+      if (p.roomId === 'ed' && hosts.has('ed')) { p.agent.userData.activity = 'meeting'; continue; }
+      p.agent.userData.activity = 'desk';
+    }
+  }
+  function updateActivities(t, dt, state) {
+    const working = !!state.clock?.working && !state.clock?.offDuty;
+    if (!working) {
+      for (const s of trips) recallTrip(s);
+      trips.length = 0;
+      syncIdle(false);
+      return 0;
+    }
+    boot += dt;
+    cool -= dt;
+    if (boot > 0.25 && !seen.meet) { startMeeting(); seen.meet = true; }
+    if (boot > 0.45 && !seen.coffee) { startCoffee(); seen.coffee = true; }
+    if (boot > 0.7 && !seen.rest) { startRest(); seen.rest = true; }
+    if (boot > 0.95 && !seen.errand) { startErrand(); seen.errand = true; }
+    if (boot > 1.2 && !seen.report && trips.length < 5) { startReport(); seen.report = true; }
+    if (cool <= 0 && trips.length < MAX_OUT) {
+      const r = rnd();
+      if (r < 0.22) startCoffee();
+      else if (r < 0.38) startRest();
+      else if (r < 0.58) startReport();
+      else if (r < 0.74) startErrand();
+      else if (r < 0.88 && trips.length <= 2) startMeeting();
+      else if (trips.length <= 2) startTeam();
+      cool = 5 + rnd() * 7;
+    }
+    const L = lounge.def;
+    const inside = (p) => Math.abs(p.x - L.x) < L.w / 2 - 0.3 && Math.abs(p.z - L.z) < L.d / 2 - 0.3;
+    let occ = 0;
+    for (let i = trips.length - 1; i >= 0; i--) {
+      const s = trips[i];
+      if ((s.key === 'coffee' || s.key === 'rest') && (inside(s.agent.position) || s.phase === 'linger')) occ++;
+      if (stepTrip(s, t, dt)) { recallTrip(s); trips.splice(i, 1); }
+    }
+    syncIdle(true);
+    return occ;
   }
   const designRoom = rooms.design;
   const showRoom = rooms.showroom;
@@ -1309,98 +1613,14 @@ export function buildOffice(scene, teams) {
       R.lamp.ring.rotation.z += dt * (st === 'idle' ? 0.3 : 1.5);
       R.lamp.group.position.y = 3.0 + Math.sin(t * 1.2 + R.def.x) * 0.06;
       for (const a of R.agents) {
+        if (a.userData.out) continue;
         a.userData.dot.material.color.set(c).multiplyScalar(2);
         animateAgent(a, t, dt, st === 'idle' ? 'idle' : 'type');
       }
     }
     // ED avatar
     if (rooms.ed.boss) { const b = rooms.ed.boss; b.userData.gesture = Math.sin(t * 0.7) > 0.6; animateAgent(b, t, dt); b.userData.dot.material.color.set(state.status.ed === 'confirm' ? GOLD : state.status.ed === 'busy' ? ORANGE : '#efe4cf'); }
-    // walkers
-    for (const w of walkers) {
-      const st = state.status[w.team];
-      const a = w.agent, u = a.userData;
-      u.dot.material.color.set(st === 'busy' ? ORANGE : st === 'confirm' ? GOLD : '#efe4cf');
-      if (w.wait > 0) {
-        w.wait -= dt; u.mode = 'stand'; animateAgent(a, t, dt);
-        if (w.wait <= 0 && !(st && st !== 'idle') && w.i === 0) w.wait = 3; // idle teams stay home
-        continue;
-      }
-      const target = w.pts[w.i + w.dir];
-      if (!target) { // reached an end
-        if (w.i === w.pts.length - 1) { u.doc.visible = false; w.dir = -1; w.wait = 2.2; }
-        else { w.dir = 1; w.wait = 5 + rnd() * 6; u.doc.visible = true; }
-        continue;
-      }
-      u.mode = 'walk';
-      tmp.subVectors(target, a.position); tmp.y = 0;
-      const dist = tmp.length();
-      const stp = w.speed * dt;
-      if (dist <= stp) { a.position.x = target.x; a.position.z = target.z; w.i += w.dir; }
-      else {
-        tmp.multiplyScalar(stp / dist); a.position.x += tmp.x; a.position.z += tmp.z;
-        const ang = Math.atan2(tmp.x, tmp.z); let da = ang - a.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
-        a.rotation.y += da * Math.min(1, dt * 10);
-      }
-      animateAgent(a, t, dt);
-    }
-    // idle / standby staff drift into the lounge, at most two at a time
-    const inside = (p) => Math.abs(p.x - lounge.def.x) < lounge.def.w / 2 && Math.abs(p.z - lounge.def.z) < lounge.def.d / 2;
-    const loungePool = () => Object.values(rooms).filter(R => R.team && !R.team.private && state.status[R.id] === 'idle');
-    let occ = 0;
-    for (const v of visitors) {
-      const a = v.agent, u = a.userData;
-      const st = v.team ? state.status[v.team] : 'idle';
-      u.dot.material.color.set(GOLD).multiplyScalar(1.4);
-      if (v.phase === 'idle') {
-        a.visible = false;
-        v.wait -= dt;
-        if (v.wait > 0) continue;
-        const used = new Set(visitors.filter(o => o !== v && o.team).map(o => o.team));
-        const pool = loungePool().filter(R => !used.has(R.id));
-        const pick = pool.length ? pool[(Math.floor(t) + v.spot) % pool.length] : null;
-        if (!pick) { v.wait = 2.5; continue; }
-        v.team = pick.id;
-        v.pts = loungePath(pick).concat([lingerSpots[v.spot % lingerSpots.length].pos]);
-        v.i = 0; v.dir = 1; v.phase = 'go';
-        a.position.copy(v.pts[0]); a.visible = true;
-        continue;
-      }
-      if (st && st !== 'idle' && v.phase !== 'back') { v.phase = 'back'; v.dir = -1; }
-      if (v.phase === 'linger') {
-        occ++;
-        if (!v.sat) {
-          setSeated(a);
-          a.position.y = FLOOR_H + 0.02;
-          a.rotation.y = lingerSpots[v.spot % lingerSpots.length].ry;
-          v.sat = true;
-        }
-        v.wait -= dt; animateAgent(a, t, dt, 'idle');
-        if (v.wait <= 0) {
-          v.sat = false; v.phase = 'back'; v.dir = -1;
-          a.userData.mode = 'stand';
-          a.userData.legs?.forEach(l => { l.rotation.x = 0; });
-          a.position.y = FLOOR_H;
-        }
-        continue;
-      }
-      const target = v.pts[v.i + v.dir];
-      if (!target) {
-        if (v.dir > 0) { v.phase = 'linger'; v.wait = 6 + rnd() * 5; u.mode = 'stand'; }
-        else { v.phase = 'idle'; v.team = null; v.wait = 7 + rnd() * 8; a.visible = false; }
-        continue;
-      }
-      if (inside(a.position)) occ++;
-      u.mode = 'walk';
-      tmp.subVectors(target, a.position); tmp.y = 0;
-      const dist = tmp.length(), stp = v.speed * dt;
-      if (dist <= stp) { a.position.x = target.x; a.position.z = target.z; v.i += v.dir; }
-      else {
-        tmp.multiplyScalar(stp / dist); a.position.x += tmp.x; a.position.z += tmp.z;
-        const ang = Math.atan2(tmp.x, tmp.z); let da = ang - a.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
-        a.rotation.y += da * Math.min(1, dt * 10);
-      }
-      animateAgent(a, t, dt);
-    }
+    const occ = updateActivities(t, dt, state);
     occTick -= dt;
     if (occTick <= 0) {
       occTick = 0.45;
@@ -1412,51 +1632,15 @@ export function buildOffice(scene, teams) {
         if (sub) sub.textContent = `共享空间 · ${occ} 人在此`;
       }
     }
-    const meetOn = !!state.clock?.meeting && !state.clock?.offDuty;
-    for (const m of meeters) {
-      const a = m.agent;
-      if (!meetOn) { a.visible = false; m.phase = 'away'; continue; }
-      if (m.phase === 'away') {
-        a.visible = true;
-        a.position.set(meetRoom.def.x + meetRoom.def.w / 2 + 0.7, FLOOR_H, meetRoom.def.z);
-        m.phase = 'walk';
-      }
-      if (m.phase === 'walk') {
-        tmp.set(m.seat.x - a.position.x, 0, m.seat.z - a.position.z);
-        const dist = tmp.length();
-        if (dist < 0.2) {
-          a.position.x = m.seat.x; a.position.z = m.seat.z; m.phase = 'sit';
-          setSeated(a);
-          a.rotation.y = Math.atan2(meetRoom.def.x - a.position.x, meetRoom.def.z - a.position.z);
-        } else {
-          a.userData.mode = 'walk';
-          tmp.multiplyScalar(Math.min(1, (1.15 * dt) / dist));
-          a.position.x += tmp.x; a.position.z += tmp.z;
-          a.rotation.y = Math.atan2(tmp.x, tmp.z);
-          animateAgent(a, t, dt);
-        }
-      } else animateAgent(a, t, dt, 'idle');
-    }
     if (state.clock?.offDuty) {
       for (const R of Object.values(rooms)) {
         if (R.id === 'ed') continue;
         for (const person of R.agents || []) person.visible = false;
-        for (const person of R.walkers || []) person.visible = false;
       }
-      for (const v of visitors) { v.agent.visible = false; v.sat = false; if (v.phase !== 'idle') { v.phase = 'idle'; v.team = null; v.wait = 4; } }
     } else {
       for (const R of Object.values(rooms)) {
         for (const person of R.agents || []) person.visible = true;
-        for (const person of R.walkers || []) person.visible = true;
       }
-    }
-    // Facility post: the archive guard never leaves the lobby desk, including at night.
-    if (rooms.archive?.guard) {
-      const guard = rooms.archive.guard;
-      guard.visible = true;
-      guard.userData.mode = 'seated';
-      animateAgent(guard, t, dt, 'idle');
-      guard.userData.dot.material.color.set('#22c55e').multiplyScalar(2.2);
     }
     newsTick += dt;
     if (newsTick > 0.08) { newsTick = 0; newsShift += 2; drawNews(newsShift); newsMap.needsUpdate = true; }
@@ -1659,28 +1843,44 @@ function furnishPantry(g, W) {
   for (const z of [z0 + 0.38, z0 + 1.12, z0 + 1.9]) barStool(g, stoolX, z);
 
   const sign = new THREE.Mesh(
-    new THREE.PlaneGeometry(1.36, 0.34),
+    new THREE.PlaneGeometry(2.05, 0.52),
     new THREE.MeshBasicMaterial({ map: signTexture('茶水间', 'PANTRY', ORANGE), toneMapped: false }),
   );
-  sign.position.set(wallInner - 0.1, 1.7, zc);
+  sign.position.set(wallInner - 0.12, 2.05, zc);
   sign.rotation.y = -Math.PI / 2;
   sign.userData.keep = true;
   g.add(sign);
 
+  // Floor tint under the counter, visible from the overview as well as inside the room.
+  const rugW = 2.55, rugD = len + 0.85;
+  const rug = new THREE.Mesh(new THREE.PlaneGeometry(rugW, rugD), M('#E87708', { r: .72, e: '#E87708', ei: 0.22 }));
+  rug.rotation.x = -Math.PI / 2;
+  rug.position.set(topX - 0.85, 0.025, zc);
+  rug.userData.keep = true;
+  g.add(rug);
+  const rim = new THREE.Mesh(new THREE.RingGeometry(0.92, 1.05, 28), new THREE.MeshBasicMaterial({ color: '#fff1d6', transparent: true, opacity: 0.85, toneMapped: false, side: THREE.DoubleSide }));
+  rim.rotation.x = -Math.PI / 2;
+  rim.position.set(topX - 1.15, 0.03, z0 + 1.52);
+  rim.userData.keep = true;
+  g.add(rim);
+
   const el = document.createElement('div');
-  el.className = 'rlabel minor';
-  el.style.setProperty('--c', ORANGE);
-  el.dataset.room = 'lounge';
-  el.innerHTML = '<div class="nm">茶水间</div>';
+  el.className = 'pantry-flag';
+  el.textContent = '茶水间';
   const label = new CSS2DObject(el);
-  label.position.set(topX - 0.05, 2.15, z0 + 0.28);
+  // Float above the east wall so the default overview camera can read it.
+  label.position.set(topX - 0.4, 4.85, z0 + 1.52);
   label.center.set(0.5, 1);
   g.add(label);
 
   pendant(g, stoolX - 0.05, zc);
-  const warm = new THREE.PointLight('#fff1d6', 0.32, 4.8, 1.6);
-  warm.position.set(topX - 0.15, 1.85, zc);
+  const warm = new THREE.PointLight('#ffb15a', 1.35, 9.5, 1.4);
+  warm.position.set(topX - 0.55, 2.15, z0 + 1.52);
   g.add(warm);
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), B('#ffb15a', { e: '#ffb15a', ei: 1.4 }));
+  bulb.position.copy(warm.position);
+  bulb.userData.keep = true;
+  g.add(bulb);
 }
 function furnishLounge(g, def) {
   const W = def.w, D = def.d;
@@ -2220,6 +2420,9 @@ function decorate(R, dyn, teamById) {
   const n = Math.min(desks.length, t.agents ?? desks.length);
   const staff = t.staff || [];
   for (let i = 0; i < desks.length; i++) {
-    if (i < n) nameTag(seat(desks[i], id === 'design' ? t.color : shirts[i % 3]), staff[i], id, i);
+    if (i < n && staff[i]) {
+      personalizeDesk(desks[i].group, staff[i], t);
+      nameTag(seat(desks[i], id === 'design' ? t.color : shirts[i % 3]), staff[i], id, i);
+    }
   }
 }

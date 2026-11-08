@@ -251,7 +251,22 @@ button{font:inherit;color:inherit}
 .ptag.s0{margin-left:8px;margin-top:-22px}
 .ptag.s1{margin-left:8px;margin-top:-58px}
 .ptag.s2{margin-left:8px;margin-top:-94px}
-.ptag .pn{font-size:11px;font-weight:700;color:#f8f4ec}
+.ptag .pn{display:flex;flex-direction:column;align-items:flex-start;font-size:11px;font-weight:700;color:#f8f4ec;line-height:1.15}
+.ptag .prole{font-size:9px;font-weight:700;color:#E87708;letter-spacing:.04em}
+.wact{font-size:10px;font-weight:800;color:#1a1006;background:#E87708;border-radius:999px;padding:0 6px;line-height:1.5}
+.pantry-flag{pointer-events:none;padding:8px 16px;border-radius:999px;background:#E87708;color:#1a1006;font-size:22px;font-weight:800;letter-spacing:.08em;border:2px solid #fff7ed;box-shadow:0 0 22px rgba(232,119,8,.9);white-space:nowrap}
+.pstat{display:inline-block;font-size:9px;font-weight:800;border-radius:999px;padding:0 5px;line-height:1.55;white-space:nowrap;color:#1a1006}
+.st-busy{background:#E87708;color:#1a1006}
+.st-meet{background:#D0B993;color:#1a1006}
+.st-report{background:#7eb6d6;color:#0c1824}
+.st-errand{background:#c4b5fd;color:#1e1b4b}
+.st-coffee{background:#b45309;color:#fff7ed}
+.st-rest{background:#86efac;color:#052e16}
+.st-off{background:#6b7280;color:#f8fafc}
+.srow .pstat{font-size:11px;padding:1px 7px}
+.wtip{display:none;position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);padding:3px 7px;border-radius:8px;background:rgba(6,6,6,.94);border:1px solid rgba(208,185,147,.75);color:#f8f4ec;font-size:11px;font-weight:650;line-height:1.35;white-space:nowrap;pointer-events:none;z-index:4}
+.ptag:hover .wtip,.ptag.showtip .wtip{display:block}
+.wfacts .wbreak{color:#d9fbe5;font-weight:700}
 .wbar{display:inline-flex;align-items:center;gap:4px;flex:none}
 .wtrack{position:relative;width:46px;height:7px;border-radius:99px;background:#121a14;box-shadow:inset 0 1px 2px rgba(0,0,0,.65),inset 0 0 0 1px rgba(74,222,128,.4);overflow:hidden}
 .wfill{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(180deg,#eaffea 0%,#4ade80 46%,#15803d 100%)}
