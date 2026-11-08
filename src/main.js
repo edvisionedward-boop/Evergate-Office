@@ -388,7 +388,7 @@ function desktopOverviewPose() {
   for (let i = 0; i < 14; i++) {
     placeOverview(dir, dist, target);
     const edge = projectedBounds(south.length ? south : floor);
-    const clipped = edge.maxY > safe.b - 8;
+    const clipped = edge.maxY > safe.b - 2;
     if (!clipped) break;
     dist *= 1.04;
   }
@@ -1302,8 +1302,8 @@ function labelRank(R) {
   if (R.labelEl?.classList.contains('minor') || R.def?.minor) return 4;
   return 30;
 }
-function rectsOverlap(a, b) {
-  return a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+function rectsOverlap(a, b, gap = 0) {
+  return a.left < b.right + gap && b.left < a.right + gap && a.top < b.bottom + gap && b.top < a.bottom + gap;
 }
 function labelRankEl(el) {
   const room = office.rooms[el.dataset.room];
@@ -1311,35 +1311,17 @@ function labelRankEl(el) {
   if (el.classList.contains('minor')) rank = Math.min(rank, 3);
   return rank;
 }
-function nudgeOf(el) {
-  const cs = getComputedStyle(el);
-  return { x: parseFloat(cs.marginLeft) || 0, y: parseFloat(cs.marginTop) || 0 };
-}
-function baseBox(el) {
-  const r = el.getBoundingClientRect();
-  const n = nudgeOf(el);
-  return { left: r.left - n.x, top: r.top - n.y, right: r.right - n.x, bottom: r.bottom - n.y, width: r.width, height: r.height };
-}
 function shiftBox(base, x, y) {
   return { left: base.left + x, top: base.top + y, right: base.right + x, bottom: base.bottom + y, width: base.width, height: base.height };
 }
 function labelObstacles() {
   const out = [];
-  out.bubble = false;
   for (const sel of ['#topbar', '#quickbar', '#legend', '#feedToggle', '#panel', '#navfab']) {
     const el = document.querySelector(sel);
     if (!el || el.classList.contains('hidden')) continue;
     if (Number(getComputedStyle(el).opacity) < 0.15) continue;
     const r = el.getBoundingClientRect();
     if (r.width > 2 && r.height > 2) out.push(r);
-  }
-  for (const el of document.querySelectorAll('.bubble')) {
-    if (el.classList.contains('out')) continue;
-    const r = el.getBoundingClientRect();
-    if (r.width > 8 && r.height > 8) {
-      out.bubble = true;
-      out.push({ left: r.left - 10, top: r.top - 10, right: r.right + 10, bottom: r.bottom + 10, width: r.width + 20, height: r.height + 20 });
-    }
   }
   return out;
 }
@@ -1392,6 +1374,7 @@ function paintLeader(el, x, y) {
   leader.style.width = `${Math.round(len)}px`;
   leader.style.transform = `rotate(${Math.atan2(-y, -x)}rad)`;
 }
+const labelHold = new WeakMap();
 function layoutRoomLabels() {
   const list = [...document.querySelectorAll('.rlabel')];
   const phone = phoneLayout();
@@ -1400,38 +1383,60 @@ function layoutRoomLabels() {
     el.classList.remove('icononly', 'packed-hide');
     const st = el.querySelector('.st');
     if (st) st.hidden = phone;
+    el.style.marginLeft = '0px';
+    el.style.marginTop = '0px';
   }
+  if (list[0]) void list[0].offsetWidth;
   const obstacles = labelObstacles();
   const free = labelFreeRect();
   const items = list.map((el) => {
-    const base = baseBox(el);
+    const r = el.getBoundingClientRect();
+    const base = {
+      left: Math.round(r.left), top: Math.round(r.top), right: Math.round(r.right), bottom: Math.round(r.bottom),
+      width: r.width, height: r.height,
+    };
     const sel = el.classList.contains('sel');
     return { el, base, sel, rank: sel ? 1000 : labelRankEl(el), icon: !!el.querySelector('.ic') };
   }).filter((item) => item.base.width > 2 && item.base.height > 2);
   items.sort((a, b) => b.rank - a.rank || a.base.top - b.base.top);
   const placed = [];
-  const hits = (box, extra = []) => placed.some((rect) => rectsOverlap(box, rect)) || obstacles.some((rect) => rectsOverlap(box, rect)) || extra.some((rect) => rectsOverlap(box, rect));
+  const hits = (box) => placed.some((rect) => rectsOverlap(box, rect, 4)) || obstacles.some((rect) => rectsOverlap(box, rect, 2));
+  const accept = (item, x, y, box) => {
+    item.el.style.marginLeft = x ? `${x}px` : '0px';
+    item.el.style.marginTop = y ? `${y}px` : '0px';
+    labelHold.set(item.el, { x, y, icon: item.el.classList.contains('icononly') });
+    paintLeader(item.el, x, y);
+    placed.push(box);
+  };
   for (const item of items) {
-    const reach = item.sel ? 240 : far || obstacles.bubble ? 150 : 64;
-    const place = (base) => {
-      let fallback = null;
-      for (const shift of labelShifts(reach)) {
-        const box = shiftBox(base, shift.x, shift.y);
-        const clear = !hits(box);
-        const onScreen = boxInside(box, { l: 4, t: 4, r: viewW - 4, b: viewH - 4 });
-        const inFree = boxInside(box, free);
-        if (item.sel) {
-          if (inFree && clear) return { ...shift, box };
-          if (inFree && !fallback) fallback = { ...shift, box };
-        } else if (clear && onScreen && inFree) return { ...shift, box };
-      }
-      return fallback;
+    const reach = item.sel ? 240 : far ? 96 : 48;
+    const held = labelHold.get(item.el);
+    const tryShift = (base, x, y) => {
+      const box = shiftBox(base, x, y);
+      if (!boxInside(box, free) || hits(box)) return null;
+      return box;
     };
-    let chosen = place(item.base);
-    if (!chosen && !item.sel && item.icon) {
+    const homeBox = shiftBox(item.base, 0, 0);
+    const homeClear = boxInside(homeBox, free) && !hits({ left: homeBox.left - 6, top: homeBox.top - 6, right: homeBox.right + 6, bottom: homeBox.bottom + 6 });
+    if (homeClear) { accept(item, 0, 0, homeBox); continue; }
+    if (held) {
+      const kept = tryShift(item.base, held.x, held.y);
+      if (kept) { accept(item, held.x, held.y, kept); continue; }
+    }
+    let chosen = null;
+    for (const shift of labelShifts(reach)) {
+      const box = tryShift(item.base, shift.x, shift.y);
+      if (box) { chosen = { ...shift, box }; break; }
+    }
+    if (!chosen && !item.sel && item.icon && !item.el.classList.contains('icononly')) {
       item.el.classList.add('icononly');
-      const shrunk = baseBox(item.el);
-      chosen = place(shrunk);
+      void item.el.offsetWidth;
+      const r = item.el.getBoundingClientRect();
+      const shrunk = { left: Math.round(r.left), top: Math.round(r.top), right: Math.round(r.right), bottom: Math.round(r.bottom), width: r.width, height: r.height };
+      for (const shift of labelShifts(reach)) {
+        const box = tryShift(shrunk, shift.x, shift.y);
+        if (box) { chosen = { ...shift, box }; break; }
+      }
       if (!chosen) item.el.classList.remove('icononly');
     }
     if (!chosen && item.sel) {
@@ -1441,20 +1446,50 @@ function layoutRoomLabels() {
       if (item.base.top + y < free.t) y += free.t - (item.base.top + y);
       if (item.base.right + x > free.r) x -= item.base.right + x - free.r;
       if (item.base.left + x < free.l) x += free.l - (item.base.left + x);
-      chosen = { x: Math.round(x), y: Math.round(y), box: shiftBox(item.base, x, y) };
+      x = Math.round(x);
+      y = Math.round(y);
+      chosen = { x, y, box: shiftBox(item.base, x, y) };
     }
     if (!chosen) {
       item.el.classList.add('packed-hide');
       paintLeader(item.el, 0, 0);
-      item.el.style.marginLeft = '';
-      item.el.style.marginTop = '';
+      labelHold.delete(item.el);
       continue;
     }
-    item.el.style.marginLeft = chosen.x ? `${chosen.x}px` : '';
-    item.el.style.marginTop = chosen.y ? `${chosen.y}px` : '';
-    labelNudge[item.el.dataset.room || ''] = { x: chosen.x, y: chosen.y };
-    paintLeader(item.el, chosen.x, chosen.y);
-    placed.push(chosen.box);
+    accept(item, chosen.x, chosen.y, chosen.box);
+  }
+  if (!list[0]) return;
+  for (let pass = 0; pass < 8; pass++) {
+    void list[0].offsetWidth;
+    const live = [];
+    for (const item of items) {
+      if (item.el.classList.contains('packed-hide')) continue;
+      const r = item.el.getBoundingClientRect();
+      if (r.width > 2 && r.height > 2) live.push({ item, r });
+    }
+    let moved = false;
+    for (let i = 0; i < live.length && !moved; i++) {
+      for (let j = i + 1; j < live.length; j++) {
+        const A = live[i];
+        const B = live[j];
+        if (!rectsOverlap(A.r, B.r, 4)) continue;
+        const loser = A.item.rank >= B.item.rank ? B : A;
+        const winner = loser === A ? B : A;
+        if (loser.item.sel) continue;
+        const ox = Math.min(A.r.right, B.r.right) - Math.max(A.r.left, B.r.left);
+        const oy = Math.min(A.r.bottom, B.r.bottom) - Math.max(A.r.top, B.r.top);
+        const hold = labelHold.get(loser.item.el) || { x: 0, y: 0 };
+        const x = hold.x + (ox < oy ? (loser.r.left >= winner.r.left ? 1 : -1) * Math.ceil(ox + 4) : 0);
+        const y = hold.y + (ox < oy ? 0 : (loser.r.top >= winner.r.top ? 1 : -1) * Math.ceil(oy + 4));
+        loser.item.el.style.marginLeft = `${x}px`;
+        loser.item.el.style.marginTop = `${y}px`;
+        labelHold.set(loser.item.el, { x, y, icon: loser.item.el.classList.contains('icononly') });
+        paintLeader(loser.item.el, x, y);
+        moved = true;
+        break;
+      }
+    }
+    if (!moved) break;
   }
 }
 function separateChrome() {
@@ -1521,36 +1556,65 @@ function settleStaffTags() {
     }
   }
 }
-function layoutEdBubble(el) {
-  const label = office.rooms.ed?.labelEl;
-  if (!label) return;
-  const lr = baseBox(label);
+function placeBubble(el) {
   const br = el.getBoundingClientRect();
-  if (br.width < 20 || lr.width < 20) return;
+  if (br.width < 20 || br.height < 8) return;
+  const labels = [...document.querySelectorAll('.rlabel')]
+    .filter((node) => !node.classList.contains('packed-hide') && getComputedStyle(node).visibility !== 'hidden')
+    .map((node) => node.getBoundingClientRect())
+    .filter((rect) => rect.width > 2 && rect.height > 2);
   const cs = getComputedStyle(el);
   const curLeft = parseFloat(cs.left) || 0;
   const curTop = parseFloat(cs.top) || 0;
   const originX = br.left - curLeft;
   const originY = br.top - curTop;
-  let left = lr.left + (lr.width - br.width) / 2;
-  let top = lr.top - 14 - br.height;
-  const others = Object.values(office.rooms).filter(R => R.labelEl && R.id !== 'ed').map(R => R.labelEl.getBoundingClientRect());
-  const hits = (x, y) => others.some(o => x < o.right - 0.5 && x + br.width > o.left + 0.5 && y < o.bottom - 0.5 && y + br.height > o.top + 0.5);
-  if (hits(left, top)) {
-    let placed = false;
-    for (const dir of [-1, 1]) {
-      let x = left;
-      for (let i = 0; i < 10 && hits(x, top); i++) x += dir * 24;
-      if (!hits(x, top)) { left = x; placed = true; break; }
-    }
-    if (!placed) { for (let i = 0; i < 8 && hits(left, top); i++) top -= 22; }
-  }
   const pad = 8;
   const topLimit = ($('#topbar')?.getBoundingClientRect().bottom || 0) + 4;
-  left = Math.min(Math.max(pad, left), Math.max(pad, viewW - pad - br.width));
-  top = Math.min(Math.max(topLimit, top), Math.max(topLimit, viewH - pad - br.height));
-  el.style.left = `${Math.round(left - originX)}px`;
-  el.style.top = `${Math.round(top - originY)}px`;
+  const bounds = { l: pad, t: topLimit, r: viewW - pad, b: viewH - pad };
+  const anchor = office.rooms.ed?.labelEl?.getBoundingClientRect();
+  const preferX = anchor && anchor.width > 2 ? anchor.left + (anchor.width - br.width) / 2 : br.left;
+  const preferY = anchor && anchor.height > 2 ? anchor.top - 12 - br.height : br.top;
+  const hitsLabel = (left, top) => labels.some((rect) => left < rect.right - 1 && rect.left < left + br.width - 1 && top < rect.bottom - 1 && rect.top < top + br.height - 1);
+  const onScreen = (left, top) => left >= bounds.l - 0.5 && top >= bounds.t - 0.5 && left + br.width <= bounds.r + 0.5 && top + br.height <= bounds.b + 0.5;
+  const clear = (left, top) => onScreen(left, top) && !hitsLabel(left, top);
+  const hold = el._hold;
+  let chosen = hold && clear(hold.left, hold.top) ? hold : null;
+  if (!chosen) {
+    const steps = [{ x: 0, y: 0 }];
+    for (let dist = 20; dist <= 200; dist += 20) {
+      for (let k = 0; k < 8; k++) {
+        const angle = -Math.PI / 2 + (k / 8) * Math.PI * 2;
+        steps.push({ x: Math.round(Math.cos(angle) * dist), y: Math.round(Math.sin(angle) * dist) });
+      }
+    }
+    for (const step of steps) {
+      const left = preferX + step.x;
+      const top = preferY + step.y;
+      if (clear(left, top)) { chosen = { left, top }; break; }
+    }
+  }
+  if (!chosen) {
+    let best = null;
+    let bestHits = 1e9;
+    for (let dist = 0; dist <= 180; dist += 24) {
+      for (let k = 0; k < 8; k++) {
+        const angle = -Math.PI / 2 + (k / 8) * Math.PI * 2;
+        let left = preferX + Math.round(Math.cos(angle) * dist);
+        let top = preferY + Math.round(Math.sin(angle) * dist);
+        left = Math.min(Math.max(bounds.l, left), Math.max(bounds.l, bounds.r - br.width));
+        top = Math.min(Math.max(bounds.t, top), Math.max(bounds.t, bounds.b - br.height));
+        const n = labels.filter((rect) => left < rect.right - 1 && rect.left < left + br.width - 1 && top < rect.bottom - 1 && rect.top < top + br.height - 1).length;
+        if (n < bestHits) { bestHits = n; best = { left, top }; }
+        if (n === 0) break;
+      }
+      if (bestHits === 0) break;
+    }
+    chosen = best;
+  }
+  if (!chosen) return;
+  el._hold = chosen;
+  el.style.left = `${Math.round(chosen.left - originX)}px`;
+  el.style.top = `${Math.round(chosen.top - originY)}px`;
 }
 function clampBubble(el) {
   const r = el.getBoundingClientRect();
@@ -1750,11 +1814,8 @@ function frame() {
   refreshWorkBars();
   if (composer) composer.render(); else renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
-  for (const b of activeBubbles) {
-    if (b.ed) layoutEdBubble(b.el);
-    clampBubble(b.el);
-  }
   layoutRoomLabels();
+  for (const b of activeBubbles) placeBubble(b.el);
   separateChrome();
   measureChrome();
   refineOverview();

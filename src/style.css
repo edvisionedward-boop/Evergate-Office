@@ -210,8 +210,8 @@ a.tab{text-decoration:none;color:var(--mut)}
   .tab{flex:1 0 auto;justify-content:center;padding:6px 10px;font-size:12px;white-space:nowrap}
   .t1{font-size:14px}
   #legend{font-size:10.5px;gap:9px;padding:6px 10px;left:50%;transform:translateX(-50%);white-space:nowrap}
-  #panel{position:fixed;z-index:44;top:auto;left:0;right:0;bottom:var(--safe-bottom-controls, calc(120px + env(safe-area-inset-bottom, 0px)));height:min(40dvh,320px);max-height:min(40dvh,320px);border-radius:22px 22px 0 0;padding:8px 16px 12px;border-bottom:0}
-  #panel.open{top:calc(var(--topbar-h, 128px) + 30dvh);height:auto;max-height:none}
+  #panel{position:fixed;z-index:44;top:auto;left:0;right:0;width:100%;bottom:var(--safe-bottom-controls, calc(120px + env(safe-area-inset-bottom, 0px)));height:min(40dvh,320px);max-height:min(40dvh,320px);border-radius:22px 22px 0 0;padding:8px 16px 12px;border-bottom:0}
+  #panel.open{top:auto;left:0;right:0;width:100%;height:min(40dvh,320px);max-height:min(40dvh,320px)}
   #panel.hidden{opacity:0;transform:translateY(40px)}
   #panel .grab{display:block;position:relative;z-index:2;flex:none;width:44px;height:44px;margin:0 auto;border:0;background:transparent;color:#E0E4E5;font-size:13px;font-weight:700}
   .cols{grid-template-columns:1fr}

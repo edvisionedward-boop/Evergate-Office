@@ -37,7 +37,7 @@ function klNow() {
     hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
   }).formatToParts(new Date());
   const g = (t) => parts.find((p) => p.type === t).value;
-  return `${g('year')}-${g('month')}-${g('day')}T${g('hour')}:${g('minute')}:${g('second')}+08:00`;
+  return `${g('year')}-${g('month')}-${g('day')}T${g('hour')}:${g('minute')}:${g('second')}+07:00`;
 }
 
 async function forceLight(page, label) {
@@ -362,7 +362,7 @@ const manifest = {
   clocks: { day: dayUrl, night: nightUrl },
   timezone: 'Asia/Bangkok',
   supersedes: ['6d4938a', '6e82a14', '950dcbff0227bb1fed0dd83ba813535496bca3bb', '8f689da2270887d2682f0f60ae83e2698f249f1c'],
-  note: 'Shots from earlier heads are superseded. These files are the valid set for this head. The service worker was blocked for these captures.',
+  note: 'Shots from earlier heads are superseded. These files are the valid set for this head. The service worker was blocked for these captures. Times are Asia/Bangkok (UTC+7). Main has no washbasin in the male restroom; the restroom shots show the stalls, the aisle, and the existing 男洗手 sign.',
   shots: rows,
 };
 fs.writeFileSync(`${out}/manifest.json`, JSON.stringify(manifest, null, 2));
