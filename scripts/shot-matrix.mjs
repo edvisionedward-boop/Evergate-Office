@@ -155,6 +155,11 @@ async function closeSheet(page) {
   const ok = got.hidden && Number(got.opacity) < 0.05 && !got.focusInPanel;
   return { ok, assert: ok ? 'panel hidden, focus outside' : `hidden=${got.hidden} opacity=${got.opacity} focusInPanel=${got.focusInPanel}` };
 }
+async function openFeed(page) {
+  await page.evaluate(() => window.__app.popBubble());
+  await page.waitForFunction(() => document.querySelector('.bubble'), null, { timeout: 8000 });
+  await page.waitForTimeout(250);
+}
 async function bubbleInside(page) {
   return page.evaluate(() => {
     const el = document.querySelector('.bubble');
@@ -229,8 +234,7 @@ async function officeSet(device, w, h, mode, now) {
   if (device === 'iphone') {
     await home(page);
     await save(page, `${device}_${mode}_feed_collapsed`, { name: 'feed-collapsed', mode });
-    await page.click('#feedToggle');
-    await page.waitForTimeout(700);
+    await openFeed(page);
     const bubble = await bubbleInside(page);
     await save(page, `${device}_${mode}_feed_expanded`, { name: 'feed-expanded', mode, status: bubble.ok ? 'valid' : 'invalid', assert: bubble.assert });
     await page.click('#feedToggle');
@@ -257,8 +261,7 @@ async function officeSet(device, w, h, mode, now) {
     const closed = await closeSheet(page);
     await save(page, `${device}_${mode}_sidebar_closed`, { name: 'sidebar-closed', mode, status: closed.ok ? 'valid' : 'invalid', assert: closed.assert });
     await save(page, `${device}_${mode}_feed_collapsed`, { name: 'feed-collapsed', mode });
-    await page.click('#feedToggle');
-    await page.waitForTimeout(700);
+    await openFeed(page);
     const bubble = await bubbleInside(page);
     await save(page, `${device}_${mode}_feed_expanded`, { name: 'feed-expanded', mode, status: bubble.ok ? 'valid' : 'invalid', assert: bubble.assert });
     await page.click('#feedToggle');
