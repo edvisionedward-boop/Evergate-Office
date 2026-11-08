@@ -307,3 +307,11 @@ a.tab{text-decoration:none;color:var(--mut)}
 @media (max-width:760px){
   #boardMode button{padding:6px 8px;font-size:12px}
 }
+@media (max-height:520px){
+  #topbar{flex-wrap:nowrap;gap:8px;padding-top:6px;padding-bottom:6px}
+  .t2,.summary{display:none}
+  .tab{padding:6px 8px;font-size:12px}
+  #legend{display:none}
+  #quickbar{bottom:8px;padding-right:64px}
+  .feedtog{top:auto;bottom:8px;left:auto;right:12px}
+}

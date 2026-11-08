@@ -79,12 +79,25 @@ function campusSpan() {
   }
   box.expandByPoint(new THREE.Vector3(30.2, 0, -5.6));
   box.expandByPoint(new THREE.Vector3(35.8, 3.2, 5.6));
-  const news = office.rooms.news?.center;
-  if (news) {
-    box.expandByPoint(new THREE.Vector3(news.x - 6, 0, news.z - 1));
-    box.expandByPoint(new THREE.Vector3(news.x + 6, 4.2, news.z + 1));
-  }
   return box;
+}
+function phoneLayout() {
+  return Math.min(viewW, viewH) <= 760;
+}
+function roomFootprint() {
+  const pts = [];
+  const add = (x0, z0, x1, z1) => {
+    pts.push(new THREE.Vector3(x0, 0.2, z0), new THREE.Vector3(x1, 0.2, z0));
+    pts.push(new THREE.Vector3(x0, 0.2, z1), new THREE.Vector3(x1, 0.2, z1));
+  };
+  for (const R of Object.values(office.rooms)) {
+    const d = R.def;
+    if (!d?.w || !d?.d) continue;
+    add(d.x - d.w / 2, d.z - d.d / 2, d.x + d.w / 2, d.z + d.d / 2);
+  }
+  add(30.34, -5.5, 35.69, 5.5);
+  add(-4.2, 23.0, 4.2, 23.28);
+  return pts;
 }
 function fitDistance() {
   const size = campusSpan().getSize(new THREE.Vector3());
@@ -147,17 +160,17 @@ function cornersOf(box) {
   }
   return pts;
 }
-function fitPose(corners, safe) {
+function fitPose(corners, safe, margin = 1.08) {
   const sw = Math.max(40, safe.r - safe.l);
   const sh = Math.max(40, safe.b - safe.t);
-  const margin = 1.08;
   const limitW = sw / margin;
   const limitH = sh / margin;
   const center = new THREE.Box3().setFromPoints(corners).getCenter(new THREE.Vector3());
   center.y = 0;
   let best = null;
-  for (const elev of [0.58, 0.78, 1.02, 1.3]) {
-    const dir = new THREE.Vector3(0.55, elev, 0.7).normalize();
+  const xz = Math.hypot(0.55, 0.7);
+  for (const phi of [0.34, 0.48, 0.68, 0.9]) {
+    const dir = new THREE.Vector3((0.55 / xz) * Math.sin(phi), Math.cos(phi), (0.7 / xz) * Math.sin(phi));
     let lo = 14;
     let hi = 420;
     for (let i = 0; i < 16; i++) {
@@ -169,8 +182,10 @@ function fitPose(corners, safe) {
     }
     placeOverview(dir, hi, center);
     const p = projectedBounds(corners);
-    const fill = Math.min(p.w / sw, p.h / sh);
-    if (!best || fill > best.fill) best = { dir, dist: hi, fill, center };
+    const widthFill = Math.min(1, p.w / sw);
+    const heightFill = Math.min(1, p.h / sh);
+    const score = widthFill * 100 + heightFill;
+    if (!best || score > best.score) best = { dir, dist: hi, fill: widthFill, score, center };
   }
   const dir = best.dir;
   let dist = best.dist;
@@ -198,7 +213,7 @@ function fitPose(corners, safe) {
     target.x = THREE.MathUtils.clamp(target.x, -40, 48);
     target.z = THREE.MathUtils.clamp(target.z, -28, 24);
     const outside = p.minX < safe.l - 1 || p.maxX > safe.r + 1 || p.minY < safe.t - 1 || p.maxY > safe.b + 1;
-    if (outside) dist *= 1.05;
+    if (outside) dist *= 1.02;
     else if (Math.abs(pcx - scx) < 3 && Math.abs(pcy - scy) < 3) break;
   }
   placeOverview(dir, dist, target);
@@ -208,13 +223,19 @@ function fitPose(corners, safe) {
 }
 function overviewPose() {
   const safe = safeOverviewRect();
-  const padX = Math.min(48, Math.max(18, viewW * 0.1));
-  const inner = { l: safe.l + padX, t: safe.t + 6, r: safe.r - padX, b: safe.b - 6 };
-  return fitPose(cornersOf(campusSpan()), inner);
+  const sw = Math.max(40, safe.r - safe.l);
+  const band = sw * 0.90;
+  const inner = {
+    l: safe.l + (sw - band) / 2,
+    t: safe.t + 4,
+    r: safe.r - (sw - band) / 2,
+    b: safe.b - 4,
+  };
+  return fitPose(roomFootprint(), inner, 1);
 }
 let homeFraming = 0;
 function refineOverview() {
-  if (camera.aspect >= 0.8 || tween || homeFraming <= 0) return;
+  if (!phoneLayout() || tween || homeFraming <= 0) return;
   homeFraming -= 1;
   const pose = overviewPose();
   controls.maxDistance = Math.max(120, pose.dist * 1.1);
@@ -241,7 +262,7 @@ function homeDir() {
 }
 function goHome(anim = true) {
   applyFitLimits();
-  if (camera.aspect < 0.8) {
+  if (phoneLayout()) {
     const pose = overviewPose();
     controls.maxDistance = Math.max(120, pose.dist * 1.1);
     camera.far = Math.max(300, pose.dist + 150);
@@ -1090,7 +1111,7 @@ function packNarrowLabels() {
     const st = el.querySelector('.st');
     if (st) st.hidden = false;
   }
-  if (viewW > 760) return false;
+  if (!phoneLayout()) return false;
   for (const el of list) {
     const st = el.querySelector('.st');
     if (st) st.hidden = true;
@@ -1120,15 +1141,31 @@ function packNarrowLabels() {
     if (!pair) break;
     loser(pair[0], pair[1]).el.classList.add('packed-hide');
   }
+  for (let pass = 0; pass < list.length; pass++) {
+    const items = boxes();
+    const out = items.find(x => x.r.left < 1 || x.r.right > viewW - 1 || x.r.top < 1 || x.r.bottom > viewH - 1);
+    if (!out) break;
+    if (!out.el.classList.contains('icononly')) out.el.classList.add('icononly');
+    else out.el.classList.add('packed-hide');
+  }
   return true;
 }
 function separateChrome() {
   const feed = $('#feedToggle');
   const home = $('#homeBtn');
   if (!feed || !home) return;
+  if (viewH <= 520) {
+    feed.style.top = '';
+    feed.style.bottom = '8px';
+    feed.style.left = 'auto';
+    feed.style.right = '12px';
+    return;
+  }
   if (viewW > 760) {
     feed.style.top = '';
     feed.style.bottom = '';
+    feed.style.left = '';
+    feed.style.right = '';
     return;
   }
   const hr = home.getBoundingClientRect();
@@ -1410,9 +1447,12 @@ function frame() {
   controls.update();
   if (scene.fog) {
     const dist = camera.position.distanceTo(controls.target);
-    if (dist > 70) {
+    if (dist > 70 && phoneLayout()) {
       scene.fog.near = dist + 70;
       scene.fog.far = dist + 240;
+    } else if (dist > 70) {
+      scene.fog.near = Math.max(78, dist * 0.72);
+      scene.fog.far = dist + 180;
     } else {
       scene.fog.near = 78;
       scene.fog.far = 220;
