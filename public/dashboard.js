@@ -5,7 +5,163 @@
   const $ = (sel) => document.querySelector(sel);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const FONT = '"PingFang SC","Hiragino Sans GB","WenQuanYi Micro Hei","Droid Sans Fallback",sans-serif';
-  const PALETTE = ['#60a5fa', '#38bdf8', '#818cf8', '#22d3ee', '#93c5fd', '#2563eb', '#a5b4fc', '#67e8f9', '#3b82f6', '#cbd5e1'];
+  const GOLD_SERIES = ['#D0B993', '#E6D8C3', '#A98B5E', '#8A7049', '#C7B596', '#F4EFE6'];
+  const MARKS = {
+    ed: { shape: 'circle', fill: true }, ED: { shape: 'circle', fill: true },
+    corpfin: { shape: 'circle', fill: false }, '会计部': { shape: 'circle', fill: false },
+    invest: { shape: 'rect', fill: true }, '投资部': { shape: 'rect', fill: true },
+    '规划部(已并入投资部)': { shape: 'rect', fill: false },
+    legal: { shape: 'triangle', fill: true }, '法务部': { shape: 'triangle', fill: true },
+    market: { shape: 'triangle', fill: false }, '市场部': { shape: 'triangle', fill: false },
+    info: { shape: 'rectRot', fill: true }, '信息部': { shape: 'rectRot', fill: true },
+    privfin: { shape: 'rectRot', fill: false }, '私密': { shape: 'rectRot', fill: false },
+    logistics: { shape: 'star', fill: true }, '物流部': { shape: 'star', fill: true },
+    design: { shape: 'star', fill: false }, '设计部': { shape: 'star', fill: false },
+    review: { shape: 'cross', fill: true }, '审查部': { shape: 'cross', fill: true },
+    it: { shape: 'cross', fill: false }, '科技部': { shape: 'cross', fill: false },
+    '已用': { shape: 'circle', fill: true }, '按百分比剩下的部分': { shape: 'circle', fill: false },
+  };
+  function markFor(id) {
+    if (MARKS[id]) return MARKS[id];
+    const shapes = ['circle', 'rect', 'triangle', 'rectRot', 'star', 'cross'];
+    let hash = 0;
+    const key = String(id || '');
+    for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+    return { shape: shapes[hash % shapes.length], fill: hash % 2 === 0 };
+  }
+  function shapeFor(id) { return markFor(id, 0).shape; }
+  function tone(i) { return GOLD_SERIES[i % GOLD_SERIES.length]; }
+  function drawMark(ctx, shape, x, y, r, color, fill) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = fill ? 1.6 : 1.5;
+    ctx.beginPath();
+    if (shape === 'rect') ctx.rect(-r, -r, r * 2, r * 2);
+    else if (shape === 'rectRot') {
+      ctx.moveTo(0, -r * 1.3); ctx.lineTo(r * 1.3, 0); ctx.lineTo(0, r * 1.3); ctx.lineTo(-r * 1.3, 0); ctx.closePath();
+    } else if (shape === 'triangle') {
+      ctx.moveTo(0, -r); ctx.lineTo(r, r * 0.9); ctx.lineTo(-r, r * 0.9); ctx.closePath();
+    } else if (shape === 'cross') {
+      ctx.lineWidth = fill ? 3 : 1.4;
+      ctx.moveTo(-r, 0); ctx.lineTo(r, 0); ctx.moveTo(0, -r); ctx.lineTo(0, r);
+    } else if (shape === 'star') {
+      let rot = -Math.PI / 2;
+      const step = Math.PI / 5;
+      for (let i = 0; i < 10; i++) {
+        const rad = i % 2 === 0 ? r : r * 0.42;
+        const px = Math.cos(rot) * rad;
+        const py = Math.sin(rot) * rad;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        rot += step;
+      }
+      ctx.closePath();
+    } else ctx.arc(0, 0, r, 0, Math.PI * 2);
+    if (shape === 'cross' || !fill) ctx.stroke();
+    else ctx.fill();
+    ctx.restore();
+  }
+  function markSvg(id, index) {
+    const mark = markFor(id, index);
+    const ink = '#1a140c';
+    const fill = mark.fill ? ink : 'none';
+    let body = '';
+    if (mark.shape === 'rect') body = `<rect x="3" y="3" width="10" height="10" fill="${fill}" stroke="${ink}" stroke-width="1.6"/>`;
+    else if (mark.shape === 'rectRot') body = `<path d="M8 1.6 L14.4 8 L8 14.4 L1.6 8 Z" fill="${fill}" stroke="${ink}" stroke-width="1.6"/>`;
+    else if (mark.shape === 'triangle') body = `<path d="M8 2.2 L14 13.6 L2 13.6 Z" fill="${fill}" stroke="${ink}" stroke-width="1.6"/>`;
+    else if (mark.shape === 'star') body = `<path d="M8 1.4 L9.8 6.1 L14.8 6.2 L10.8 9.2 L12.2 14.1 L8 11.4 L3.8 14.1 L5.2 9.2 L1.2 6.2 L6.2 6.1 Z" fill="${fill}" stroke="${ink}" stroke-width="1.2"/>`;
+    else if (mark.shape === 'cross') body = `<path d="M3 8 H13 M8 3 V13" fill="none" stroke="${ink}" stroke-width="${mark.fill ? 3 : 1.4}" stroke-linecap="round"/>`;
+    else body = `<circle cx="8" cy="8" r="5" fill="${fill}" stroke="${ink}" stroke-width="1.6"/>`;
+    return `<svg class="mk" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">${body}</svg>`;
+  }
+  function sliceLegend(items) {
+    return `<ul class="slice-legend">${items.map((item, i) => `<li>${markSvg(item.id, i)}<span>${esc(item.name)} ${esc(item.pct)}%</span></li>`).join('')}</ul>`;
+  }
+  function drawSpreadLabels(chart, ctx) {
+    const labels = chart.$sliceLabels || [];
+    if (!labels.length) return;
+    ctx.save();
+    ctx.font = '12px ' + FONT;
+    ctx.fillStyle = '#F4EFE6';
+    ctx.strokeStyle = '#E6D8C3';
+    ctx.lineWidth = 1;
+    const placed = [];
+    const left = [];
+    const right = [];
+    for (const src of labels) {
+      const item = { ...src, w: ctx.measureText(src.text).width };
+      (Math.cos(src.mid) >= 0 || item.w > 140 ? right : left).push(item);
+    }
+    const stack = (arr, side) => {
+      arr.sort((a, b) => Math.sin(a.mid) - Math.sin(b.mid));
+      const room = Math.max(16, chart.height - 32);
+      const gap = Math.max(18, Math.min(26, room / Math.max(arr.length, 1)));
+      let y = 16 + gap / 2;
+      for (const item of arr) {
+        item.y = Math.max(16, Math.min(chart.height - 16, y));
+        y += gap;
+        item.side = side;
+        const inset = item.w + 8;
+        item.x = side > 0 ? Math.max(inset, chart.width - 8 - item.w) : Math.min(chart.width - inset, inset);
+        placed.push(item);
+      }
+    };
+    stack(left, -1);
+    stack(right, 1);
+    for (const lab of placed) {
+      const rimX = lab.cx + Math.cos(lab.mid) * lab.outer;
+      const rimY = lab.cy + Math.sin(lab.mid) * lab.outer;
+      const bendX = lab.cx + Math.cos(lab.mid) * (lab.outer + 14);
+      const bendY = lab.cy + Math.sin(lab.mid) * (lab.outer + 14);
+      ctx.beginPath();
+      ctx.moveTo(rimX, rimY);
+      ctx.lineTo(bendX, bendY);
+      ctx.lineTo(lab.x, lab.y);
+      ctx.stroke();
+      ctx.textAlign = lab.side > 0 ? 'left' : 'right';
+      ctx.textBaseline = 'middle';
+      const textX = lab.side > 0
+        ? Math.min(chart.width - lab.w - 4, lab.x + 4)
+        : Math.max(lab.w + 4, lab.x - 4);
+      ctx.fillText(lab.text, textX, lab.y);
+    }
+    ctx.restore();
+  }
+  function drawSliceMark(ctx, mark, x, y) {
+    ctx.save();
+    ctx.fillStyle = '#F4EFE6';
+    ctx.beginPath();
+    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    drawMark(ctx, mark.shape, x, y, 4.5, '#1a140c', mark.fill);
+  }
+  function drawPhoneMarks(chart, ctx) {
+    const marks = chart.$phoneMarks || [];
+    for (let pass = 0; pass < 10; pass++) {
+      for (let i = 0; i < marks.length; i++) {
+        for (let j = i + 1; j < marks.length; j++) {
+          const a = marks[i];
+          const b = marks[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          if (dist >= 18) continue;
+          const push = (18 - dist) / 2;
+          a.x -= (dx / dist) * push;
+          a.y -= (dy / dist) * push;
+          b.x += (dx / dist) * push;
+          b.y += (dy / dist) * push;
+        }
+      }
+    }
+    for (const mark of marks) {
+      mark.x = Math.max(10, Math.min(chart.width - 10, mark.x));
+      mark.y = Math.max(10, Math.min(chart.height - 10, mark.y));
+      drawSliceMark(ctx, mark.mark, mark.x, mark.y);
+    }
+  }
   const PHASE = { done: '已完成', upcoming: '即将到来', today: '今天', overdue: '已到期，结果尚未回写' };
   const COLS = [['todo', '待开始'], ['doing', '进行中'], ['done', '已完成']];
   const charts = {};
@@ -17,6 +173,78 @@
     Chart.defaults.font.family = FONT;
     Chart.defaults.color = 'rgba(248,251,255,.86)';
     Chart.defaults.animation.duration = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 800;
+    if (!Chart.registry.plugins.get('brandShapes')) {
+      Chart.register({
+        id: 'brandShapes',
+        afterDatasetsDraw(chart) {
+          const type = chart.config.type;
+          const ctx = chart.ctx;
+          chart.$sliceLabels = [];
+          chart.$phoneMarks = [];
+          if (type === 'line') {
+            ctx.save();
+            ctx.font = '12px ' + FONT;
+            ctx.textBaseline = 'middle';
+            chart.data.datasets.forEach((ds, di) => {
+              const meta = chart.getDatasetMeta(di);
+              if (!meta || meta.hidden) return;
+              const last = [...meta.data].reverse().find((pt) => pt && !pt.skip);
+              if (!last) return;
+              const p = last.getProps(['x', 'y'], true);
+              ctx.fillStyle = ds.borderColor || '#D0B993';
+              ctx.fillText(ds.label || '', p.x + 8, p.y);
+            });
+            ctx.restore();
+            return;
+          }
+          chart.data.datasets.forEach((ds, di) => {
+            const meta = chart.getDatasetMeta(di);
+            if (!meta || meta.hidden) return;
+            meta.data.forEach((el, i) => {
+              const id = ds.shapeIds?.[i] || chart.data.shapeIds?.[i] || chart.data.labels?.[i] || ds.label;
+              if (type === 'doughnut' || type === 'pie') {
+                const mid = ((el.startAngle || 0) + (el.endAngle || 0)) / 2;
+                const rad = ((el.outerRadius || 0) + (el.innerRadius || 0)) / 2;
+                const mx = el.x + Math.cos(mid) * rad;
+                const my = el.y + Math.sin(mid) * rad;
+                const mark = markFor(id, i);
+                const outerR = el.outerRadius || rad;
+                const span = Math.abs((el.endAngle || 0) - (el.startAngle || 0));
+                const outside = isPhone() && span * outerR < 22;
+                const markDist = outside ? outerR + 15 : rad;
+                const markX = el.x + Math.cos(mid) * markDist;
+                const markY = el.y + Math.sin(mid) * markDist;
+                if (isPhone()) {
+                  if (!chart.$phoneMarks) chart.$phoneMarks = [];
+                  chart.$phoneMarks.push({ mark, x: markX, y: markY, cx: el.x, cy: el.y });
+                } else {
+                  drawSliceMark(ctx, mark, mx, my);
+                }
+                if (!chart.$sliceLabels) chart.$sliceLabels = [];
+                if (!isPhone()) {
+                  const values = (ds.data || []).map((n) => Number(n) || 0);
+                  const total = values.reduce((sum, n) => sum + n, 0);
+                  const raw = values[i] || 0;
+                  const pct = total ? Math.round((raw / total) * 1000) / 10 : 0;
+                  const pctText = Number.isInteger(pct) ? String(pct) : pct.toFixed(1);
+                  const name = String(chart.data.labels?.[i] || '');
+                  chart.$sliceLabels.push({
+                    text: `${name} ${pctText}%`,
+                    mid, cx: el.x, cy: el.y, outer: el.outerRadius || rad,
+                  });
+                }
+              } else {
+                const p = el.getProps(['x', 'y'], true);
+                const mark = markFor(id, i);
+                drawMark(ctx, mark.shape, p.x, p.y, 5, '#1a140c', mark.fill);
+              }
+            });
+          });
+          if (chart.$sliceLabels && chart.$sliceLabels.length > 2) drawSpreadLabels(chart, ctx);
+          if (chart.$phoneMarks && chart.$phoneMarks.length) drawPhoneMarks(chart, ctx);
+        },
+      });
+    }
   }
 
   function readClock() {
@@ -175,7 +403,7 @@
     if (document.getElementById('sparkDone') && done.length) {
       const dLabels = done.map((task) => M.fmtKL(Date.parse(task.updatedAt)));
       const dValues = done.map((_, i) => i + 1);
-      upsert('sparkDone', () => sparkConfig(dLabels, dValues, '#34d399'));
+      upsert('sparkDone', () => sparkConfig(dLabels, dValues, '#D0B993', '完成'));
       setSeries('sparkDone', dLabels, dValues);
     }
     const ranks = M.departmentRanks(state.data.teams, rules, clock.nowMs);
@@ -200,8 +428,8 @@
               label: '公司总分',
               data: values,
               tension: 0,
-              borderColor: '#60a5fa',
-              backgroundColor: 'rgba(96,165,250,.2)',
+              borderColor: '#D0B993',
+              backgroundColor: 'rgba(208,185,147,.22)',
               fill: true,
               pointRadius: 2,
               pointBackgroundColor: '#fff',
@@ -211,6 +439,7 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: { padding: { right: 72 } },
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => M.fmtScore(c.raw) } } },
             scales: {
               x: { ...axis(), ticks: { ...axis().ticks, maxTicksLimit: 6, callback(v) { return String(this.getLabelForValue(v)).slice(5); } } },
@@ -229,7 +458,7 @@
     const labels = ranks.map((r) => (narrow ? r.name : `${r.name} · ${r.n}人`));
     const data = ranks.map((r) => r.total);
     const maxVal = data.reduce((m, n) => Math.max(m, Number(n) || 0), 0);
-    const colors = ranks.map((_, i) => PALETTE[i % PALETTE.length]);
+    const colors = ranks.map((_, i) => tone(i));
     const x = { ...axis(), beginAtZero: true, ticks: { ...axis().ticks, maxTicksLimit: narrow ? 4 : 8 } };
     if (narrow) {
       x.grace = '18%';
@@ -244,7 +473,7 @@
     if (!charts.rankChart) {
       charts.rankChart = new Chart(document.getElementById('rankChart'), {
         type: 'bar',
-        data: { labels, datasets: [{ data, backgroundColor: colors, ...barStyle }] },
+        data: { labels, shapeIds: ranks.map((r) => r.id || r.name), datasets: [{ data, backgroundColor: colors, ...barStyle }] },
         options: {
           indexAxis: 'y',
           responsive: true,
@@ -265,19 +494,24 @@
     requestAnimationFrame(() => charts.rankChart && charts.rankChart.resize());
   }
 
-  function sparkConfig(labels, data, color) {
-    const line = color || '#93c5fd';
+  function sparkConfig(labels, data, color, name) {
+    const line = color || '#D0B993';
     return {
       type: 'line',
       data: {
         labels,
         datasets: [{
+          label: name || '总分',
           data,
           tension: 0.25,
           borderColor: line,
-          backgroundColor: 'rgba(147,197,253,.18)',
+          backgroundColor: 'rgba(208,185,147,.18)',
           fill: true,
-          pointRadius: 0,
+          pointRadius: 3,
+          pointHoverRadius: 4,
+          pointBackgroundColor: line,
+          pointBorderColor: '#1a140c',
+          pointBorderWidth: 1,
           borderWidth: 2,
         }],
       },
@@ -285,6 +519,7 @@
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: Chart.defaults.animation.duration },
+        layout: { padding: { right: 36 } },
         plugins: { legend: { display: false }, tooltip: { enabled: false } },
         scales: { x: { display: false }, y: { display: false } },
       },
@@ -528,7 +763,7 @@
         type: 'bar',
         data: {
           labels: ['进行中', '等你确认', '已完成'],
-          datasets: [{ data: [counts.doing, counts.confirm, counts.done], backgroundColor: ['#3b82f6', '#D0B993', '#34d399'], borderRadius: 10, maxBarThickness: 48 }],
+          datasets: [{ data: [counts.doing, counts.confirm, counts.done], backgroundColor: ['#A98B5E', '#D0B993', '#E6D8C3'], borderRadius: 10, maxBarThickness: 48 }],
         },
         options: {
           responsive: true,
@@ -554,7 +789,7 @@
     }
     const depts = Array.isArray(report.departments) ? report.departments : [];
     const sum = Math.round(depts.reduce((n, row) => n + (Number(row.pct) || 0), 0) * 10) / 10;
-    const rows = depts.map((row, i) => `<tr><td><i class="swatch" style="background:${PALETTE[i % PALETTE.length]}"></i>${esc(row.name)}</td><td>${esc(row.pct)}%</td><td>${esc(row.note || '')}</td></tr>`).join('');
+    const rows = depts.map((row, i) => `<tr><td>${markSvg(row.name, i)}${esc(row.name)}</td><td>${esc(row.pct)}%</td><td>${esc(row.note || '')}</td></tr>`).join('');
     const sumNote = sum === 100 ? '' : `<p class="note">部门份额合计 ${sum}%，与 100% 不一致。页面没有改这些数字。</p>`;
     const used = Number(report.weekUsedPct);
     const rest = Number.isFinite(used) ? Number((100 - used).toFixed(1)) : null;
@@ -566,13 +801,17 @@
           <span>重置 ${esc(whenText(report.resetAt))}（UTC+8）</span>
         </div>
         <div class="usage-grid">
-          <div class="gauge-wrap">
-            <canvas id="gauge"></canvas>
-            <div class="gauge-label"><b>${esc(report.weekUsedPct)}%</b><span>本周已用</span></div>
+          <div>
+            <div class="gauge-wrap">
+              <canvas id="gauge"></canvas>
+              <div class="gauge-label"><b>${esc(report.weekUsedPct)}%</b><span>本周已用</span></div>
+            </div>
+            ${sliceLegend([{ id: '已用', name: '已用', pct: used }, { id: '按百分比剩下的部分', name: '按百分比剩下的部分', pct: rest }]).replace('slice-legend', 'slice-legend always')}
           </div>
           <div>
             <p class="note">${esc(report.weekUsedNote || '')}</p>
-            <div class="chartbox" style="height:240px"><canvas id="donut"></canvas></div>
+            <div class="chartbox" style="height:280px"><canvas id="donut"></canvas></div>
+            ${sliceLegend(depts.map((row) => ({ id: row.name, name: row.name, pct: row.pct })))}
           </div>
         </div>
         <table class="share">${rows}</table>
@@ -585,20 +824,22 @@
       type: 'doughnut',
       data: {
         labels: ['已用', '按百分比剩下的部分'],
-        datasets: [{ data: [used, rest], backgroundColor: ['#3b82f6', 'rgba(255,255,255,.16)'], borderWidth: 0 }],
+        datasets: [{ data: [used, rest], backgroundColor: ['#D0B993', 'rgba(255,255,255,.16)'], borderWidth: 0 }],
       },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '74%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } } },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '74%', layout: { padding: isPhone() ? 8 : 18 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } } },
     });
     charts.donut = new Chart(document.getElementById('donut'), {
       type: 'doughnut',
       data: {
         labels: depts.map((row) => row.name),
-        datasets: [{ data: depts.map((row) => row.pct), backgroundColor: depts.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 0 }],
+        shapeIds: depts.map((row) => row.name),
+        datasets: [{ data: depts.map((row) => row.pct), backgroundColor: depts.map((_, i) => tone(i)), borderWidth: 0 }],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '62%',
+        cutout: '58%',
+        layout: { padding: isPhone() ? 28 : { top: 24, right: 200, bottom: 24, left: 132 } },
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${c.raw}%` } } },
       },
     });
@@ -653,7 +894,7 @@
       type: 'bar',
       data: {
         labels: bars.map((row) => row.name),
-        datasets: [{ data: bars.map((row) => row.score), backgroundColor: '#60a5fa', borderRadius: 8, maxBarThickness: 28 }],
+        datasets: [{ data: bars.map((row) => row.score), backgroundColor: '#D0B993', borderRadius: 8, maxBarThickness: 28 }],
       },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ...axis(), grid: { display: false } }, y: axis() } },
     });
@@ -669,13 +910,16 @@
               const hit = rows.find((row) => row.employee === person.employee && row.date === date);
               return hit ? hit.score : null;
             }),
-            borderColor: PALETTE[i % PALETTE.length],
-            backgroundColor: PALETTE[i % PALETTE.length],
+            borderColor: tone(i),
+            backgroundColor: tone(i),
+            pointStyle: shapeFor(person.employee || person.name),
+            pointRadius: 4,
+            pointHoverRadius: 6,
             spanGaps: false,
             tension: 0,
           })),
         },
-        options: { responsive: true, maintainAspectRatio: false, scales: { x: axis(), y: axis() } },
+        options: { responsive: true, maintainAspectRatio: false, layout: { padding: { right: 72 } }, scales: { x: axis(), y: axis() } },
       });
     } else {
       const canvas = document.getElementById('examLine');
@@ -775,14 +1019,22 @@
         else link.removeAttribute('aria-current');
       });
     };
-    const sections = [...document.querySelectorAll('.sec')];
-    const observer = new IntersectionObserver((entries) => {
-      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (visible) setActive(visible.target.id);
-    }, { rootMargin: '-72px 0px -52% 0px', threshold: [0.12, 0.3, 0.6] });
-    sections.forEach((section) => observer.observe(section));
+    const sections = [...document.querySelectorAll('section.sec')];
+    const spy = () => {
+      const nav = document.querySelector('.pills-wrap');
+      const line = (nav?.getBoundingClientRect().bottom || 72) + 24;
+      let current = sections[0]?.id || 'overview';
+      for (const section of sections) {
+        if (section.getBoundingClientRect().top <= line) current = section.id;
+      }
+      setActive(current);
+    };
     links.forEach((link) => link.addEventListener('click', () => setActive(link.dataset.sec)));
+    document.addEventListener('scroll', spy, { passive: true, capture: true });
+    window.addEventListener('scroll', spy, { passive: true });
+    window.addEventListener('resize', spy);
     setActive((location.hash || '#overview').slice(1));
+    requestAnimationFrame(spy);
   }
 
   function tick() {
@@ -826,6 +1078,12 @@
     renderClients();
     renderSkills();
     bindNav();
+    const syncSticky = () => {
+      const nav = document.querySelector('.pills-wrap');
+      if (nav) document.documentElement.style.setProperty('--sticky-h', `${nav.offsetHeight}px`);
+    };
+    syncSticky();
+    window.addEventListener('resize', syncSticky);
     document.addEventListener('click', (event) => {
       const row = event.target.closest('.mrow');
       if (row && !row.classList.contains('mstatic')) {

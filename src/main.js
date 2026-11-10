@@ -57,6 +57,7 @@ const fill = new THREE.DirectionalLight('#ffd8b0', 0.28); fill.position.set(22, 
 
 /* office */
 const office = buildOffice(scene, DATA.teams);
+const hue = (team) => window.EvergateBrand.teamColor(team);
 
 /* controls */
 const controls = new OrbitControls(camera, canvas);
@@ -68,22 +69,357 @@ controls.rotateSpeed = 0.6; controls.zoomSpeed = 0.9; controls.panSpeed = 0.9;
 controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
 const HOME_DIR = new THREE.Vector3(0.82, 1.05, 1).normalize();
 
-function homeDistance() {
-  const R = 46, vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+function campusSpan() {
+  const box = new THREE.Box3();
+  for (const R of Object.values(office.rooms)) {
+    const d = R.def;
+    if (!d?.w || !d?.d) continue;
+    box.expandByPoint(new THREE.Vector3(d.x - d.w / 2, 0, d.z - d.d / 2));
+    box.expandByPoint(new THREE.Vector3(d.x + d.w / 2, 3.2, d.z + d.d / 2));
+  }
+  box.expandByPoint(new THREE.Vector3(30.2, 0, -5.6));
+  box.expandByPoint(new THREE.Vector3(35.8, 3.2, 5.6));
+  return box;
+}
+function phoneLayout() {
+  return Math.min(viewW, viewH) <= 760;
+}
+function roomFootprint() {
+  const pts = [];
+  const add = (x0, z0, x1, z1) => {
+    pts.push(new THREE.Vector3(x0, 0.2, z0), new THREE.Vector3(x1, 0.2, z0));
+    pts.push(new THREE.Vector3(x0, 0.2, z1), new THREE.Vector3(x1, 0.2, z1));
+  };
+  for (const R of Object.values(office.rooms)) {
+    const d = R.def;
+    if (!d?.w || !d?.d) continue;
+    add(d.x - d.w / 2, d.z - d.d / 2, d.x + d.w / 2, d.z + d.d / 2);
+  }
+  add(30.34, -5.5, 35.69, 5.5);
+  add(-4.2, 23.0, 4.2, 23.28);
+  return pts;
+}
+function fitDistance() {
+  const size = campusSpan().getSize(new THREE.Vector3());
+  const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
   const hf = Math.atan(Math.tan(vf) * camera.aspect);
-  const d = Math.max(R * 0.78 / Math.tan(vf), R * 1.05 / Math.tan(hf));
-  return camera.aspect < 0.8 ? d * 0.72 : d;
+  const radiusX = size.x * 0.5;
+  const radiusZ = size.z * 0.5;
+  const d = Math.max(radiusX / Math.tan(hf), radiusZ / Math.tan(vf));
+  return d * 1.08;
+}
+function homeDistance() {
+  return fitDistance();
+}
+function safeOverviewRect() {
+  const top = $('#topbar')?.getBoundingClientRect().bottom || 0;
+  let bottom = viewH;
+  const quick = $('#quickbar')?.getBoundingClientRect();
+  if (quick && quick.height > 2 && quick.top > top + 40) bottom = quick.top;
+  return { l: 8, t: top + 8, r: Math.max(48, viewW - 8), b: Math.max(top + 80, bottom - 8) };
+}
+function rectArea(r) { return Math.max(0, r.r - r.l) * Math.max(0, r.b - r.t); }
+function untransformedRect(el) {
+  const r = el.getBoundingClientRect();
+  const tr = getComputedStyle(el).transform;
+  const m = tr && tr.match(/^matrix\(([^)]+)\)$/);
+  if (!m) return r;
+  const n = m[1].split(',').map((s) => parseFloat(s));
+  const tx = n[4] || 0;
+  const ty = n[5] || 0;
+  return { top: r.top - ty, bottom: r.bottom - ty, left: r.left - tx, right: r.right - tx, width: r.width, height: r.height };
+}
+function chromeSafeRect() {
+  const top = ($('#topbar')?.getBoundingClientRect().bottom || 0) + 8;
+  let bottom = viewH - 8;
+  const quick = $('#quickbar')?.getBoundingClientRect();
+  if (quick && quick.height > 2 && quick.top > top + 24) bottom = Math.min(bottom, quick.top - 8);
+  const full = { l: 8, t: top, r: Math.max(48, viewW - 8), b: Math.max(top + 48, bottom) };
+  let best = full;
+  for (const sel of ['#panel', '#directory']) {
+    const el = $(sel);
+    if (!el || el.classList.contains('hidden')) continue;
+    const b = untransformedRect(el);
+    if (b.width < 2 || b.height < 2) continue;
+    const options = [];
+    if (b.top - best.t > 24) options.push({ ...best, b: Math.min(best.b, b.top - 8) });
+    if (best.b - b.bottom > 24) options.push({ ...best, t: Math.max(best.t, b.bottom + 8) });
+    if (b.left - best.l > 48) options.push({ ...best, r: Math.min(best.r, b.left - 8) });
+    if (best.r - b.right > 48) options.push({ ...best, l: Math.max(best.l, b.right + 8) });
+    if (options.length) best = options.sort((a, c) => rectArea(c) - rectArea(a))[0];
+  }
+  return best;
+}
+function roomFitCorners(def) {
+  const pad = 0.4;
+  return cornersOf(new THREE.Box3(
+    new THREE.Vector3(def.x - def.w / 2 - pad, 0, def.z - def.d / 2 - pad),
+    new THREE.Vector3(def.x + def.w / 2 + pad, 5.6, def.z + def.d / 2 + pad),
+  ));
+}
+function holdCamera(run) {
+  const target = controls.target.clone();
+  const position = camera.position.clone();
+  const pose = run();
+  controls.target.copy(target);
+  camera.position.copy(position);
+  camera.up.set(0, 1, 0);
+  return pose;
+}
+function focusRoom(id, anim = true) {
+  const R = office.rooms[id];
+  if (!R?.def?.w) return;
+  homeFraming = 0;
+  const safe = chromeSafeRect();
+  const pose = holdCamera(() => fitPose(roomFitCorners(R.def), safe, 1.04));
+  controls.maxDistance = Math.max(140, pose.dist * 1.6);
+  camera.far = Math.max(300, pose.dist + 160);
+  camera.updateProjectionMatrix();
+  const dist = Math.min(pose.dist, safe.b - safe.t < 140 ? 72 : pose.dist);
+  if (anim) flyTo(pose.target, dist, pose.dir, 0.7);
+  else {
+    tween = null;
+    window.__flying = false;
+    controls.target.copy(pose.target);
+    camera.position.copy(pose.target).addScaledVector(pose.dir, dist);
+  }
+  if (safe.b - safe.t < 140) pinRoomAnchor(R.def, safe, dist);
+}
+function pinRoomAnchor(def, safe, dist) {
+  const anchor = new THREE.Vector3(def.x, def.id === 'ed' ? 5.4 : 4.3, def.z - def.d * 0.1);
+  const scx = (safe.l + safe.r) / 2;
+  const scy = safe.b - 8;
+  const flat = camera.position.clone().sub(controls.target);
+  flat.y = 0;
+  if (flat.lengthSq() < 1e-6) flat.set(1, 0, 1);
+  flat.normalize();
+  const dir = new THREE.Vector3(flat.x * Math.sin(0.42), Math.cos(0.42), flat.z * Math.sin(0.42)).normalize();
+  camera.position.copy(controls.target).addScaledVector(dir, dist);
+  camera.up.set(0, 1, 0);
+  camera.lookAt(controls.target);
+  for (let i = 0; i < 24; i++) {
+    camera.updateMatrixWorld();
+    const p = anchor.clone().project(camera);
+    const x = (p.x * 0.5 + 0.5) * viewW;
+    const y = (-p.y * 0.5 + 0.5) * viewH;
+    if (Math.abs(x - scx) < 12 && Math.abs(y - scy) < 8) break;
+    const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+    right.y = 0;
+    if (right.lengthSq() > 1e-6) right.normalize();
+    const toward = new THREE.Vector3(dir.x, 0, dir.z);
+    if (toward.lengthSq() > 1e-6) toward.normalize();
+    const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+    const hf = Math.atan(Math.tan(vf) * camera.aspect);
+    const px = (viewW / 2) / Math.max(1, dist * Math.tan(hf));
+    const py = (viewH / 2) / Math.max(1, dist * Math.tan(vf));
+    controls.target.addScaledVector(right, (x - scx) / px);
+    controls.target.addScaledVector(toward, ((y - scy) / py) * 1.6);
+    controls.target.y = 0;
+    camera.position.copy(controls.target).addScaledVector(dir, dist);
+    camera.up.set(0, 1, 0);
+    camera.lookAt(controls.target);
+  }
+  controls.update();
+}
+const _proj = new THREE.Vector3();
+function roomCorners() {
+  const box = campusSpan();
+  const pts = [];
+  for (const x of [box.min.x, box.max.x]) {
+    for (const y of [box.min.y, box.max.y]) {
+      for (const z of [box.min.z, box.max.z]) pts.push(new THREE.Vector3(x, y, z));
+    }
+  }
+  return pts;
+}
+function projectedBounds(corners) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of corners) {
+    _proj.copy(p).project(camera);
+    const x = (_proj.x * 0.5 + 0.5) * viewW;
+    const y = (-_proj.y * 0.5 + 0.5) * viewH;
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+  return { minX, minY, maxX, maxY, w: maxX - minX, h: maxY - minY };
+}
+function placeOverview(dir, dist, target) {
+  controls.target.copy(target);
+  camera.position.copy(target).addScaledVector(dir, dist);
+  camera.up.set(0, 1, 0);
+  camera.lookAt(target);
+  camera.updateMatrixWorld();
+}
+function cornersOf(box) {
+  const pts = [];
+  for (const x of [box.min.x, box.max.x]) {
+    for (const y of [box.min.y, box.max.y]) {
+      for (const z of [box.min.z, box.max.z]) pts.push(new THREE.Vector3(x, y, z));
+    }
+  }
+  return pts;
+}
+function fitPose(corners, safe, margin = 1.08) {
+  const sw = Math.max(40, safe.r - safe.l);
+  const sh = Math.max(40, safe.b - safe.t);
+  const limitW = sw / margin;
+  const limitH = sh / margin;
+  const center = new THREE.Box3().setFromPoints(corners).getCenter(new THREE.Vector3());
+  center.y = 0;
+  let best = null;
+  const xz = Math.hypot(0.55, 0.7);
+  for (const phi of [0.34, 0.48, 0.68, 0.9]) {
+    const dir = new THREE.Vector3((0.55 / xz) * Math.sin(phi), Math.cos(phi), (0.7 / xz) * Math.sin(phi));
+    let lo = 14;
+    let hi = 420;
+    for (let i = 0; i < 16; i++) {
+      const mid = (lo + hi) / 2;
+      placeOverview(dir, mid, center);
+      const p = projectedBounds(corners);
+      if (p.w <= limitW && p.h <= limitH) hi = mid;
+      else lo = mid;
+    }
+    placeOverview(dir, hi, center);
+    const p = projectedBounds(corners);
+    const widthFill = Math.min(1, p.w / sw);
+    const heightFill = Math.min(1, p.h / sh);
+    const score = widthFill * 100 + heightFill;
+    if (!best || score > best.score) best = { dir, dist: hi, fill: widthFill, score, center };
+  }
+  const dir = best.dir;
+  let dist = best.dist;
+  const target = best.center.clone();
+  const scx = (safe.l + safe.r) / 2;
+  const scy = (safe.t + safe.b) / 2;
+  for (let n = 0; n < 8; n++) {
+    placeOverview(dir, dist, target);
+    const p = projectedBounds(corners);
+    const pcx = (p.minX + p.maxX) / 2;
+    const pcy = (p.minY + p.maxY) / 2;
+    const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+    const hf = Math.atan(Math.tan(vf) * camera.aspect);
+    const px = (viewW / 2) / Math.max(1, dist * Math.tan(hf));
+    const py = (viewH / 2) / Math.max(1, dist * Math.tan(vf));
+    const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+    right.y = 0;
+    if (right.lengthSq() > 1e-6) right.normalize();
+    const toward = new THREE.Vector3(dir.x, 0, dir.z);
+    if (toward.lengthSq() > 1e-6) toward.normalize();
+    // Sliding the target along camera-right moves the subject the other way on screen.
+    target.addScaledVector(right, (pcx - scx) / px);
+    target.addScaledVector(toward, (pcy - scy) / py);
+    target.y = 0;
+    target.x = THREE.MathUtils.clamp(target.x, -40, 48);
+    target.z = THREE.MathUtils.clamp(target.z, -28, 24);
+    const outside = p.minX < safe.l - 1 || p.maxX > safe.r + 1 || p.minY < safe.t - 1 || p.maxY > safe.b + 1;
+    if (outside) dist *= 1.02;
+    else if (Math.abs(pcx - scx) < 3 && Math.abs(pcy - scy) < 3) break;
+  }
+  placeOverview(dir, dist, target);
+  const p = projectedBounds(corners);
+  const fill = Math.min(p.w / sw, p.h / sh);
+  return { dir, dist, target, fill, bounds: p };
+}
+function overviewPose() {
+  const safe = safeOverviewRect();
+  const sw = Math.max(40, safe.r - safe.l);
+  const band = sw * 0.90;
+  const inner = {
+    l: safe.l + (sw - band) / 2,
+    t: safe.t + 4,
+    r: safe.r - (sw - band) / 2,
+    b: safe.b - 4,
+  };
+  return fitPose(roomFootprint(), inner, 1);
+}
+let homeFraming = 0;
+function refineOverview() {
+  if (!phoneLayout() || tween || homeFraming <= 0) return;
+  homeFraming -= 1;
+  const pose = overviewPose();
+  controls.maxDistance = Math.max(120, pose.dist * 1.1);
+  camera.far = Math.max(300, pose.dist + 150);
+  camera.updateProjectionMatrix();
+  controls.target.copy(pose.target);
+  camera.position.copy(pose.target).addScaledVector(pose.dir, pose.dist);
 }
 let tween = null;
 function flyTo(target, dist, dir, dur = 0.9) {
   const curDir = camera.position.clone().sub(controls.target).normalize();
-  tween = { t: 0, dur, fromT: controls.target.clone(), toT: target.clone(), fromP: camera.position.clone(),
-    toP: target.clone().add((dir ?? curDir).clone().multiplyScalar(dist)) };
+  const toP = target.clone().add((dir ?? curDir).clone().multiplyScalar(dist));
+  if (qs.get('snap') === '1') {
+    tween = null;
+    window.__flying = false;
+    controls.target.copy(target);
+    camera.position.copy(toP);
+    return;
+  }
+  window.__flying = true;
+  tween = { t: 0, dur, fromT: controls.target.clone(), toT: target.clone(), fromP: camera.position.clone(), toP };
+}
+function applyFitLimits() {
+  const d = fitDistance();
+  controls.maxDistance = Math.max(120, d * 1.1);
+  camera.far = Math.max(300, d + 150);
+  camera.updateProjectionMatrix();
+}
+function homeDir() {
+  if (camera.aspect < 0.8) return new THREE.Vector3(0.42, 1.65, 0.55).normalize();
+  return HOME_DIR;
+}
+function desktopOverviewPose() {
+  const safe = safeOverviewRect();
+  const target = new THREE.Vector3(0, 0, 1.5);
+  const dir = HOME_DIR.clone();
+  const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+  const hf = Math.atan(Math.tan(vf) * camera.aspect);
+  let dist = Math.max(46 * 0.78 / Math.tan(vf), 46 * 1.05 / Math.tan(hf));
+  const south = [];
+  for (const id of ['design', 'showroom']) {
+    const d = office.rooms[id]?.def;
+    if (!d?.w) continue;
+    for (const x of [d.x - d.w / 2, d.x + d.w / 2]) {
+      for (const z of [d.z - d.d / 2, d.z + d.d / 2]) south.push(new THREE.Vector3(x, 0.2, z));
+    }
+  }
+  const floor = roomFootprint();
+  for (let i = 0; i < 14; i++) {
+    placeOverview(dir, dist, target);
+    const edge = projectedBounds(south.length ? south : floor);
+    const clipped = edge.maxY > safe.b - 2;
+    if (!clipped) break;
+    dist *= 1.04;
+  }
+  return { dir, dist, target };
 }
 function goHome(anim = true) {
-  const tgt = camera.aspect < 0.8 ? new THREE.Vector3(1.6, 0, 3.2) : new THREE.Vector3(0, 0, 1.5);
-  if (anim) flyTo(tgt, homeDistance(), HOME_DIR);
-  else { controls.target.copy(tgt); camera.position.copy(tgt).add(HOME_DIR.clone().multiplyScalar(homeDistance())); }
+  window.__userAimed = false;
+  controls.minDistance = 9;
+  controls.enableDamping = true;
+  const fromT = controls.target.clone();
+  const fromP = camera.position.clone();
+  applyFitLimits();
+  const pose = phoneLayout() ? overviewPose() : desktopOverviewPose();
+  controls.maxDistance = Math.max(140, pose.dist * 1.2);
+  camera.far = Math.max(400, pose.dist + 180);
+  camera.updateProjectionMatrix();
+  if (phoneLayout()) {
+    if (scene.fog) scene.fog.far = Math.max(220, pose.dist + 120);
+    homeFraming = 12;
+  } else homeFraming = 0;
+  const snap = !anim || qs.get('snap') === '1';
+  if (snap) {
+    tween = null;
+    window.__flying = false;
+    controls.target.copy(pose.target);
+    camera.position.copy(pose.target).addScaledVector(pose.dir, pose.dist);
+    return;
+  }
+  controls.target.copy(fromT);
+  camera.position.copy(fromP);
+  flyTo(pose.target, pose.dist, pose.dir);
 }
 
 /* post */
@@ -114,13 +450,26 @@ function syncView() {
   renderer.setSize(w, h, false);
   labelRenderer.setSize(w, h);
   if (composer) { composer.setPixelRatio(pr); composer.setSize(w, h); bloom.resolution.set(w / 2, h / 2); }
+  applyFitLimits();
   if (!viewReady) { viewReady = true; goHome(false); }
+  else scheduleRefit();
   return true;
+}
+let refitTimer = 0;
+function scheduleRefit() {
+  clearTimeout(refitTimer);
+  refitTimer = setTimeout(() => {
+    if (!viewReady) return;
+    if (window.__holdCam && !state.selected) return;
+    measureChrome();
+    if (state.selected && office.rooms[state.selected]) focusRoom(state.selected, false);
+    else if (!window.__userAimed) goHome(false);
+  }, 180);
 }
 const viewBox = canvas.parentElement || canvas;
 if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => syncView()).observe(viewBox);
 window.addEventListener('resize', syncView);
-window.addEventListener('orientationchange', syncView);
+window.addEventListener('orientationchange', () => { syncView(); scheduleRefit(); });
 if (window.visualViewport) {
   visualViewport.addEventListener('resize', syncView);
   visualViewport.addEventListener('scroll', syncView);
@@ -131,7 +480,7 @@ syncView();
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 const hits = Object.values(office.rooms).map(r => r.hit);
 let down = null;
-canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId }; tween = null; });
+canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId }; tween = null; homeFraming = 0; window.__userAimed = true; });
 canvas.addEventListener('pointerup', e => {
   if (!down || e.pointerId !== down.id) return;
   const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), dt = performance.now() - down.t; down = null;
@@ -555,7 +904,7 @@ function renderPanel(id) {
     const n = office.rooms.lounge?.occupancy ?? 0;
     const note = L.lastMeeting ? `<div class="sec"><h4>最新纪要</h4><div class="card"><div class="cur">${esc(L.lastMeeting)}</div></div></div>` : '';
     const pantry = L.pantry ? `<div class="sec"><div class="card"><div class="cur">${esc(L.pantry)}</div></div></div>` : '';
-    body.innerHTML = `<div class="ph" style="--c:#E87708"><div class="ic">休</div><div><h3>${esc(L.name || '休息室')}</h3><div class="sub">跨部门交流区 · 每周一 9:00 例会</div></div></div>` +
+    body.innerHTML = `<div class="ph" style="--c:#D0B993"><div class="ic">休</div><div><h3>${esc(L.name || '休息室')}</h3><div class="sub">跨部门交流区 · 每周一 9:00 例会</div></div></div>` +
       pantry +
       `<div class="sec"><h4>例会</h4><div class="card"><div class="cur">${esc(L.meeting || '每周一 9:00 跨部门例会')}</div></div></div>` +
       note +
@@ -568,7 +917,7 @@ function renderPanel(id) {
     return;
   }
   if (t.private) {
-    body.innerHTML = `<div class="ph" style="--c:${esc(t.color)}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '私')}</div><div><h3>私密</h3></div></div><div class="sec"><div class="card private"><div>私密</div></div></div>`;
+    body.innerHTML = `<div class="ph" style="--c:${esc(hue(t))}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '私')}</div><div><h3>私密</h3></div></div><div class="sec"><div class="card private"><div>私密</div></div></div>`;
     return;
   }
   const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
@@ -576,7 +925,7 @@ function renderPanel(id) {
   const doingItems = doing.length ? doing : (t.currentTask ? [{ status: 'doing', title: t.currentTask }] : []);
   const done = DATA.tasks.filter(x => x.team === id && x.status === 'done').sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 3);
   const staff = (t.staff || []).map(s => `<li class="srow${state.staffId === s.id ? ' on' : ''}" data-staff="${esc(s.id)}"><span class="sn">${esc(s.name)}${s.role ? `<span class="srole">${esc(s.role)}</span>` : ''}${statusBadgeHtml(s)}</span><span class="grow">${workBarHtml(s)}${workFactsHtml(s)}</span></li>`).join('');
-  const head = `<div class="ph" style="--c:${esc(t.color)}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '')}</div><div><h3>${esc(t.name)}</h3>
+  const head = `<div class="ph" style="--c:${esc(hue(t))}"><div class="ic">${esc(office.rooms[id]?.def.icon ?? '')}</div><div><h3>${esc(t.name)}</h3>
     <div class="sub"><span class="chip ${esc(t.status)}"><i class="dot ${esc(t.status)}"></i>${esc(lbl)}</span><span class="scorebit">${ringHtml(t.score)}</span></div></div></div>`;
   body.innerHTML = head +
     `<div class="sec"><h4>职责</h4><div class="card"><div class="cur">${esc(t.duty || '—')}</div></div></div>` +
@@ -585,8 +934,26 @@ function renderPanel(id) {
     `<div class="sec"><h4>考核</h4><div class="card"><div class="snote">${esc(workRuleLine())}</div></div>${staff ? `<ul class="staff">${staff}</ul>` : ''}</div>` +
     `<div class="sec"><h4>最后更新</h4><div class="card"><div class="cur">${esc(fmtTime(teamUpdatedAt(t)))} (UTC+8)</div></div></div>`;
 }
+let panelOpener = null;
+function rememberOpener() {
+  const el = document.activeElement;
+  if (el instanceof HTMLElement && !el.closest('#panel')) panelOpener = el;
+}
+function canTakeFocus(el) {
+  if (!(el instanceof HTMLElement) || !el.isConnected || el.closest('#panel')) return false;
+  if (!el.matches('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')) return false;
+  const box = el.getBoundingClientRect();
+  return box.width > 0 && box.height > 0 && getComputedStyle(el).visibility !== 'hidden';
+}
+function restoreOpener() {
+  const el = panelOpener;
+  panelOpener = null;
+  if (canTakeFocus(el)) el.focus();
+  else ($('#homeBtn') || $('#feedToggle'))?.focus();
+}
 function selectRoom(id, source, staffId) {
   const wideDir = source === 'directory' && viewW > 760 && !$('#directory').classList.contains('hidden');
+  rememberOpener();
   state.selected = id;
   state.staffId = staffId || null;
   if (!wideDir) {
@@ -603,18 +970,26 @@ function selectRoom(id, source, staffId) {
   Object.values(office.rooms).forEach(R => R.labelEl.classList.toggle('sel', R.id === id));
   const R = office.rooms[id];
   if (!R) return;
-  const tgt = R.center.clone();
-  const portrait = camera.aspect < 0.8;
-  // shift target so the room sits in the visible area (beside the open frame / above the bottom sheet)
-  const right = new THREE.Vector3(HOME_DIR.z, 0, -HOME_DIR.x).normalize();
-  const fwd = new THREE.Vector3(-HOME_DIR.x, 0, -HOME_DIR.z).normalize();
-  if (wideDir) tgt.addScaledVector(right, -4.4).addScaledVector(fwd, -0.4);
-  else if (portrait) tgt.addScaledVector(fwd, -2.2);
-  else if (viewW > 760) tgt.addScaledVector(right, 3.6).addScaledVector(fwd, -0.6);
-  flyTo(tgt, portrait ? 31 : 22, HOME_DIR);
+  focusRoom(id, true);
+  refitWhenPanelSettles();
   renderQuick();
 }
+function measureChrome() {
+  const top = $('#topbar')?.getBoundingClientRect();
+  if (top && top.height > 2) document.documentElement.style.setProperty('--topbar-h', `${Math.ceil(top.height)}px`);
+  let bottomTop = viewH;
+  const topCut = (top?.bottom || 0) + 24;
+  for (const sel of ['#quickbar', '#legend', '#feedToggle']) {
+    const r = $(sel)?.getBoundingClientRect();
+    if (!r || r.height < 2 || r.top < topCut) continue;
+    bottomTop = Math.min(bottomTop, r.top);
+  }
+  document.documentElement.style.setProperty('--safe-bottom-controls', `${Math.max(72, Math.ceil(viewH - bottomTop + 8))}px`);
+  const quick = $('#quickbar')?.getBoundingClientRect();
+  if (quick && quick.height > 2) document.documentElement.style.setProperty('--quick-h', `${Math.ceil(viewH - quick.top)}px`);
+}
 function syncPanelChrome() {
+  measureChrome();
   const open = !$('#panel').classList.contains('hidden');
   document.getElementById('app').classList.toggle('panel-open', open);
   const panel = $('#panel');
@@ -622,18 +997,55 @@ function syncPanelChrome() {
   if (open && viewW > 760) {
     const bar = $('#topbar').getBoundingClientRect().height;
     panel.style.top = `${Math.ceil(bar + 8)}px`;
-  } else panel.style.top = '';
+  } else if (!panel.classList.contains('open')) panel.style.top = '';
 }
 window.addEventListener('resize', () => syncPanelChrome());
-function closePanel() {
-  if (!state.selected && $('#panel').classList.contains('hidden')) return;
-  state.selected = null; state.staffId = null; $('#panel').classList.add('hidden');
+function hidePanel() {
+  clearTimeout(refitTimer);
+  clearTimeout(panelFitTimer);
+  state.selected = null;
+  state.staffId = null;
+  $('#panel').classList.add('hidden');
   syncPanelChrome();
   Object.values(office.rooms).forEach(R => R.labelEl.classList.remove('sel'));
   renderQuick();
-  goHome(true);
 }
-$('#panelClose').addEventListener('click', closePanel);
+function closePanel() {
+  if (!state.selected && $('#panel').classList.contains('hidden')) return;
+  hidePanel();
+  goHome(true);
+  restoreOpener();
+}
+$('#panelClose').addEventListener('click', () => closePanel());
+let panelFitTimer = 0;
+function refitSelected() {
+  if (!state.selected || !office.rooms[state.selected]) return;
+  focusRoom(state.selected, qs.get('snap') !== '1');
+}
+function refitWhenPanelSettles() {
+  clearTimeout(panelFitTimer);
+  const started = performance.now();
+  const tick = () => {
+    const el = $('#panel');
+    const tr = el ? getComputedStyle(el).transform : 'none';
+    const settled = !el || el.classList.contains('hidden') || !tr || tr === 'none' || tr === 'matrix(1, 0, 0, 1, 0, 0)';
+    if (settled || performance.now() - started > 1500) refitSelected();
+    else panelFitTimer = setTimeout(tick, 60);
+  };
+  panelFitTimer = setTimeout(tick, 60);
+}
+$('#panel')?.addEventListener('transitionend', (event) => {
+  if (event.target !== $('#panel') || event.propertyName !== 'transform') return;
+  clearTimeout(panelFitTimer);
+  refitSelected();
+});
+$('#panelExpand')?.addEventListener('click', () => {
+  const open = $('#panel').classList.toggle('open');
+  $('#panelExpand').setAttribute('aria-expanded', open ? 'true' : 'false');
+  $('#panelExpand').textContent = open ? '收起' : '展开';
+  measureChrome();
+  refitWhenPanelSettles();
+});
 
 function teamCounts(team) {
   const tasks = DATA.tasks.filter(x => x.team === team.id);
@@ -655,7 +1067,7 @@ function renderBoard() {
     $('#boardStats').innerHTML = `<div class="bstotal">考核 <b>已评 ${scored}</b> · <b>待评 ${teams.length - scored}</b></div>`;
     $('#boardCols').innerHTML = `<div class="col grade-col">${teams.map(t => {
       const people = (t.staff || []).map(s => `<span class="smini"><b>${esc(s.name)}</b>${barHtml(s.score)}</span>`).join('');
-      return `<button type="button" class="gcard" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="top"><div class="bn">${esc(t.name)}</div>${barHtml(t.score)}</div><div class="snote">${esc(t.gradeNote || '')}</div>${t.gradedAt ? `<div class="gdate">${esc(fmtTime(t.gradedAt))}</div>` : ''}<div class="sminis">${people}</div></button>`;
+      return `<button type="button" class="gcard" data-team="${esc(t.id)}" style="--c:${esc(hue(t))}"><div class="top"><div class="bn">${esc(t.name)}</div>${barHtml(t.score)}</div><div class="snote">${esc(t.gradeNote || '')}</div>${t.gradedAt ? `<div class="gdate">${esc(fmtTime(t.gradedAt))}</div>` : ''}<div class="sminis">${people}</div></button>`;
     }).join('')}</div>`;
     return;
   }
@@ -667,7 +1079,7 @@ function renderBoard() {
       const rows = t.private
         ? ''
         : (t.staff || []).map(s => `<span class="smini"><b>${esc(s.name)}</b>${workBarHtml(s)}</span>`).join('');
-      return `<button type="button" class="gcard" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="top"><div class="bn">${esc(t.private ? '私密' : t.name)}</div></div><div class="sminis">${rows}</div></button>`;
+      return `<button type="button" class="gcard" data-team="${esc(t.id)}" style="--c:${esc(hue(t))}"><div class="top"><div class="bn">${esc(t.private ? '私密' : t.name)}</div></div><div class="sminis">${rows}</div></button>`;
     }).join('')}</div>`;
     return;
   }
@@ -680,7 +1092,7 @@ function renderBoard() {
       : `<div class="bc"><span>进行中 ${c.doing}</span><span>等你确认 ${c.confirm}</span><span>已完成 ${c.done}</span></div><div class="bt">共 ${c.total} 项</div>`;
     const who = t.private ? '私密' : t.name;
     const count = t.private ? '' : `<div class="bm">成员 ${c.members} 人</div>`;
-    return `<button type="button" class="bschip" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="top"><span class="ic">${esc(icon)}</span><span class="bn">${esc(who)}</span></div>${count}${stats}</button>`;
+    return `<button type="button" class="bschip" data-team="${esc(t.id)}" style="--c:${esc(hue(t))}"><div class="top"><span class="ic">${esc(icon)}</span><span class="bn">${esc(who)}</span></div>${count}${stats}</button>`;
   }).join('');
   $('#boardStats').innerHTML = `<div class="bstotal">全公司 <b>成员 ${members}</b> / <b>任务 ${DATA.tasks.length}</b></div><div class="bsrow">${chips}</div>`;
   const cols = [['doing', '进行中', 'busy'], ['confirm', '等你确认', 'confirm'], ['done', '已完成', 'idle']];
@@ -690,7 +1102,7 @@ function renderBoard() {
       const t = teamOf(x.team) ?? { name: x.team, color: '#D0B993' };
       const title = t.private ? '私密' : esc(x.title);
       const teamName = t.private ? '私密' : t.name;
-      return `<div class="tcard ${k}" data-team="${esc(x.team)}" style="--c:${esc(t.color)}"><div class="tm"><i></i>${esc(teamName)} · ${fmtTime(x.updatedAt)}</div><div class="tt">${title}</div></div>`;
+      return `<div class="tcard ${k}" data-team="${esc(x.team)}" style="--c:${esc(hue(t))}"><div class="tm"><i></i>${esc(teamName)} · ${fmtTime(x.updatedAt)}</div><div class="tt">${title}</div></div>`;
     }).join('') || '<div class="empty" style="padding:6px 4px">暂无</div>'}</div>`;
   }).join('');
 }
@@ -746,9 +1158,10 @@ function renderQuick() {
     const icon = office.rooms[t.id]?.def.icon ?? (t.private ? '私' : '·');
     const on = state.selected === t.id ? ' on' : '';
     const label = t.private ? '私密' : (t.short || t.name);
-    return `<button type="button" class="qchip${on}" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><span class="qi">${esc(icon)}</span><span>${esc(label)}</span></button>`;
+    return `<button type="button" class="qchip${on}" data-team="${esc(t.id)}" style="--c:${esc(hue(t))}"><span class="qi">${esc(icon)}</span><span>${esc(label)}</span></button>`;
   }).join('');
 }
+$('#moreDepts')?.addEventListener('click', () => openView('directory'));
 $('#homeBtn')?.addEventListener('click', () => {
   state.selected = null; state.staffId = null;
   $('#panel').classList.add('hidden');
@@ -780,14 +1193,14 @@ function deptCard(t) {
   const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status] || '';
   const sel = state.selected === t.id ? ' sel' : '';
   if (t.private) {
-    return `<button type="button" class="dcard${sel}" data-team="${esc(t.id)}" style="--c:${esc(t.color)}"><div class="dtop"><span class="ic">${esc(icon)}</span><div class="nm">私密</div></div><div class="dlock">私密</div></button>`;
+    return `<button type="button" class="dcard${sel}" data-team="${esc(t.id)}" style="--c:${esc(hue(t))}"><div class="dtop"><span class="ic">${esc(icon)}</span><div class="nm">私密</div></div><div class="dlock">私密</div></button>`;
   }
   const head = `<div class="dtop"><span class="ic">${esc(icon)}</span><div><div class="nm">${esc(t.name)}</div><div class="sub"><i class="dot ${esc(t.status)}"></i>${esc(lbl)} · ${t.agents ?? 0} 位成员</div></div></div>`;
   const tasks = directoryTasks(t);
   const body = tasks.length
     ? `<ul class="dtasks">${tasks.map(x => `<li>${chip(x.status)}<span>${esc(x.title)}</span></li>`).join('')}</ul>`
     : '<div class="dnone">暂无任务</div>';
-  return `<button type="button" class="dcard${sel}" data-team="${esc(t.id)}" style="--c:${esc(t.color)}">${head}${body}</button>`;
+  return `<button type="button" class="dcard${sel}" data-team="${esc(t.id)}" style="--c:${esc(hue(t))}">${head}${body}</button>`;
 }
 function renderDirectory() {
   const root = $('#dirBody');
@@ -825,7 +1238,7 @@ function sharedSpaceCard() {
   const n = office.rooms.lounge?.occupancy ?? 0;
   const sel = (id) => state.selected === id ? ' sel' : '';
   const extra = [L.pantry, L.meeting, L.lastMeeting].filter(Boolean).map(s => `<div class="dnone">${esc(s)}</div>`).join('');
-  const lounge = `<button type="button" class="dcard${sel('lounge')}" data-team="lounge" style="--c:#E87708"><div class="dtop"><span class="ic">休</span><div><div class="nm">${esc(L.name || '休息室')}</div><div class="sub">共享空间 · ${n} 人在此</div></div></div>${extra}</button>`;
+  const lounge = `<button type="button" class="dcard${sel('lounge')}" data-team="lounge" style="--c:#D0B993"><div class="dtop"><span class="ic">休</span><div><div class="nm">${esc(L.name || '休息室')}</div><div class="sub">共享空间 · ${n} 人在此</div></div></div>${extra}</button>`;
   const archive = `<button type="button" class="dcard${sel('archive')}" data-team="archive" style="--c:#D0B993"><div class="dtop"><span class="ic">资</span><div><div class="nm">${esc(DATA.archive?.name || '资料库')}</div><div class="sub">客厅 · 普通文件房 · 机密文件房</div></div></div></button>`;
   const showroom = `<button type="button" class="dcard${sel('showroom')}" data-team="showroom" style="--c:#D0B993"><div class="dtop"><span class="ic">展</span><div><div class="nm">品牌展厅</div><div class="sub">展陈占位 · 非部门</div></div></div></button>`;
   const meeting = `<button type="button" class="dcard${sel('meeting')}" data-team="meeting" style="--c:#D0B993"><div class="dtop"><span class="ic">议</span><div><div class="nm">会议室</div><div class="sub">${esc(nextMeetingText(klNow()))}</div></div></div></button>`;
@@ -841,75 +1254,293 @@ $('#dirMode').addEventListener('click', e => {
   renderDirectory();
 });
 $('#dirClose').addEventListener('click', () => { $('#directory').classList.add('hidden'); setTab('office'); });
+function dismissBubbles() {
+  for (const b of activeBubbles) { b.o.parent?.remove(b.o); b.el.remove(); }
+  activeBubbles.length = 0;
+  bubbleArmed = false;
+  $('#feedToggle')?.setAttribute('aria-expanded', 'false');
+}
+$('#feedToggle')?.addEventListener('click', () => {
+  if (activeBubbles.length) { dismissBubbles(); return; }
+  $('#feedToggle')?.setAttribute('aria-expanded', popBubble() ? 'true' : 'false');
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  if (activeBubbles.length) $('#feedToggle')?.click();
+  if (!$('#panel').classList.contains('hidden')) closePanel();
+});
 
 /* ---------- speech bubbles ---------- */
-let bubbleTimer = 2.5, bubbleIdx = 0;
+let bubbleTimer = 1e9, bubbleIdx = 0, bubbleArmed = false;
 const activeBubbles = [];
+function anchorVisible(obj) {
+  let node = obj;
+  while (node) {
+    if (node.visible === false) return false;
+    node = node.parent;
+  }
+  return !!obj;
+}
+function bubblePool(R) {
+  if (!R) return [];
+  const add = (obj, into) => {
+    if (!obj?.userData?.bubbleAnchor || !anchorVisible(obj)) return;
+    into.push(obj);
+  };
+  if (R.boss && anchorVisible(R.boss) && R.boss.userData.bubbleAnchor) return [R.boss];
+  const pool = [];
+  for (const person of R.agents || []) add(person, pool);
+  for (const person of R.walkers || []) add(person, pool);
+  return pool;
+}
 function popBubble() {
   const cands = DATA.teams.filter(t => !t.private && DATA.feed.some(f => f.team === t.id));
-  if (!cands.length) return;
-  // prioritise non-idle teams but rotate through everyone
-  const t = cands[bubbleIdx++ % cands.length];
-  const R = office.rooms[t.id]; if (!R) return;
-  const pool = t.id === 'ed' && R.boss ? [R.boss] : [...R.agents, ...R.walkers.filter(w => w.visible)];
-  if (!pool.length) return;
-  const agent = pool[Math.floor(Math.random() * pool.length)];
-  const latest = DATA.feed.filter(f => f.team === t.id).sort((a, b) => new Date(b.time) - new Date(a.time))[0];
-  if (activeBubbles.some(b => b.agent === agent)) return;
-  if (activeBubbles.length >= (viewW <= 760 ? 1 : 3)) return;
-  const host = document.createElement('div'); host.className = 'bubble-host' + (t.id === 'ed' ? ' ed' : '');
-  const el = document.createElement('div'); el.className = 'bubble'; el.style.setProperty('--c', t.color);
-  el.innerHTML = `<b>${esc(t.name)}</b>${esc(latest.text)}`;
-  host.appendChild(el);
-  const o = new CSS2DObject(host); o.renderOrder = t.id === 'ed' ? 40 : 8; agent.userData.bubbleAnchor.add(o);
-  const b = { o, el, agent, life: 5.2, ed: t.id === 'ed' }; activeBubbles.push(b);
+  if (!cands.length || activeBubbles.length >= 1) return false;
+  const start = bubbleIdx;
+  for (let n = 0; n < cands.length; n++) {
+    const t = cands[(start + n) % cands.length];
+    const R = office.rooms[t.id];
+    const pool = bubblePool(R);
+    if (!pool.length) continue;
+    bubbleIdx = (start + n + 1) % cands.length;
+    const agent = pool[Math.floor(Math.random() * pool.length)];
+    const latest = DATA.feed.filter(f => f.team === t.id).sort((a, b) => new Date(b.time) - new Date(a.time))[0];
+    if (!latest || activeBubbles.some(b => b.agent === agent)) continue;
+    const host = document.createElement('div'); host.className = 'bubble-host' + (t.id === 'ed' ? ' ed' : '');
+    const el = document.createElement('div'); el.className = 'bubble'; el.style.setProperty('--c', hue(t));
+    el.dataset.room = t.id;
+    el.dataset.anchor = 'visible';
+    el.classList.add('aimed');
+    el.innerHTML = `<b>${esc(t.name)}</b>${esc(latest.text)}`;
+    host.appendChild(el);
+    const o = new CSS2DObject(host); o.renderOrder = t.id === 'ed' ? 40 : 8; agent.userData.bubbleAnchor.add(o);
+    activeBubbles.push({ o, el, agent, life: 6, ed: t.id === 'ed' });
+    return true;
+  }
+  bubbleIdx = (start + 1) % cands.length;
+  return false;
 }
 const labelNudge = {};
-function separateLabels() {
-  const list = Object.values(office.rooms).filter(R => R.labelEl);
-  if (list.length < 2) return;
-  const pad = 8;
-  const base = {};
-  for (const R of list) {
-    const m = R.labelEl.getBoundingClientRect();
-    const cur = labelNudge[R.id] || { x: 0, y: 0 };
-    if (m.width < 2 || m.height < 2) continue;
-    base[R.id] = { left: m.left - cur.x, top: m.top - cur.y, right: m.right - cur.x, bottom: m.bottom - cur.y };
+function labelRank(R) {
+  const order = { ed: 100, market: 90, invest: 88, legal: 80, info: 78, it: 70, design: 68, corpfin: 60, logistics: 58, review: 50, privfin: 48, meeting: 20, lounge: 18, archive: 16, showroom: 14, news: 8 };
+  if (order[R.id] != null) return order[R.id];
+  if (R.labelEl?.classList.contains('minor') || R.def?.minor) return 4;
+  return 30;
+}
+function rectsOverlap(a, b, gap = 0) {
+  return a.left < b.right + gap && b.left < a.right + gap && a.top < b.bottom + gap && b.top < a.bottom + gap;
+}
+function labelRankEl(el) {
+  const room = office.rooms[el.dataset.room];
+  let rank = room ? labelRank(room) : 6;
+  if (el.classList.contains('minor')) rank = Math.min(rank, 3);
+  return rank;
+}
+function shiftBox(base, x, y) {
+  return { left: base.left + x, top: base.top + y, right: base.right + x, bottom: base.bottom + y, width: base.width, height: base.height };
+}
+function labelObstacles() {
+  const out = [];
+  for (const sel of ['#topbar', '#quickbar', '#legend', '#feedToggle', '#panel', '#navfab']) {
+    const el = document.querySelector(sel);
+    if (!el || el.classList.contains('hidden')) continue;
+    if (Number(getComputedStyle(el).opacity) < 0.15) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width > 2 && r.height > 2) out.push(r);
   }
-  const ids = Object.keys(base);
-  const pos = {};
-  for (const id of ids) pos[id] = { ...base[id] };
-  for (let pass = 0; pass < 10; pass++) {
-    for (let i = 0; i < ids.length; i++) {
-      for (let j = i + 1; j < ids.length; j++) {
-        const A = pos[ids[i]], B = pos[ids[j]];
-        const ox = Math.min(A.right, B.right) - Math.max(A.left, B.left);
-        const oy = Math.min(A.bottom, B.bottom) - Math.max(A.top, B.top);
-        if (ox <= 0 || oy <= 0) continue;
-        if (ox < oy) {
-          const left = A.left <= B.left ? A : B;
-          const right = left === A ? B : A;
-          const d = (ox + pad) / 2;
-          left.left -= d; left.right -= d; right.left += d; right.right += d;
-        } else {
-          const up = A.top <= B.top ? A : B;
-          const down = up === A ? B : A;
-          const d = (oy + pad) / 2;
-          up.top -= d; up.bottom -= d; down.top += d; down.bottom += d;
-        }
-      }
+  return out;
+}
+function labelFreeRect() {
+  const topEl = $('#topbar')?.getBoundingClientRect();
+  const top = (topEl && topEl.height > 2 ? topEl.bottom : 0) + 6;
+  let bottom = viewH - 6;
+  let left = 6;
+  let right = viewW - 6;
+  const quick = $('#quickbar')?.getBoundingClientRect();
+  if (quick && quick.height > 2 && quick.top > top + 20) bottom = Math.min(bottom, quick.top - 6);
+  const panel = $('#panel');
+  if (panel && !panel.classList.contains('hidden') && Number(getComputedStyle(panel).opacity) > 0.15) {
+    const r = panel.getBoundingClientRect();
+    if (r.width > 2 && r.height > 2) {
+      if (r.width > viewW * 0.7) bottom = Math.min(bottom, r.top - 6);
+      else if (r.left > viewW * 0.4) right = Math.min(right, r.left - 6);
+      else if (r.right < viewW * 0.6) left = Math.max(left, r.right + 6);
     }
   }
-  for (const R of list) {
-    const b = base[R.id];
-    if (!b) continue;
-    const p = pos[R.id];
-    const x = Math.round(Math.max(-96, Math.min(96, p.left - b.left)));
-    const y = Math.round(Math.max(-72, Math.min(72, p.top - b.top)));
-    labelNudge[R.id] = { x, y };
-    R.labelEl.style.marginLeft = x ? `${x}px` : '';
-    R.labelEl.style.marginTop = y ? `${y}px` : '';
+  return { l: left, t: top, r: Math.max(left + 48, right), b: Math.max(top + 40, bottom) };
+}
+function boxInside(box, bounds) {
+  return box.left >= bounds.l && box.right <= bounds.r && box.top >= bounds.t && box.bottom <= bounds.b;
+}
+function labelShifts(reach) {
+  const shifts = [{ x: 0, y: 0 }];
+  for (let dist = 16; dist <= reach; dist += 18) {
+    for (let k = 0; k < 10; k++) {
+      const angle = -Math.PI / 2 + (k / 10) * Math.PI * 2;
+      shifts.push({ x: Math.round(Math.cos(angle) * dist), y: Math.round(Math.sin(angle) * dist) });
+    }
   }
+  return shifts;
+}
+function paintLeader(el, x, y) {
+  let leader = el.querySelector(':scope > .leader');
+  if (!leader) {
+    leader = document.createElement('i');
+    leader.className = 'leader';
+    leader.setAttribute('aria-hidden', 'true');
+    el.prepend(leader);
+  }
+  const len = Math.hypot(x, y);
+  if (len < 14) {
+    leader.style.display = 'none';
+    return;
+  }
+  leader.style.display = 'block';
+  leader.style.width = `${Math.round(len)}px`;
+  leader.style.transform = `rotate(${Math.atan2(-y, -x)}rad)`;
+}
+const labelHold = new WeakMap();
+function layoutRoomLabels() {
+  const list = [...document.querySelectorAll('.rlabel')];
+  const phone = phoneLayout();
+  const far = camera.position.distanceTo(controls.target) > 62;
+  for (const el of list) {
+    el.classList.remove('icononly', 'packed-hide');
+    const st = el.querySelector('.st');
+    if (st) st.hidden = phone;
+    el.style.marginLeft = '0px';
+    el.style.marginTop = '0px';
+  }
+  if (list[0]) void list[0].offsetWidth;
+  const obstacles = labelObstacles();
+  const free = labelFreeRect();
+  const items = list.map((el) => {
+    const r = el.getBoundingClientRect();
+    const base = {
+      left: Math.round(r.left), top: Math.round(r.top), right: Math.round(r.right), bottom: Math.round(r.bottom),
+      width: r.width, height: r.height,
+    };
+    const sel = el.classList.contains('sel');
+    return { el, base, sel, rank: sel ? 1000 : labelRankEl(el), icon: !!el.querySelector('.ic') };
+  }).filter((item) => item.base.width > 2 && item.base.height > 2);
+  items.sort((a, b) => b.rank - a.rank || a.base.top - b.base.top);
+  const placed = [];
+  const hits = (box) => placed.some((rect) => rectsOverlap(box, rect, 4)) || obstacles.some((rect) => rectsOverlap(box, rect, 2));
+  const accept = (item, x, y, box) => {
+    item.el.style.marginLeft = x ? `${x}px` : '0px';
+    item.el.style.marginTop = y ? `${y}px` : '0px';
+    labelHold.set(item.el, { x, y, icon: item.el.classList.contains('icononly') });
+    paintLeader(item.el, x, y);
+    placed.push(box);
+  };
+  for (const item of items) {
+    const reach = item.sel ? 240 : far ? 96 : 48;
+    const held = labelHold.get(item.el);
+    const tryShift = (base, x, y) => {
+      const box = shiftBox(base, x, y);
+      if (!boxInside(box, free) || hits(box)) return null;
+      return box;
+    };
+    const homeBox = shiftBox(item.base, 0, 0);
+    const homeClear = boxInside(homeBox, free) && !hits({ left: homeBox.left - 6, top: homeBox.top - 6, right: homeBox.right + 6, bottom: homeBox.bottom + 6 });
+    if (homeClear) { accept(item, 0, 0, homeBox); continue; }
+    if (held) {
+      const kept = tryShift(item.base, held.x, held.y);
+      if (kept) { accept(item, held.x, held.y, kept); continue; }
+    }
+    let chosen = null;
+    for (const shift of labelShifts(reach)) {
+      const box = tryShift(item.base, shift.x, shift.y);
+      if (box) { chosen = { ...shift, box }; break; }
+    }
+    if (!chosen && !item.sel && item.icon && !item.el.classList.contains('icononly')) {
+      item.el.classList.add('icononly');
+      void item.el.offsetWidth;
+      const r = item.el.getBoundingClientRect();
+      const shrunk = { left: Math.round(r.left), top: Math.round(r.top), right: Math.round(r.right), bottom: Math.round(r.bottom), width: r.width, height: r.height };
+      for (const shift of labelShifts(reach)) {
+        const box = tryShift(shrunk, shift.x, shift.y);
+        if (box) { chosen = { ...shift, box }; break; }
+      }
+      if (!chosen) item.el.classList.remove('icononly');
+    }
+    if (!chosen && item.sel) {
+      let x = 0;
+      let y = 0;
+      if (item.base.bottom > free.b) y -= item.base.bottom - free.b;
+      if (item.base.top + y < free.t) y += free.t - (item.base.top + y);
+      if (item.base.right + x > free.r) x -= item.base.right + x - free.r;
+      if (item.base.left + x < free.l) x += free.l - (item.base.left + x);
+      x = Math.round(x);
+      y = Math.round(y);
+      chosen = { x, y, box: shiftBox(item.base, x, y) };
+    }
+    if (!chosen) {
+      item.el.classList.add('packed-hide');
+      paintLeader(item.el, 0, 0);
+      labelHold.delete(item.el);
+      continue;
+    }
+    accept(item, chosen.x, chosen.y, chosen.box);
+  }
+  if (!list[0]) return;
+  for (let pass = 0; pass < 8; pass++) {
+    void list[0].offsetWidth;
+    const live = [];
+    for (const item of items) {
+      if (item.el.classList.contains('packed-hide')) continue;
+      const r = item.el.getBoundingClientRect();
+      if (r.width > 2 && r.height > 2) live.push({ item, r });
+    }
+    let moved = false;
+    for (let i = 0; i < live.length && !moved; i++) {
+      for (let j = i + 1; j < live.length; j++) {
+        const A = live[i];
+        const B = live[j];
+        if (!rectsOverlap(A.r, B.r, 4)) continue;
+        const loser = A.item.rank >= B.item.rank ? B : A;
+        const winner = loser === A ? B : A;
+        if (loser.item.sel) continue;
+        const ox = Math.min(A.r.right, B.r.right) - Math.max(A.r.left, B.r.left);
+        const oy = Math.min(A.r.bottom, B.r.bottom) - Math.max(A.r.top, B.r.top);
+        const hold = labelHold.get(loser.item.el) || { x: 0, y: 0 };
+        const x = hold.x + (ox < oy ? (loser.r.left >= winner.r.left ? 1 : -1) * Math.ceil(ox + 4) : 0);
+        const y = hold.y + (ox < oy ? 0 : (loser.r.top >= winner.r.top ? 1 : -1) * Math.ceil(oy + 4));
+        loser.item.el.style.marginLeft = `${x}px`;
+        loser.item.el.style.marginTop = `${y}px`;
+        labelHold.set(loser.item.el, { x, y, icon: loser.item.el.classList.contains('icononly') });
+        paintLeader(loser.item.el, x, y);
+        moved = true;
+        break;
+      }
+    }
+    if (!moved) break;
+  }
+  settleBubbles();
+}
+function separateChrome() {
+  const feed = $('#feedToggle');
+  const home = $('#homeBtn');
+  if (!feed || !home) return;
+  if (viewH <= 520) {
+    feed.style.top = '';
+    feed.style.bottom = '8px';
+    feed.style.left = 'auto';
+    feed.style.right = '12px';
+    return;
+  }
+  if (viewW > 760) {
+    feed.style.top = '';
+    feed.style.bottom = '';
+    feed.style.left = '';
+    feed.style.right = '';
+    return;
+  }
+  const hr = home.getBoundingClientRect();
+  const gap = 8;
+  const top = Math.max(8, Math.round(hr.top - gap - 44));
+  feed.style.bottom = 'auto';
+  feed.style.top = `${top}px`;
 }
 function settleStaffTags() {
   const tags = [...document.querySelectorAll('.ptag')];
@@ -951,42 +1582,356 @@ function settleStaffTags() {
     }
   }
 }
-function layoutEdBubble(el) {
-  const label = office.rooms.ed?.labelEl;
-  if (!label) return;
-  const lr = label.getBoundingClientRect();
+function bubbleBounds() {
+  const pad = 8;
+  const topLimit = ($('#topbar')?.getBoundingClientRect().bottom || 0) + 4;
+  const bounds = { l: pad, t: topLimit, r: viewW - pad, b: viewH - pad };
+  const quick = $('#quickbar')?.getBoundingClientRect();
+  if (quick && quick.height > 2 && quick.top > topLimit + 40) bounds.b = Math.min(bounds.b, quick.top - 6);
+  return bounds;
+}
+function readLabels() {
+  return [...document.querySelectorAll('.rlabel')].map((el) => {
+    const ml = parseFloat(el.style.marginLeft) || 0;
+    const mt = parseFloat(el.style.marginTop) || 0;
+    const r = el.getBoundingClientRect();
+    const hidden = el.classList.contains('packed-hide') || r.width < 2 || r.height < 2 || getComputedStyle(el).visibility === 'hidden';
+    return {
+      el,
+      id: el.dataset.room,
+      hidden,
+      sel: el.classList.contains('sel'),
+      rank: el.classList.contains('sel') ? 1000 : labelRankEl(el),
+      rect: { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height },
+      base: {
+        left: Math.round(r.left - ml), top: Math.round(r.top - mt),
+        right: Math.round(r.right - ml), bottom: Math.round(r.bottom - mt),
+        width: r.width, height: r.height,
+      },
+    };
+  });
+}
+function segmentsIntersect(a, b, c, d) {
+  const cross = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+  const d1 = cross(c, d, a);
+  const d2 = cross(c, d, b);
+  const d3 = cross(a, b, c);
+  const d4 = cross(a, b, d);
+  return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
+}
+function segHitsRect(a, b, rect, pad = 2) {
+  const r = { left: rect.left - pad, right: rect.right + pad, top: rect.top - pad, bottom: rect.bottom + pad };
+  const inside = (p) => p.x > r.left && p.x < r.right && p.y > r.top && p.y < r.bottom;
+  if (inside(a) || inside(b)) return true;
+  const edges = [
+    [{ x: r.left, y: r.top }, { x: r.right, y: r.top }],
+    [{ x: r.right, y: r.top }, { x: r.right, y: r.bottom }],
+    [{ x: r.right, y: r.bottom }, { x: r.left, y: r.bottom }],
+    [{ x: r.left, y: r.bottom }, { x: r.left, y: r.top }],
+  ];
+  return edges.some(([c, d]) => segmentsIntersect(a, b, c, d));
+}
+function pathClear(pts, obstacles) {
+  for (let i = 0; i < pts.length - 1; i++) {
+    if (obstacles.some((rect) => segHitsRect(pts[i], pts[i + 1], rect, 2))) return false;
+  }
+  return true;
+}
+function polylineLen(pts) {
+  let n = 0;
+  for (let i = 0; i < pts.length - 1; i++) n += Math.hypot(pts[i + 1].x - pts[i].x, pts[i + 1].y - pts[i].y);
+  return n;
+}
+function exitPoint(bubble, side) {
+  const cx = (bubble.left + bubble.right) / 2;
+  const cy = (bubble.top + bubble.bottom) / 2;
+  if (side === 'bottom') return { x: cx, y: bubble.bottom };
+  if (side === 'top') return { x: cx, y: bubble.top };
+  if (side === 'right') return { x: bubble.right, y: cy };
+  return { x: bubble.left, y: cy };
+}
+function routeToPoint(bubble, end, obstacles) {
+  const starts = ['top', 'bottom', 'left', 'right'].map((side) => exitPoint(bubble, side));
+  let best = null;
+  const consider = (pts) => {
+    if (!pathClear(pts, obstacles)) return;
+    const len = polylineLen(pts);
+    if (!best || len < best.len) best = { pts, len };
+  };
+  for (const start of starts) {
+    consider([start, end]);
+    consider([start, { x: end.x, y: start.y }, end]);
+    consider([start, { x: start.x, y: end.y }, end]);
+  }
+  const lanes = [10, viewW - 10];
+  for (const start of starts) {
+    for (const x of lanes) {
+      consider([start, { x, y: start.y }, { x, y: end.y }, end]);
+    }
+  }
+  return best;
+}
+function labelEntries(rect) {
+  const cx = (rect.left + rect.right) / 2;
+  const cy = (rect.top + rect.bottom) / 2;
+  return [
+    { x: cx, y: rect.top + 8 },
+    { x: cx, y: rect.bottom - 8 },
+    { x: rect.left + 8, y: cy },
+    { x: rect.right - 8, y: cy },
+  ].map((p) => ({
+    x: Math.min(rect.right - 4, Math.max(rect.left + 4, p.x)),
+    y: Math.min(rect.bottom - 4, Math.max(rect.top + 4, p.y)),
+  }));
+}
+function routeToLabel(bubble, rect, obstacles) {
+  let best = null;
+  for (const end of labelEntries(rect)) {
+    const route = routeToPoint(bubble, end, obstacles);
+    if (route && (!best || route.len < best.len)) best = route;
+  }
+  return best;
+}
+function roomScreenPoly(id) {
+  const d = office.rooms[id]?.def;
+  if (!d?.w) return null;
+  const corners = [
+    [d.x - d.w / 2, d.z - d.d / 2],
+    [d.x + d.w / 2, d.z - d.d / 2],
+    [d.x + d.w / 2, d.z + d.d / 2],
+    [d.x - d.w / 2, d.z + d.d / 2],
+  ];
+  return corners.map(([x, z]) => {
+    const p = new THREE.Vector3(x, 0.4, z).project(camera);
+    return { x: (p.x * 0.5 + 0.5) * viewW, y: (-p.y * 0.5 + 0.5) * viewH };
+  });
+}
+function calloutLayer() {
+  let svg = document.getElementById('callouts');
+  if (svg) return svg;
+  svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.id = 'callouts';
+  svg.setAttribute('aria-hidden', 'true');
+  document.getElementById('app')?.appendChild(svg);
+  return svg;
+}
+function drawCallout(pts) {
+  const svg = calloutLayer();
+  if (!svg) return;
+  const ns = 'http://www.w3.org/2000/svg';
+  const points = pts.map((pt) => `${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ');
+  for (const [width, color, marked] of [[5, '#1a140c', false], [2, '#f8fafc', true]]) {
+    const line = document.createElementNS(ns, 'polyline');
+    line.setAttribute('points', points);
+    line.setAttribute('fill', 'none');
+    line.setAttribute('stroke', color);
+    line.setAttribute('stroke-width', String(width));
+    line.setAttribute('stroke-linejoin', 'round');
+    line.setAttribute('stroke-linecap', 'round');
+    if (marked) line.setAttribute('class', 'callout');
+    svg.appendChild(line);
+  }
+  const end = pts[pts.length - 1];
+  const dot = document.createElementNS(ns, 'circle');
+  dot.setAttribute('class', 'callout-end');
+  dot.setAttribute('cx', end.x.toFixed(1));
+  dot.setAttribute('cy', end.y.toFixed(1));
+  dot.setAttribute('r', '4');
+  dot.setAttribute('fill', '#f8fafc');
+  dot.setAttribute('stroke', '#1a140c');
+  dot.setAttribute('stroke-width', '1.5');
+  svg.appendChild(dot);
+}
+function shoveLabel(item, blocked, free) {
+  for (const step of labelShifts(280)) {
+    const box = shiftBox(item.base, step.x, step.y);
+    if (!boxInside(box, free) || blocked.some((rect) => rectsOverlap(box, rect, 4))) continue;
+    return { item, x: step.x, y: step.y, box };
+  }
+  return null;
+}
+function obstaclesAfter(labels, speaker, moves, chrome) {
+  const boxes = [];
+  for (const item of labels) {
+    if (item === speaker) continue;
+    const moved = moves.find((step) => step.item === item);
+    boxes.push(moved ? moved.box : item.rect);
+  }
+  return boxes.concat(chrome);
+}
+function fitSpot(spot, spec) {
+  const { w, h, labels, chrome, free, bounds, speaker } = spec;
+  const left = Math.round(spot.left);
+  const top = Math.round(spot.top);
+  if (left < bounds.l || top < bounds.t || left + w > bounds.r || top + h > bounds.b) return null;
+  const bubble = { left, top, right: left + w, bottom: top + h };
+  if (chrome.some((rect) => rectsOverlap(bubble, rect, 2))) return null;
+  if (speaker && rectsOverlap(bubble, speaker.rect, 4)) return null;
+  const hit = labels.filter((item) => item !== speaker && rectsOverlap(bubble, item.rect, 4));
+  if (hit.some((item) => item.sel)) return null;
+  const moving = [...hit].sort((a, b) => a.rank - b.rank);
+  const blocked = labels.filter((item) => !moving.includes(item)).map((item) => item.rect).concat(chrome, [bubble]);
+  const moves = [];
+  for (const item of moving) {
+    const placed = shoveLabel(item, blocked, free);
+    if (!placed) return null;
+    moves.push(placed);
+    blocked.push(placed.box);
+  }
+  const obstacles = obstaclesAfter(labels, speaker, moves, chrome);
+  const route = speaker ? routeToLabel(bubble, speaker.rect, obstacles) : null;
+  if (!route) return null;
+  return { left, top, moves, route, cost: route.len + moves.length * 70 };
+}
+function chooseBubbleSpot(spec) {
+  if (!spec.speaker) return null;
+  let best = null;
+  const consider = (spot) => {
+    const fitted = fitSpot(spot, spec);
+    if (fitted && (!best || fitted.cost < best.cost)) best = fitted;
+  };
+  const target = spec.speaker.rect;
+  const gap = 12;
+  const cx = target.left + (target.width - spec.w) / 2;
+  const cy = target.top + (target.height - spec.h) / 2;
+  const near = [
+    { left: cx, top: target.top - gap - spec.h },
+    { left: cx, top: target.bottom + gap },
+    { left: target.left - gap - spec.w, top: cy },
+    { left: target.right + gap, top: cy },
+  ];
+  for (const dx of [-100, -50, 50, 100]) {
+    near.push({ left: cx + dx, top: target.top - gap - spec.h });
+    near.push({ left: cx + dx, top: target.bottom + gap });
+  }
+  for (const spot of near) consider(spot);
+  if (best && best.cost < 130) return best;
+  for (const shift of labelShifts(160)) consider({ left: cx + shift.x, top: target.top - gap - spec.h + shift.y });
+  return best;
+}
+function settleBubbles() {
+  const svg = document.getElementById('callouts');
+  if (svg) svg.replaceChildren();
+  for (const b of activeBubbles) settleBubble(b);
+}
+function settleBubble(b) {
+  const el = b.el;
   const br = el.getBoundingClientRect();
-  if (br.width < 20 || lr.width < 20) return;
+  if (br.width < 20 || br.height < 8) return;
   const cs = getComputedStyle(el);
   const curLeft = parseFloat(cs.left) || 0;
   const curTop = parseFloat(cs.top) || 0;
   const originX = br.left - curLeft;
   const originY = br.top - curTop;
-  let left = lr.left + (lr.width - br.width) / 2;
-  let top = lr.top - 14 - br.height;
-  const others = Object.values(office.rooms).filter(R => R.labelEl && R.id !== 'ed').map(R => R.labelEl.getBoundingClientRect());
-  const hits = (x, y) => others.some(o => x < o.right - 0.5 && x + br.width > o.left + 0.5 && y < o.bottom - 0.5 && y + br.height > o.top + 0.5);
-  if (hits(left, top)) {
-    let placed = false;
-    for (const dir of [-1, 1]) {
-      let x = left;
-      for (let i = 0; i < 10 && hits(x, top); i++) x += dir * 24;
-      if (!hits(x, top)) { left = x; placed = true; break; }
+  const w = br.width;
+  const h = br.height;
+  const labels = readLabels().filter((item) => !item.hidden);
+  const chrome = labelObstacles();
+  const free = labelFreeRect();
+  const bounds = bubbleBounds();
+  const speaker = labels.find((item) => item.id === el.dataset.room) || null;
+  let chosen = chooseBubbleSpot({ w, h, labels, chrome, free, bounds, speaker });
+  if (!chosen && speaker) {
+    const poly = roomScreenPoly(el.dataset.room);
+    if (poly) {
+      const end = poly.reduce((acc, p) => ({ x: acc.x + p.x / poly.length, y: acc.y + p.y / poly.length }), { x: 0, y: 0 });
+      const bubble = {
+        left: Math.round(Math.min(Math.max(bounds.l, end.x - w / 2), bounds.r - w)),
+        top: Math.round(Math.min(Math.max(bounds.t, end.y - h - 16), bounds.b - h)),
+      };
+      bubble.right = bubble.left + w;
+      bubble.bottom = bubble.top + h;
+      const obstacles = labels.filter((item) => item !== speaker).map((item) => item.rect).concat(chrome);
+      const route = routeToPoint(bubble, end, obstacles);
+      if (route && !labels.some((item) => item !== speaker && rectsOverlap(bubble, item.rect, 4)) && !chrome.some((rect) => rectsOverlap(bubble, rect, 2))) {
+        chosen = { left: bubble.left, top: bubble.top, moves: [], route };
+      }
     }
-    if (!placed) { for (let i = 0; i < 8 && hits(left, top); i++) top -= 22; }
   }
-  top = Math.max(8, top);
-  el.style.left = `${Math.round(left - originX)}px`;
-  el.style.top = `${Math.round(top - originY)}px`;
+  if (!chosen) {
+    b.o.parent?.remove(b.o);
+    el.remove();
+    const idx = activeBubbles.indexOf(b);
+    if (idx >= 0) activeBubbles.splice(idx, 1);
+    if (!activeBubbles.length) $('#feedToggle')?.setAttribute('aria-expanded', 'false');
+    return;
+  }
+  for (const move of chosen.moves || []) {
+    move.item.el.classList.remove('packed-hide');
+    move.item.el.style.marginLeft = move.x ? `${move.x}px` : '0px';
+    move.item.el.style.marginTop = move.y ? `${move.y}px` : '0px';
+    labelHold.set(move.item.el, { x: move.x, y: move.y, icon: move.item.el.classList.contains('icononly') });
+    paintLeader(move.item.el, move.x, move.y);
+  }
+  el._hold = { left: chosen.left, top: chosen.top };
+  el.style.left = `${Math.round(chosen.left - originX)}px`;
+  el.style.top = `${Math.round(chosen.top - originY)}px`;
+  el.classList.add('aimed');
+  drawCallout(chosen.route.pts);
+}
+function clampBubble(el) {
+  const r = el.getBoundingClientRect();
+  if (r.width < 8 || r.height < 8) return;
+  const pad = 8;
+  const topLimit = ($('#topbar')?.getBoundingClientRect().bottom || 0) + 4;
+  const bottomLimit = Math.max(topLimit + 20, viewH - pad);
+  let dx = 0;
+  let dy = 0;
+  if (r.right > viewW - pad) dx -= r.right - (viewW - pad);
+  if (r.left + dx < pad) dx += pad - (r.left + dx);
+  if (r.bottom + dy > bottomLimit) dy -= r.bottom + dy - bottomLimit;
+  if (r.top + dy < topLimit) dy += topLimit - (r.top + dy);
+  if (!dx && !dy) return;
+  const cs = getComputedStyle(el);
+  el.style.left = `${Math.round((parseFloat(cs.left) || 0) + dx)}px`;
+  el.style.top = `${Math.round((parseFloat(cs.top) || 0) + dy)}px`;
+}
+function bubbleOnScreen(el) {
+  if (!el?.isConnected) return false;
+  const r = el.getBoundingClientRect();
+  return r.width > 20 && r.height > 8 && r.left < viewW - 1 && r.right > 1 && r.top < viewH - 1 && r.bottom > 1;
+}
+function syncFeedAria() {
+  const btn = $('#feedToggle');
+  if (!btn) return;
+  for (let i = activeBubbles.length - 1; i >= 0; i--) {
+    const b = activeBubbles[i];
+    if (!anchorVisible(b.agent)) {
+      b.o.parent?.remove(b.o);
+      b.el.remove();
+      activeBubbles.splice(i, 1);
+      continue;
+    }
+    if (bubbleOnScreen(b.el)) { b.miss = 0; continue; }
+    b.miss = (b.miss || 0) + 1;
+    if (b.miss < 8) continue;
+    b.o.parent?.remove(b.o);
+    b.el.remove();
+    activeBubbles.splice(i, 1);
+  }
+  btn.setAttribute('aria-expanded', activeBubbles.length ? 'true' : 'false');
 }
 function tickBubbles(dt) {
   bubbleTimer -= dt;
-  if (bubbleTimer <= 0) { popBubble(); bubbleTimer = 2.6 + Math.random() * 2; }
+  if (bubbleArmed && bubbleTimer <= 0) {
+    const opened = popBubble();
+    bubbleArmed = false;
+    bubbleTimer = 1e9;
+    if (!opened) $('#feedToggle')?.setAttribute('aria-expanded', 'false');
+  }
   for (let i = activeBubbles.length - 1; i >= 0; i--) {
-    const b = activeBubbles[i]; b.life -= dt;
+    const b = activeBubbles[i];
+    if (!anchorVisible(b.agent)) {
+      b.o.parent?.remove(b.o);
+      b.el.remove();
+      activeBubbles.splice(i, 1);
+      continue;
+    }
+    b.life -= dt;
     if (b.life < 0.4 && !b.el.classList.contains('out')) b.el.classList.add('out');
     if (b.life <= 0) { b.o.parent?.remove(b.o); b.el.remove(); activeBubbles.splice(i, 1); }
   }
+  if (!activeBubbles.length) $('#feedToggle')?.setAttribute('aria-expanded', 'false');
 }
 
 /* ---------- data loading ---------- */
@@ -1133,26 +2078,43 @@ function frame() {
   if (tween) {
     tween.t += dt / tween.dur; const k = tween.t >= 1 ? 1 : 1 - Math.pow(1 - tween.t, 3);
     controls.target.lerpVectors(tween.fromT, tween.toT, k); camera.position.lerpVectors(tween.fromP, tween.toP, k);
-    if (tween.t >= 1) tween = null;
+    if (tween.t >= 1) { tween = null; window.__flying = false; }
   }
   controls.update();
+  if (scene.fog) {
+    const dist = camera.position.distanceTo(controls.target);
+    if (dist > 70 && phoneLayout()) {
+      scene.fog.near = dist + 70;
+      scene.fog.far = dist + 240;
+    } else if (dist > 70) {
+      scene.fog.near = Math.max(78, dist * 0.72);
+      scene.fog.far = dist + 180;
+    } else {
+      scene.fog.near = 78;
+      scene.fog.far = 220;
+    }
+  }
   // keep target inside the office
-  controls.target.x = THREE.MathUtils.clamp(controls.target.x, -40, 30);
+  controls.target.x = THREE.MathUtils.clamp(controls.target.x, -40, 48);
   controls.target.z = THREE.MathUtils.clamp(controls.target.z, -28, 24);
-  controls.target.y = 0;
+  if (window.__holdCam) controls.minDistance = 1.2;
+  else controls.target.y = 0;
   office.update(t, dt, state);
   tickBubbles(dt);
   refreshWorkBars();
   if (composer) composer.render(); else renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
-  separateLabels();
+  layoutRoomLabels();
+  syncFeedAria();
+  separateChrome();
+  measureChrome();
+  refineOverview();
   settleStaffTags();
-  for (const b of activeBubbles) if (b.ed) layoutEdBubble(b.el);
   if ((T % 0.5) < dt) applyClock();
   if (first) { first = false; setTimeout(() => $('#loading').classList.add('gone'), 150); window.__ready = true; }
 }
 renderer.setAnimationLoop(frame);
-window.__app = { popBubble, selectRoom, closePanel, setTab, openView, office, camera, controls, renderer };
+window.__app = { popBubble, selectRoom, closePanel, hidePanel, setTab, openView, office, camera, controls, renderer };
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {});
 }

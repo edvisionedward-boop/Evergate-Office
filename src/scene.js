@@ -73,7 +73,7 @@ function screenTexture(kind, accent, dim = false) {
   } else if (kind === 'code') {
     for (let i = 0; i < 26; i++) {
       const y = 8 + i * 12, x = 10 + (i % 5) * 12;
-      g.fillStyle = ['#60a5fa', '#f472b6', '#a3e635', '#e2e8f0', accent][i % 5]; g.globalAlpha = .9;
+      g.fillStyle = ['#D0B993', '#E6D8C3', '#A98B5E', '#e2e8f0', accent][i % 5]; g.globalAlpha = .9;
       g.fillRect(x, y % 320, 30 + ((i * 37) % 120), 5);
       g.fillStyle = '#94a3b8'; g.fillRect(x + 40 + ((i * 37) % 120), y % 320, 20 + (i * 13) % 40, 5);
     }
@@ -121,7 +121,7 @@ function portraitScreenMat(kind, accent) {
     const c = document.createElement('canvas'); c.width = 160; c.height = 280;
     const g = c.getContext('2d');
     g.fillStyle = '#0b1222'; g.fillRect(0, 0, 160, 280);
-    g.fillStyle = accent || '#7EB6D6'; g.globalAlpha = .85;
+    g.fillStyle = accent || '#D0B993'; g.globalAlpha = .85;
     for (let i = 0; i < 15; i++) g.fillRect(14, 16 + i * 17, 36 + ((i * 29) % 96), 6);
     g.globalAlpha = .45; g.fillStyle = '#D0B993'; g.fillRect(14, 248, 90, 8);
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 2;
@@ -282,7 +282,7 @@ export function makeAgent(o = {}) {
   const eyeM = M('#0b0f19', { r: .3 });
   for (const sx of [-1, 1]) { const e = new THREE.Mesh(sphG(0.025, 6, 5), eyeM); e.position.set(sx * 0.08, 0.13, 0.2); headG.add(e); }
   // status dot
-  const dot = new THREE.Mesh(sphG(0.055, 10, 8), B('#22c55e'));
+  const dot = new THREE.Mesh(sphG(0.055, 10, 8), B(o.private ? '#AEB7C2' : '#22c55e'));
   dot.material = dot.material.clone(); dot.position.y = 0.55; dot.castShadow = false; headG.add(dot);
   // document in hand
   const doc = new THREE.Mesh(boxG(0.22, 0.3, 0.015), M('#f8fafc', { r: .5 }));
@@ -680,18 +680,20 @@ function archiveRacks(parent, slots) {
   const bodyGeo = boxG(0.66, 1.82, 0.44);
   const faceGeo = boxG(0.58, 1.66, 0.018);
   const ledGeo = boxG(0.055, 0.04, 0.012);
-  const ledMat = new THREE.MeshBasicMaterial({ color: '#7eb6d6', toneMapped: false });
+  const ledMat = new THREE.MeshBasicMaterial({ color: GOLD, toneMapped: false });
   const n = slots.length;
   const ledN = n * 6;
   const bodyMesh = new THREE.InstancedMesh(bodyGeo, M('#101218', { r: .55, m: .4 }), n);
-  const faceMesh = new THREE.InstancedMesh(faceGeo, M('#1a2030', { r: .4, m: .25 }), n);
+  const faceMesh = new THREE.InstancedMesh(faceGeo, M('#3A4456', { r: .45, m: .2 }), n);
+  const edgeGeo = boxG(0.66, 0.045, 0.03);
+  const edgeMesh = new THREE.InstancedMesh(edgeGeo, M('#C7B596', { r: .4, m: .15 }), n);
   const ledMesh = new THREE.InstancedMesh(ledGeo, ledMat, ledN);
-  bodyMesh.castShadow = faceMesh.castShadow = ledMesh.castShadow = false;
+  bodyMesh.castShadow = faceMesh.castShadow = ledMesh.castShadow = edgeMesh.castShadow = false;
   bodyMesh.receiveShadow = true;
-  bodyMesh.frustumCulled = faceMesh.frustumCulled = ledMesh.frustumCulled = false;
-  bodyMesh.userData.keep = faceMesh.userData.keep = ledMesh.userData.keep = true;
+  bodyMesh.frustumCulled = faceMesh.frustumCulled = ledMesh.frustumCulled = edgeMesh.frustumCulled = false;
+  bodyMesh.userData.keep = faceMesh.userData.keep = ledMesh.userData.keep = edgeMesh.userData.keep = true;
   const dummy = new THREE.Object3D();
-  const on = new THREE.Color('#7eb6d6');
+  const on = new THREE.Color(GOLD);
   const dim = new THREE.Color('#163044');
   const phases = new Float32Array(ledN);
   const front = new THREE.Vector3();
@@ -707,6 +709,10 @@ function archiveRacks(parent, slots) {
     dummy.position.set(s.x + front.x, 0.91, s.z + front.z);
     dummy.updateMatrix();
     faceMesh.setMatrixAt(i, dummy.matrix);
+    const base = new THREE.Vector3(0, -0.86, 0.24).applyEuler(dummy.rotation);
+    dummy.position.set(s.x + base.x, 0.91 - 0.86, s.z + base.z);
+    dummy.updateMatrix();
+    edgeMesh.setMatrixAt(i, dummy.matrix);
     for (let k = 0; k < 6; k++) {
       ledOff.set(k % 2 ? 0.14 : -0.14, 0, 0.25).applyEuler(dummy.rotation);
       dummy.position.set(s.x + ledOff.x, 0.38 + Math.floor(k / 2) * 0.46, s.z + ledOff.z);
@@ -717,9 +723,9 @@ function archiveRacks(parent, slots) {
       li++;
     }
   });
-  bodyMesh.instanceMatrix.needsUpdate = faceMesh.instanceMatrix.needsUpdate = ledMesh.instanceMatrix.needsUpdate = true;
+  bodyMesh.instanceMatrix.needsUpdate = faceMesh.instanceMatrix.needsUpdate = ledMesh.instanceMatrix.needsUpdate = edgeMesh.instanceMatrix.needsUpdate = true;
   if (ledMesh.instanceColor) ledMesh.instanceColor.needsUpdate = true;
-  parent.add(bodyMesh, faceMesh, ledMesh);
+  parent.add(bodyMesh, faceMesh, ledMesh, edgeMesh);
   return { leds: ledMesh, phases, on, dim };
 }
 function rackRow(x0, x1, step, z, ry) {
@@ -790,7 +796,7 @@ function furnishArchive(g, def, dyn, R) {
   // West lobby inside the corridor door. The two libraries sit east of it and open only from the lobby.
   const splitX = -W / 2 + Math.min(3.6, W * 0.4);
   const doorW = Math.min(1.35, D * 0.28);
-  const wallMat = M('#12161f', { r: .62, m: .08 });
+  const wallMat = M('#C7B596', { r: .80, m: 0 });
   const trim = M(GOLD, { m: .35, r: .55, e: GOLD, ei: 0.04 });
   const hz = -D / 2 + 0.08, zz = D / 2 - 0.08;
   const genZ = -D * 0.25, secZ = D * 0.25;
@@ -860,8 +866,35 @@ function furnishArchive(g, def, dyn, R) {
     }
   }
   R.rackLeds = archiveRacks(g, slots);
-  const glowS = new THREE.PointLight('#7eb6d6', 0.45, 7, 1.6);
-  glowS.position.set(2.2, 2.05, secZ); g.add(glowS);
+  const secretSpot = new THREE.SpotLight('#FFF1DE', 0.10, 5, 0.75, 0.80, 2);
+  secretSpot.position.set(2.00, 2.20, 2.05);
+  secretSpot.target.position.set(2.00, 0, 2.05);
+  g.add(secretSpot, secretSpot.target);
+  if (!g.userData.lightProfiles) g.userData.lightProfiles = [];
+  const archiveSpots = [
+    { light: secretSpot, dayIntensity: 0.10, nightIntensity: 0.75 },
+  ];
+  for (const s of [
+    { x: -2.90, z: 0, day: 0.10, night: 0.50 },
+    { x: 1.80, z: -2.05, day: 0.12, night: 0.65 },
+  ]) {
+    const spot = new THREE.SpotLight('#FFF1DE', s.day, 5, 0.60, 0.80, 2);
+    spot.position.set(s.x, 2.20, s.z);
+    spot.target.position.set(s.x, 0, s.z);
+    g.add(spot, spot.target);
+    archiveSpots.push({ light: spot, dayIntensity: s.day, nightIntensity: s.night });
+  }
+  g.userData.lightProfiles.push(...archiveSpots);
+  const afl = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.2, D - 0.2), M('#242430', { r: .8, m: 0 }));
+  afl.rotation.x = -Math.PI / 2; afl.position.y = 0.012; afl.receiveShadow = true;
+  afl.material.polygonOffset = true; afl.material.polygonOffsetFactor = -1; afl.material.polygonOffsetUnits = 1; g.add(afl);
+  const secW = W / 2 - splitX - 0.35;
+  const secD = D / 2 - 0.28;
+  const secFloor = new THREE.Mesh(new THREE.PlaneGeometry(secW, secD), M('#3E4A5C', { r: .72, m: 0 }));
+  secFloor.rotation.x = -Math.PI / 2;
+  secFloor.position.set(splitX + 0.18 + secW / 2, 0.02, D / 4);
+  secFloor.receiveShadow = true;
+  secFloor.material.polygonOffset = true; secFloor.material.polygonOffsetFactor = -2; secFloor.material.polygonOffsetUnits = 1; g.add(secFloor);
   pendant(g, splitX - 1.4, 0);
   seed = savedSeed;
 }
@@ -999,7 +1032,9 @@ function safeBox(parent, x, z, ry) {
 
 /* ---------------- room shell ---------------- */
 const WALL_H = 2.4, FLOOR_H = 0.14;
-const GOLD = '#D0B993', ORANGE = '#E87708', FLOOR_BLACK = '#060606', HOLO = '#7eb6d6';
+const BRAND = window.EvergateBrand;
+const GOLD = BRAND.GOLD, ORANGE = '#E87708', FLOOR_BLACK = '#060606', HOLO = BRAND.GOLD;
+const PRIVATE = BRAND.PRIVATE;
 const floorPools = [];
 const windowPane = new THREE.MeshBasicMaterial({ color: 0x9ec3e0, toneMapped: false });
 const smokeGlass = () => M('#9aa3ad', { r: .28, m: .16, op: 0.3, side: THREE.DoubleSide });
@@ -1045,10 +1080,10 @@ function roomShell(root, def, ctx) {
   }
   return g;
 }
-function glassRun(g, x0, z0, x1, z1, h, gaps = [], tint = '#9aa3ad', op = 0.28) {
+function glassRun(g, x0, z0, x1, z1, h, gaps = [], tint = '#9aa3ad', op = 0.28, frameMat) {
   // glass panels from (x0,z0) to (x1,z1) with door gaps given as [t0,t1] fractions
   const glass = M(tint, { r: .28, m: .16, op, side: THREE.DoubleSide });
-  const frame = goldFrame();
+  const frame = frameMat || goldFrame();
   const len = Math.hypot(x1 - x0, z1 - z0), ang = Math.atan2(z1 - z0, x1 - x0);
   const segs = []; let t = 0;
   for (const [a, b] of gaps) { segs.push([t, a]); t = b; } segs.push([t, 1]);
@@ -1084,6 +1119,8 @@ function windows(g, def) {
 function labelEl(def) {
   const el = document.createElement('div');
   el.className = 'rlabel' + (def.minor ? ' minor' : '');
+  el.tabIndex = 0;
+  el.setAttribute('role', 'button');
   el.style.setProperty('--c', def.color);
   el.dataset.room = def.id;
   el.innerHTML = def.minor ? `<div class="nm">${def.label}</div>` :
@@ -1107,13 +1144,13 @@ export const LAYOUT = {
   corpfin:  { x: -13.5, z: 12,  w: 10, d: 8.5, icon: '会', sign: '会计部', signSub: 'ACCOUNTING' },
   logistics:{ x: 0,     z: 13.875, w: 11, d: 12.25, icon: '物', sign: '物流部', signSub: 'LOGISTICS' },
   privfin:  { x: 13.5,  z: 12,  w: 10, d: 8.5, icon: '私', walls: 'glass', private: true, sign: '私密', signSub: '私密' },
-  lounge:   { x: 25.6, z: 0,   w: 9.4, d: 11, icon: '休', color: '#E87708', door: 'west', sign: '休息室', signSub: 'LOUNGE', label: '休息室' },
+  lounge:   { x: 25.6, z: 0,   w: 9.4, d: 11, icon: '休', color: '#D0B993', door: 'west', sign: '休息室', signSub: 'LOUNGE', label: '休息室' },
   archive:  { x: 25.6, z: -12, w: 9.4, d: 8.2, icon: '资', color: '#D0B993', door: 'west', sign: '资料库', signSub: 'RECORDS', label: '资料库' },
   // Shares 会计部's south wall. Separate room, entered from the east corridor.
   review:   { x: -13.5, z: 19.55, w: 10, d: 6.6, icon: '审', color: '#D0B993', sign: '审查部', signSub: 'REVIEW', label: '审查部' },
   meeting:  { x: -28, z: 8, w: 13.2, d: 11.8, icon: '议', color: '#D0B993', sign: '会议室', signSub: 'MEETING', label: '会议室' },
   // West and north walls stay. Growth is east, then south.
-  design:   { x: 27.25, z: 13.05, w: 12.7, d: 10.3, icon: '设', color: '#E87708', door: 'west', sign: '设计部', signSub: 'DESIGN', label: '设计部' },
+  design:   { x: 27.25, z: 13.05, w: 12.7, d: 10.3, icon: '设', color: '#D0B993', door: 'west', sign: '设计部', signSub: 'DESIGN', label: '设计部' },
   // Immediately east of 设计部. Exhibition hall, own north door, not merged.
   showroom: { x: 37.7, z: 11.9, w: 8.2, d: 8.0, icon: '展', color: '#D0B993', door: 'north', gallery: true, sign: '品牌展厅', signSub: 'BRAND HALL', label: '品牌展厅' },
 };
@@ -1193,7 +1230,7 @@ export function buildOffice(scene, teams) {
   /* rooms */
   for (const [id, L] of Object.entries(LAYOUT)) {
     const t = teamById[id];
-    const def = { id, ...L, color: t?.color ?? L.color, label: t?.name ?? L.label };
+    const def = { id, ...L, color: BRAND.areaColor(id, !!(t?.private || L.private || id === 'privfin')), label: t?.name ?? L.label };
     const g = roomShell(staticG, def);
     const R = rooms[id] = { id, def, group: g, agents: [], walkers: [], center: new THREE.Vector3(def.x, 0, def.z), team: t };
     // hit box
@@ -1219,11 +1256,13 @@ export function buildOffice(scene, teams) {
     // status lamp
     if (!def.minor && !def.gallery) {
       const lamp = new THREE.Group(); const lx = def.x - def.w / 2 + 0.45, lz = def.z - def.d / 2 + 0.45; lamp.position.set(lx, 3.05, lz); lamp.userData.base = 3.05; root.add(lamp);
-      const core = new THREE.Mesh(sphG(0.2, 16, 12), B('#22c55e').clone()); core.userData.boost = 2.2; lamp.add(core);
-      const halo = new THREE.Mesh(sphG(0.42, 16, 12), B('#22c55e', { op: .22, add: true }).clone()); lamp.add(halo);
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.025, 6, 32), B('#22c55e').clone()); ring.userData.boost = 2.2; ring.rotation.x = Math.PI / 2; lamp.add(ring);
+      const secret = !!(t?.private || def.private || id === 'privfin');
+      const lampColor = secret ? PRIVATE : '#22c55e';
+      const core = new THREE.Mesh(sphG(0.2, 16, 12), B(lampColor).clone()); if (!secret) core.userData.boost = 2.2; lamp.add(core);
+      const halo = new THREE.Mesh(sphG(0.42, 16, 12), B(lampColor, { op: secret ? .12 : .22, add: !secret }).clone()); lamp.add(halo);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.025, 6, 32), B(lampColor).clone()); if (!secret) ring.userData.boost = 2.2; ring.rotation.x = Math.PI / 2; lamp.add(ring);
       const stem = new THREE.Mesh(cylG(0.012, 0.012, 0.8, 4), B('#334155')); stem.position.y = -0.55; lamp.add(stem);
-      R.lamp = { group: lamp, core, halo, ring };
+      R.lamp = { group: lamp, core, halo, ring, secret };
     }
     decorate(R, dyn, teamById);
   }
@@ -1261,20 +1300,26 @@ export function buildOffice(scene, teams) {
   }
 
   /* per-room soft colored lights */
-  const roomLights = [];
+  const lightProfiles = [];
   for (const id of ['market', 'legal', 'corpfin', 'logistics', 'privfin', 'invest', 'info', 'design', 'review', 'it']) {
     const R = rooms[id];
-    const warm = R.def.color === ORANGE ? ORANGE : GOLD;
-    const pl = new THREE.PointLight(warm, 0.16, 11, 1.6); pl.position.set(R.def.x + 1, 3.4, R.def.z + 1); root.add(pl);
-    roomLights.push(pl);
+    const warm = id === 'privfin' ? PRIVATE : GOLD;
+    const pl = new THREE.PointLight(warm, 0.14, 11, 1.6); pl.position.set(R.def.x + 1, 3.4, R.def.z + 1); root.add(pl);
+    lightProfiles.push({ light: pl, dayIntensity: 0.14, nightIntensity: 1.09 });
   }
 
   const walkers = [];
   const lounge = rooms.lounge;
   furnishRestrooms(staticG);
-  const loungeLight = new THREE.PointLight(ORANGE, 0.35, 9, 1.8);
+  const absorbLights = (root) => {
+    root?.traverse(o => {
+      if (o.userData?.lightProfiles) lightProfiles.push(...o.userData.lightProfiles);
+    });
+  };
+  absorbLights(staticG);
+  const loungeLight = new THREE.PointLight('#FFF1DE', 0.18, 6.2, 2);
   loungeLight.position.set(lounge.def.x, 3.1, 0.4); root.add(loungeLight);
-  roomLights.push(loungeLight);
+  lightProfiles.push({ light: loungeLight, dayIntensity: 0.18, nightIntensity: 16 });
   const stSpan = lounge.labelEl?.querySelector('.st span');
   if (stSpan) stSpan.textContent = '暂无成员';
   lounge.occupancy = 0;
@@ -1582,9 +1627,9 @@ export function buildOffice(scene, teams) {
   }
   const designRoom = rooms.design;
   const showRoom = rooms.showroom;
-  const designLight = new THREE.PointLight(ORANGE, 0.2, 9, 1.8);
+  const designLight = new THREE.PointLight(GOLD, 0.14, 9, 1.6);
   designLight.position.set(designRoom.def.x, 3.1, designRoom.def.z); root.add(designLight);
-  roomLights.push(designLight);
+  lightProfiles.push({ light: designLight, dayIntensity: 0.14, nightIntensity: 1.09 });
   const showLight = new THREE.PointLight('#fff4e0', 0.18, 9, 1.8);
   showLight.position.set(showRoom.def.x, 3.1, showRoom.def.z); root.add(showLight);
   floorPools.push(showLight);
@@ -1654,16 +1699,30 @@ export function buildOffice(scene, teams) {
       if (!R.lamp) continue;
       const st = state.status[R.id] ?? 'idle';
       const night = (state.clock?.day ?? 1) < 0.45;
-      const c = st === 'busy' ? ORANGE : st === 'confirm' ? GOLD : '#efe4cf';
+      const secret = !!(R.lamp.secret || R.def.private || R.id === 'privfin');
+      const c = secret ? PRIVATE : (st === 'busy' ? ORANGE : st === 'confirm' ? GOLD : '#efe4cf');
+      if (secret) {
+        R.lamp.core.material.color.set(PRIVATE);
+        R.lamp.ring.material.color.set(PRIVATE);
+        R.lamp.halo.material.color.set(PRIVATE);
+        R.lamp.halo.material.opacity = 0.08;
+        R.lamp.halo.scale.setScalar(1);
+        R.lamp.group.position.y = R.lamp.group.userData.base || 3.05;
+        for (const a of R.agents) {
+          if (a.userData.out || !a.userData.dot) continue;
+          a.userData.dot.material.color.set('#AEB7C2');
+        }
+      } else {
       const lift = night ? 1.22 : 1;
       R.lamp.core.material.color.set(c).multiplyScalar(2.4 * lift); R.lamp.ring.material.color.set(c).multiplyScalar(2 * lift); R.lamp.halo.material.color.set(c);
       const k = st === 'confirm' ? 0.5 + 0.5 * Math.abs(Math.sin(t * 3)) : st === 'busy' ? 0.85 + 0.15 * Math.sin(t * 5) : 0.8;
       R.lamp.halo.material.opacity = 0.12 + 0.25 * k; R.lamp.halo.scale.setScalar(0.9 + 0.3 * k);
       R.lamp.ring.rotation.z += dt * (st === 'idle' ? 0.3 : 1.5);
       R.lamp.group.position.y = 3.0 + Math.sin(t * 1.2 + R.def.x) * 0.06;
+      }
       for (const a of R.agents) {
         if (a.userData.out) continue;
-        a.userData.dot.material.color.set(c).multiplyScalar(2);
+        if (!secret) a.userData.dot.material.color.set(c).multiplyScalar(2);
         animateAgent(a, t, dt, st === 'idle' ? 'idle' : 'type');
       }
     }
@@ -1716,7 +1775,7 @@ export function buildOffice(scene, teams) {
     const night = 1 - d;
     sky.material.color.setRGB(0.07 + d * 0.9, 0.1 + d * 0.82, 0.16 + d * 0.78);
     windowPane.color.setHex(d > 0.45 ? 0xb7c9d6 : 0xffc98a);
-    if (pendantGlow) pendantGlow.emissiveIntensity = Math.min(0.7, 0.18 + night * 0.42);
+    if (pendantGlow) pendantGlow.emissiveIntensity = Math.min(0.35, 0.12 + night * 0.2);
     const glass = smokeGlass();
     glass.roughness = 0.28;
     const trim = goldFrame();
@@ -1728,7 +1787,7 @@ export function buildOffice(scene, teams) {
     ico.material.opacity = 0.62 + night * 0.28;
     coreS.material.opacity = 0.42 + night * 0.28;
     beam.material.opacity = 0.08 + night * 0.1;
-    for (const pl of roomLights) pl.intensity = 0.14 + night * 0.95;
+    for (const p of lightProfiles) p.light.intensity = p.dayIntensity + (p.nightIntensity - p.dayIntensity) * night;
     for (const pl of floorPools) pl.intensity = 0.1 + night * 1.15;
     for (const pl of cityLights) pl.intensity = night * 0.7;
   }
@@ -1815,7 +1874,7 @@ function loungeBoardTexture() {
   const c = document.createElement('canvas'); c.width = 512; c.height = 288;
   const g = c.getContext('2d');
   g.fillStyle = '#102033'; g.fillRect(0, 0, 512, 288);
-  g.fillStyle = '#E87708'; g.fillRect(0, 0, 512, 10);
+  g.fillStyle = '#D0B993'; g.fillRect(0, 0, 512, 10);
   g.fillStyle = '#f8fafc'; g.font = '700 46px "PingFang SC","Noto Sans SC",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillText('本周跨部门例会', 256, 132);
   g.fillStyle = '#8b97b0'; g.font = '500 24px sans-serif'; g.fillText('周一  9:00', 256, 196);
@@ -1893,7 +1952,7 @@ function furnishPantry(g, W) {
 
   const sign = new THREE.Mesh(
     new THREE.PlaneGeometry(1.36, 0.34),
-    new THREE.MeshBasicMaterial({ map: signTexture('茶水间', 'PANTRY', ORANGE), toneMapped: false }),
+    new THREE.MeshBasicMaterial({ map: signTexture('茶水间', 'PANTRY', GOLD), toneMapped: false }),
   );
   sign.position.set(wallInner - 0.1, 1.7, zc);
   sign.rotation.y = -Math.PI / 2;
@@ -1902,7 +1961,7 @@ function furnishPantry(g, W) {
 
   const el = document.createElement('div');
   el.className = 'rlabel minor';
-  el.style.setProperty('--c', ORANGE);
+  el.style.setProperty('--c', GOLD);
   el.dataset.room = 'lounge';
   el.innerHTML = '<div class="nm">茶水间</div>';
   const label = new CSS2DObject(el);
@@ -1911,12 +1970,16 @@ function furnishPantry(g, W) {
   g.add(label);
 
   pendant(g, stoolX - 0.05, zc);
-  const warm = new THREE.PointLight('#fff1d6', 0.32, 4.8, 1.6);
-  warm.position.set(topX - 0.15, 1.85, zc);
+  const warm = new THREE.PointLight('#FFF1DE', 0.18, 3.6, 2);
+  warm.position.set(topX - 0.15, 2.20, zc);
   g.add(warm);
+  g.userData.lightProfiles = [{ light: warm, dayIntensity: 0.18, nightIntensity: 0.45 }];
 }
 function furnishLounge(g, def) {
   const W = def.w, D = def.d;
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.2, D - 0.2), M('#242430', { r: .8, m: 0 }));
+  fl.rotation.x = -Math.PI / 2; fl.position.y = 0.012; fl.receiveShadow = true;
+  fl.material.polygonOffset = true; fl.material.polygonOffsetFactor = -1; fl.material.polygonOffsetUnits = 1; g.add(fl);
   const sofaM = M('#b45309', { r: .82 });
   const sofa = (x, z, ry) => {
     const s = new THREE.Group(); s.position.set(x, 0, z); s.rotation.y = ry; g.add(s);
@@ -1940,6 +2003,10 @@ function furnishLounge(g, def) {
   chair(g, dineX - 1.05, dineZ, -Math.PI / 2, '#44403c');
   chair(g, dineX + 1.05, dineZ, Math.PI / 2, '#44403c');
   furnishPantry(g, W);
+  const sofaFill = new THREE.PointLight('#FFF1DE', 0.06, 3.8, 2);
+  sofaFill.position.set(0, 2.15, -3.2);
+  g.add(sofaFill);
+  g.userData.lightProfiles.push({ light: sofaFill, dayIntensity: 0.06, nightIntensity: 1.5 });
   // east + south walls, door stays on the west
   const wallMat = smokeGlass();
   const gold = goldFrame();
@@ -1977,15 +2044,17 @@ function furnishLounge(g, def) {
 function furnishRestrooms(parent) {
   // North and south walls match 休息室 (d = 11, centered at z = 0).
   const g = new THREE.Group(); g.position.set(30.34, FLOOR_H, 0); parent.add(g);
-  const wall = M('#12161f', { r: .62 });
+  const wall = M('#C7B596', { r: .80, m: 0 });
+  const stall = M('#727C8A', { r: .80, m: 0 });
+  const fixture = M('#E0E4E5', { r: .78, m: 0 });
   const trim = goldFrame();
   const zH = 5.5;
   const xV = 2.05, xE = 5.35;
   const stalls = 3;
-  const span = (x0, x1, z) => {
+  const span = (x0, x1, z, mat = wall) => {
     const len = Math.abs(x1 - x0);
     if (len < 0.08) return;
-    box(g, len, WALL_H, 0.08, (x0 + x1) / 2, 0, z, wall, { cast: false });
+    box(g, len, WALL_H, 0.08, (x0 + x1) / 2, 0, z, mat, { cast: false });
   };
   const post = (x, z0, z1) => {
     const len = Math.abs(z1 - z0);
@@ -1997,11 +2066,11 @@ function furnishRestrooms(parent) {
   box(g, xE, 0.045, 0.08, xE / 2, WALL_H - 0.04, -zH, trim, { cast: false });
   box(g, xE, 0.045, 0.08, xE / 2, WALL_H - 0.04, zH, trim, { cast: false });
   post(xE, -zH, zH);
-  span(xV, xE, 0);
+  span(xV, xE, 0, stall);
   const step = zH / stalls;
   for (let i = 1; i < stalls; i++) {
-    span(xV, xE, -i * step);
-    span(xV, xE, i * step);
+    span(xV, xE, -i * step, stall);
+    span(xV, xE, i * step, stall);
   }
   const door = 0.85;
   for (let i = 0; i < stalls; i++) {
@@ -2011,7 +2080,7 @@ function furnishRestrooms(parent) {
     post(xV, czN + door / 2, -zH + (i + 1) * step);
     post(xV, zH - (i + 1) * step, czS - door / 2);
     post(xV, czS + door / 2, zH - i * step);
-    const bowl = M('#e8eef2', { r: .35, m: .08 });
+    const bowl = fixture;
     box(g, 0.42, 0.4, 0.34, xE - 0.55, 0, czN, bowl, { round: 0.06, cast: false });
     box(g, 0.42, 0.4, 0.34, xE - 0.55, 0, czS, bowl, { round: 0.06, cast: false });
   }
@@ -2020,6 +2089,20 @@ function furnishRestrooms(parent) {
   doorSign(g, xV - 0.12, 2.05, -zH * 0.5, '女洗手', 'WOMEN', -Math.PI / 2);
   doorSign(g, xV - 0.12, 2.05, zH * 0.5, '男洗手', 'MEN', -Math.PI / 2);
   doorSign(g, 0.22, 2.05, 0, '前室', 'VESTIBULE', -Math.PI / 2);
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(xE - 0.1, zH * 2 - 0.1), M('#242430', { r: .8, m: 0 }));
+  fl.rotation.x = -Math.PI / 2; fl.position.set(xE / 2, 0.012, 0); fl.receiveShadow = true;
+  fl.material.polygonOffset = true; fl.material.polygonOffsetFactor = -1; fl.material.polygonOffsetUnits = 1; g.add(fl);
+  const spots = [
+    { x: 3.65, z: -2.75, day: 0.16, night: 0.75 },
+    { x: 3.65, z: 2.75, day: 0.16, night: 0.75 },
+  ];
+  g.userData.lightProfiles = spots.map((s) => {
+    const light = new THREE.SpotLight('#FFF1DE', s.day, 5, 0.70, 0.85, 2);
+    light.position.set(s.x, 2.20, s.z);
+    light.target.position.set(s.x, 0, s.z);
+    g.add(light, light.target);
+    return { light, dayIntensity: s.day, nightIntensity: s.night };
+  });
 }
 let loungeTv = null;
 function loungeTvArt() {
@@ -2320,7 +2403,7 @@ function furnishTechnology(g, t) {
     for (let i = 0; i < 7; i++) ctx.fillRect(24, 64 + i * 24, 200 - (i % 3) * 36, 8);
   };
   const wire = (ctx) => {
-    ctx.strokeStyle = '#7EB6D6'; ctx.lineWidth = 5;
+    ctx.strokeStyle = '#D0B993'; ctx.lineWidth = 5;
     ctx.strokeRect(36, 28, 184, 120);
     ctx.strokeRect(52, 46, 78, 46);
     ctx.strokeRect(142, 46, 60, 86);
@@ -2383,7 +2466,7 @@ function furnishTechnology(g, t) {
   box(cab, 0.35, 0.80, 0.60, 0, 0.90, 0, M('#060606', { r: .45, m: .28 }), { cast: false });
   box(cab, 0.012, 0.72, 0.50, -0.17, 0.94, 0, M('#1C2130', { r: .4 }), { cast: false });
   for (let i = 0; i < 5; i++) box(cab, 0.008, 0.012, 0.42, -0.178, 1.02 + i * 0.12, 0, M('#D0B993', { m: .3, r: .45 }), { cast: false });
-  sph(cab, 0.012, -0.185, 1.62, 0.20, M('#7EB6D6', { e: '#7EB6D6', ei: 0.18 }), { cast: false });
+  sph(cab, 0.012, -0.185, 1.62, 0.20, M('#F4EFE6', { e: '#F4EFE6', ei: 0.18 }), { cast: false });
   sph(cab, 0.012, -0.185, 1.62, 0.14, M('#E87708', { e: '#E87708', ei: 0.15 }), { cast: false });
 
   const locker = new THREE.Group(); locker.position.set(-4.55, 0, 0.30); g.add(locker);
@@ -2399,7 +2482,7 @@ function furnishTechnology(g, t) {
     const ctx = c.getContext('2d');
     ctx.fillStyle = '#12161c'; ctx.fillRect(0, 0, 680, 280);
     ctx.strokeStyle = '#D0B993'; ctx.lineWidth = 8; ctx.strokeRect(10, 10, 660, 260);
-    ctx.fillStyle = '#7EB6D6'; ctx.font = '600 40px sans-serif'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#D0B993'; ctx.font = '600 40px sans-serif'; ctx.textBaseline = 'middle';
     ctx.fillText(title, 36, 52);
     ctx.fillStyle = '#2a3340';
     marks.forEach((w, i) => ctx.fillRect(36, 96 + i * 32, w, 14));
@@ -2422,7 +2505,7 @@ function decorate(R, dyn, teamById) {
   const accentChair = hex(mix(def.color, '#1f2937', 0.55));
   const idle = t.status === 'idle';
   const seat = (ds, shirt, opts = {}) => {
-    const a = makeAgent({ shirt, ...opts });
+    const a = makeAgent({ shirt, ...opts, private: !!(t?.private || def.private || id === 'privfin') });
     const p = ds.group.localToWorld(ds.seat.clone());
     // place in room-local coords of dyn (world)
     ds.group.updateMatrixWorld(true);
@@ -2444,8 +2527,8 @@ function decorate(R, dyn, teamById) {
       box(g, 0.32, 0.01, 0.22, cx, 0.8, s * 0.6, M('#dfe5ee', { r: .9 }), { cast: false });
     }
     // ED avatar at head
-    chair(g, -3.1, 0, -Math.PI / 2, '#0e7490');
-    const boss = makeAgent({ shirt: '#1e3a5f', pants: '#111827', tie: '#dc2626', hair: '#111827', skin: '#e9bf9c' });
+    chair(g, -3.1, 0, -Math.PI / 2, GOLD);
+    const boss = makeAgent({ shirt: '#E6D8C3', pants: '#111827', tie: '#8A7049', hair: '#111827', skin: '#e9bf9c' });
     boss.position.set(def.x - 3.15, FLOOR_H, def.z + 0.9); boss.rotation.y = Math.PI / 2 + 0.3; dyn.add(boss); R.boss = boss;
     boss.userData.bubbleAnchor.position.set(-0.35, 2.9, -0.45);
     if (!t.private) nameTag(boss, (t.staff || [])[0], id);
@@ -2456,7 +2539,7 @@ function decorate(R, dyn, teamById) {
     const big = new THREE.Mesh(new THREE.PlaneGeometry(3.15, 1.25), screenMat('dash', GOLD, false)); big.position.set(0, 1.75, 0.045); scr.add(big);
     plant(g, bx + 0.6, bz + 0.6, 1.2, 1); plant(g, W / 2 - 0.6, bz + 0.6, 1.2, 1);
     plant(g, bx + 0.6, D / 2 - 0.6, 1, 0); plant(g, W / 2 - 0.6, D / 2 - 0.6, 1, 0);
-    rug(g, 0, 0, 7, 3.6, '#0a2230');
+    rug(g, 0, 0, 7, 3.6, '#242430');
     glassRun(g, -W / 2, -D / 2, W / 2, -D / 2, 1.05, [[0.42, 0.58]]);
     glassRun(g, -W / 2, D / 2, W / 2, D / 2, 1.05, [[0.42, 0.58]]);
     glassRun(g, -W / 2, -D / 2, -W / 2, D / 2, 1.05, [[0.4, 0.6]]);
@@ -2525,14 +2608,16 @@ function decorate(R, dyn, teamById) {
     cabinet(g, bx + 0.45, 0.2, Math.PI / 2, 0.55, 1.3); plant(g, 3.8, 2.8, 1.2, 2); plant(g, bx + 0.6, 3.0, 1, 0);
     // sofa
     box(g, 1.8, 0.42, 0.8, 2.6, 0, 0.8, M('#1c1917', { r: .9 }), { round: 0.08 }); box(g, 1.8, 0.5, 0.2, 2.6, 0.35, 0.5, M('#292524', { r: .9 }), { round: 0.08 });
-    glassRun(g, -W / 2, D / 2, W / 2, D / 2, WALL_H, [[0.62, 0.76]]);
-    glassRun(g, W / 2, -D / 2, W / 2, D / 2, WALL_H, []);
+    const privFrame = M(PRIVATE, { m: .35, r: .55 });
+    glassRun(g, -W / 2, D / 2, W / 2, D / 2, WALL_H, [[0.62, 0.76]], '#9aa3ad', 0.28, privFrame);
+    glassRun(g, W / 2, -D / 2, W / 2, D / 2, WALL_H, [], '#9aa3ad', 0.28, privFrame);
     const door = new THREE.Mesh(boxG(W * 0.14, WALL_H, 0.04), smokeGlass()); door.position.set(-W / 2 + W * 0.69, WALL_H / 2, D / 2); g.add(door);
-    const band = new THREE.Mesh(boxG(W, 0.04, 0.035), goldFrame()); band.position.set(0, 1.25, D / 2 + 0.02); g.add(band);
-    const band2 = new THREE.Mesh(boxG(0.035, 0.04, D), goldFrame()); band2.position.set(W / 2 + 0.02, 1.25, 0); g.add(band2);
+    const privTrim = M(PRIVATE, { m: .35, r: .55 });
+    const band = new THREE.Mesh(boxG(W, 0.04, 0.035), privTrim); band.position.set(0, 1.25, D / 2 + 0.02); g.add(band);
+    const band2 = new THREE.Mesh(boxG(0.035, 0.04, D), privTrim); band2.position.set(W / 2 + 0.02, 1.25, 0); g.add(band2);
     // padlock icon (3D) above door
     const lk = new THREE.Group(); lk.position.set(-W / 2 + W * 0.69, 2.75, D / 2 + 0.05); g.add(lk);
-    const lkb = new THREE.Mesh(rboxG(0.42, 0.34, 0.12, 0.05), M(GOLD, { m: .7, r: .3, e: ORANGE, ei: .35 })); lkb.userData.keep = true; lk.add(lkb);
+    const lkb = new THREE.Mesh(rboxG(0.42, 0.34, 0.12, 0.05), M(PRIVATE, { m: .55, r: .4, e: PRIVATE, ei: 0 })); lkb.userData.keep = true; lk.add(lkb);
     const sh = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.04, 8, 16, Math.PI), M('#e5e7eb', { m: .9, r: .2 })); sh.position.y = 0.17; sh.userData.keep = true; lk.add(sh);
     const kh = new THREE.Mesh(boxG(0.06, 0.12, 0.02), M('#1f2937')); kh.position.z = 0.065; kh.userData.keep = true; lk.add(kh);
     R.lock = lk;
