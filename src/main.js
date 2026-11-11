@@ -5,6 +5,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRe
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { buildOffice } from './scene.js';
@@ -431,6 +432,11 @@ function setupComposer() {
   composer.addPass(new RenderPass(scene, camera));
   bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.28, 0.45, 1.3);
   composer.addPass(bloom);
+  // The canvas is created with antialias, but EffectComposer draws into a
+  // half-float target whose sample count is 0, so that flag never reaches the
+  // glass and wires. Half-float multisampling is not available on iOS, so the
+  // phone resolves edges with SMAA before the tone-map pass. Desktop is unchanged.
+  if (isMobile) composer.addPass(new SMAAPass());
   composer.addPass(new OutputPass());
 }
 setupComposer();
@@ -1506,6 +1512,11 @@ function commitLabel(el, x, y, hidden) {
 function layoutDesktopLabels(list) {
   let dirty = false;
   for (const el of list) {
+    if (el.dataset.synthesizedBadge) {
+      el.querySelector(':scope > .ic')?.remove();
+      delete el.dataset.synthesizedBadge;
+      dirty = true;
+    }
     if (el.classList.contains('icononly')) { el.classList.remove('icononly'); dirty = true; }
     const st = el.querySelector('.st');
     if (st && st.hidden) { st.hidden = false; dirty = true; }
@@ -1541,7 +1552,7 @@ function layoutDesktopLabels(list) {
   };
   const settled = [];
   for (const item of items) {
-    const reach = item.sel ? 240 : dist > 62 ? 96 : 48;
+    const reach = item.sel ? 240 : 200;
     const held = labelHold.get(item.el);
     const homeBox = item.base;
     const homeClear = boxInside(homeBox, free) && !hits({ left: homeBox.left - 6, top: homeBox.top - 6, right: homeBox.right + 6, bottom: homeBox.bottom + 6 });
@@ -1574,24 +1585,41 @@ function layoutDesktopLabels(list) {
     settled.push({ item, x: chosen.x, y: chosen.y, hidden: false, box: chosen.box });
     placed.push(chosen.box);
   }
-  for (let pass = 0; pass < 8; pass++) {
-    let moved = false;
+  for (let pass = 0; pass < 24; pass++) {
     const live = settled.filter((row) => !row.hidden);
+    let moved = false;
     for (let i = 0; i < live.length && !moved; i++) {
       for (let j = i + 1; j < live.length; j++) {
         const A = live[i];
         const B = live[j];
         if (!rectsOverlap(A.box, B.box, 4)) continue;
         const loser = A.item.rank >= B.item.rank ? B : A;
-        const winner = loser === A ? B : A;
         if (loser.item.sel) continue;
-        const ox = Math.min(A.box.right, B.box.right) - Math.max(A.box.left, B.box.left);
-        const oy = Math.min(A.box.bottom, B.box.bottom) - Math.max(A.box.top, B.box.top);
-        const x = loser.x + (ox < oy ? (loser.box.left >= winner.box.left ? 1 : -1) * Math.ceil(ox + 4) : 0);
-        const y = loser.y + (ox < oy ? 0 : (loser.box.top >= winner.box.top ? 1 : -1) * Math.ceil(oy + 4));
-        loser.x = x;
-        loser.y = y;
-        loser.box = shiftBox(loser.item.base, x, y);
+        const others = live.filter((row) => row !== loser);
+        let best = null;
+        for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+          let step = 12;
+          for (const other of others) {
+            if (!rectsOverlap(loser.box, other.box, 4)) continue;
+            const ox = Math.min(loser.box.right, other.box.right) - Math.max(loser.box.left, other.box.left);
+            const oy = Math.min(loser.box.bottom, other.box.bottom) - Math.max(loser.box.top, other.box.top);
+            if (dx) step = Math.max(step, Math.ceil(ox + 6));
+            if (dy) step = Math.max(step, Math.ceil(oy + 6));
+          }
+          const x = loser.x + dx * step;
+          const y = loser.y + dy * step;
+          const next = shiftBox(loser.item.base, x, y);
+          if (!boxInside(next, free)) continue;
+          let score = Math.hypot(x, y) * 0.01;
+          for (const other of others) if (rectsOverlap(next, other.box, 4)) score += 10;
+          for (const rect of obstacles) if (rectsOverlap(next, rect, 2)) score += 10;
+          if (!best || score < best.score) best = { x, y, box: next, score };
+        }
+        const current = others.filter((other) => rectsOverlap(loser.box, other.box, 4)).length * 10;
+        if (!best || best.score >= current) continue;
+        loser.x = best.x;
+        loser.y = best.y;
+        loser.box = best.box;
         moved = true;
         break;
       }
@@ -1629,6 +1657,20 @@ function layoutRoomLabels() {
     if (bubbles) settleBubbles();
     return;
   }
+  let badgesAdded = false;
+  for (const el of list) {
+    if (el.querySelector(':scope > .ic')) continue;
+    const ch = [...(el.querySelector('.nm')?.textContent || '').trim()][0];
+    if (!ch) continue;
+    const ic = document.createElement('div');
+    ic.className = 'ic';
+    ic.textContent = ch;
+    el.prepend(ic);
+    el.dataset.synthesizedBadge = '1';
+    sizeMemo.delete(el);
+    badgesAdded = true;
+  }
+  if (badgesAdded) labelOrigin = null;
   const phone = phoneLayout();
   const dist = camera.position.distanceTo(controls.target);
   const map = labelObjectMap();
@@ -1676,7 +1718,6 @@ function layoutRoomLabels() {
     if (!obj || !size || size.w < 2 || el.style.display === 'none') continue;
     const anchor = labelAnchor(obj);
     if (!anchor.on) continue;
-    const minorFar = phone && el.classList.contains('minor') && dist > 130;
     const left = origin.dx + anchor.x - obj.center.x * size.w;
     const top = origin.dy + anchor.y - obj.center.y * size.h;
     const base = { left, top, right: left + size.w, bottom: top + size.h, width: size.w, height: size.h };
@@ -1686,7 +1727,6 @@ function layoutRoomLabels() {
       sel: el.classList.contains('sel'),
       rank: el.classList.contains('sel') ? 1000 : labelRankEl(el),
       icon: !!el.querySelector('.ic'),
-      hide: minorFar,
     });
   }
   items.sort((a, b) => b.rank - a.rank || a.base.top - b.base.top);
@@ -1699,8 +1739,7 @@ function layoutRoomLabels() {
   };
   const settled = [];
   for (const item of items) {
-    if (item.hide) { settled.push({ item, x: 0, y: 0, hidden: true, box: item.base }); continue; }
-    const reach = item.sel ? (phone ? 140 : 240) : item.el.classList.contains('icononly') ? 42 : (dist > 62 ? 96 : 48);
+    const reach = item.sel ? (phone ? 140 : 240) : item.el.classList.contains('icononly') ? 160 : (dist > 62 ? 96 : 48);
     const held = labelHold.get(item.el);
     const homeBox = shiftBox(item.base, 0, 0);
     const homeClear = boxInside(homeBox, free) && !hits({ left: homeBox.left - 6, top: homeBox.top - 6, right: homeBox.right + 6, bottom: homeBox.bottom + 6 });
@@ -1747,15 +1786,23 @@ function layoutRoomLabels() {
       chosen = { x: Math.round(x), y: Math.round(y), box: shiftBox(item.base, Math.round(x), Math.round(y)) };
     }
     if (!chosen) {
-      const collapse = item.hide || item.el.classList.contains('icononly');
-      settled.push({ item, x: 0, y: 0, hidden: collapse, box: item.base });
-      if (!collapse) placed.push(item.base);
+      let best = { x: 0, y: 0, box: item.base, penalty: Infinity };
+      for (const shift of labelShifts(280)) {
+        const box = shiftBox(item.base, shift.x, shift.y);
+        if (!boxInside(box, free)) continue;
+        let penalty = Math.hypot(shift.x, shift.y);
+        for (const rect of placed) if (rectsOverlap(box, rect, 4)) penalty += 4000;
+        for (const rect of obstacles) if (rectsOverlap(box, rect, 2)) penalty += 4000;
+        if (penalty < best.penalty) best = { x: shift.x, y: shift.y, box, penalty };
+      }
+      settled.push({ item, x: best.x, y: best.y, hidden: false, box: best.box });
+      placed.push(best.box);
       continue;
     }
     settled.push({ item, x: chosen.x, y: chosen.y, hidden: false, box: chosen.box });
     placed.push(chosen.box);
   }
-  for (let pass = 0; pass < 8; pass++) {
+  for (let pass = 0; pass < 32; pass++) {
     let moved = false;
     const live = settled.filter((row) => !row.hidden);
     for (let i = 0; i < live.length && !moved; i++) {
