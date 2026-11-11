@@ -1,0 +1,4 @@
+dashboard-bg.jpg
+
+Original interior image created for the Evergate Office dashboard, then blurred in this repository.
+It is not a third-party photograph and is not loaded from another site.

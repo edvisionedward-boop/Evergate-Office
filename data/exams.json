@@ -1,0 +1,9 @@
+{
+  "fields": ["employee", "date", "score"],
+  "employee": "data.json teams[].staff[].id",
+  "date": "考核日 YYYY-MM-DD，马来西亚时间",
+  "score": "成绩数字",
+  "baselineDate": "2026-11-16",
+  "empty": "首次全员考核 2026-11-16（周一），当天成绩为基准线，之后定期复测对比成长",
+  "records": []
+}
