@@ -82,7 +82,7 @@ a.tab{text-decoration:none;color:var(--mut)}
 .close{position:absolute;right:12px;top:12px;width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.05);cursor:pointer;font-size:14px}
 .feedtog{position:fixed;z-index:47;left:calc(12px + var(--sal));bottom:calc(112px + env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:12px;border:1px solid var(--gold);background:#242430;color:var(--gold);font-size:11px;line-height:1.15;padding:2px;cursor:pointer;overflow:hidden;display:grid;place-items:center;text-align:center}
 .rlabel.icononly{padding:4px;gap:0}
-.rlabel.icononly .nmrow,.rlabel.icononly .st{display:none}
+.rlabel.icononly > :not(.ic){display:none}
 .rlabel.packed-hide{visibility:hidden;pointer-events:none}
 .rlabel .leader{position:absolute;left:0;top:100%;height:0;border-top:1.5px solid rgba(230,216,195,.95);transform-origin:0 0;pointer-events:none;display:none}
 .bubble > .leader{position:absolute;height:0;border-top:1.5px solid rgba(230,216,195,.95);transform-origin:0 0;pointer-events:none;display:none}
@@ -220,10 +220,16 @@ a.tab{text-decoration:none;color:var(--mut)}
   .cols{grid-template-columns:1fr}
   .bschip{width:168px}
   #board,#directory{padding-top:calc(118px + var(--sat))}
-  .rlabel{gap:6px;padding:6px 10px 6px 6px;border-radius:10px}
-  .rlabel .ic{width:24px;height:24px;border-radius:7px;font-size:12px}
-  .rlabel .nm{font-size:13px}
-  .rlabel .st{font-size:11px}
+  .rlabel{gap:3px;padding:2px 6px 2px 2px;border-radius:8px;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 4px 12px rgba(0,0,0,.45)}
+  .rlabel .ic{width:18px;height:18px;border-radius:5px;font-size:10px;box-shadow:none}
+  .rlabel .nm{font-size:11px}
+  .rlabel .st{font-size:9px;margin-top:2px}
+  .rlabel .scorebit{display:none}
+  .rlabel.icononly{padding:0;border-radius:7px}
+  .rlabel.icononly .ic{width:22px;height:22px;border-radius:6px;font-size:12px}
+  .rlabel.minor{padding:1px 5px}
+  .rlabel.minor .nm{font-size:9px}
+  .rlabel.minor.icononly{padding:0}
   .bubble-host,.bubble{max-width:min(220px, calc(100vw - 16px))}
   .bubble{font-size:11.5px;padding:7px 10px}
   #quickbar{bottom:calc(54px + env(safe-area-inset-bottom,0px));padding-right:calc(64px + env(safe-area-inset-right,0px))}
