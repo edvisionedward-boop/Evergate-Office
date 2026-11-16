@@ -1128,7 +1128,7 @@
       "short": "科技",
       "color": "#D0B993",
       "status": "busy",
-      "statusNote": "内部项目方案修订中",
+      "statusNote": "内部项目开发中",
       "agents": 5,
       "private": false,
       "duty": "技术方案、开发、运维与安全",
