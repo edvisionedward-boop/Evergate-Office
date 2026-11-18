@@ -1680,6 +1680,9 @@ export function buildOffice(scene, teams, opts = {}) {
     if (!mat || Array.isArray(mat) || mat.map || mat.alphaMap) return;
     const emissiveOn = mat.emissive && (mat.emissive.r + mat.emissive.g + mat.emissive.b) > 1e-4 && (mat.emissiveIntensity ?? 1) > 0;
     if (emissiveOn) return;
+    if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+    const span = o.geometry.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z);
+    if (span < 0.16) o.castShadow = false;
     const cast = o.castShadow ? 1 : 0;
     let key, outMat, vertex = false;
     if (mat.isMeshStandardMaterial && !mat.transparent) {

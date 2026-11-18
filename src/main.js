@@ -576,10 +576,10 @@ function applyData() {
   $('#company').textContent = DATA.office?.company ?? 'EVERGATE HOLDING SDN BHD';
   if (office.setNews) office.setNews(DATA.news);
   renderQuick();
-  renderBoard();
-  renderDirectory();
   paintShiftLabels();
-  refreshWorkBars();
+  const fillPanels = () => { renderBoard(); renderDirectory(); refreshWorkBars(); };
+  if (window.requestIdleCallback) requestIdleCallback(fillPanels, { timeout: 1500 });
+  else setTimeout(fillPanels, 400);
   layoutKeyLast = '';
   if (state.selected && !$('#panel').classList.contains('hidden')) renderPanel(state.selected);
 }
@@ -1617,6 +1617,24 @@ function settleStaffTags() {
       else y += Math.sign(dy || 1) * 14;
     }
   }
+  for (let pass = 0; pass < 8; pass++) {
+    let moved = false;
+    const live = tags.filter((el) => el.style.visibility !== 'hidden');
+    for (let i = 0; i < live.length; i++) {
+      const a = live[i].getBoundingClientRect();
+      if (a.width < 2) continue;
+      for (let j = i + 1; j < live.length; j++) {
+        const b = live[j].getBoundingClientRect();
+        if (!hit(a, b)) continue;
+        const cur = parseFloat(live[j].style.marginTop) || 0;
+        live[j].style.marginTop = `${cur + 18}px`;
+        moved = true;
+        break;
+      }
+      if (moved) break;
+    }
+    if (!moved) break;
+  }
 }
 function bubbleBounds() {
   const pad = 8;
@@ -2121,8 +2139,27 @@ const prevCam = new THREE.Vector3();
 const prevTgt = new THREE.Vector3();
 let prevPoseReady = false;
 let bootFrames = 0;
-let idleSkip = 0;
-function frame() {
+let interacting = false;
+let loopOn = false;
+let frameQueued = false;
+let shadersWarmed = false;
+const nativeRAF = window.requestAnimationFrame.bind(window);
+controls.addEventListener('start', () => { interacting = true; kick(); });
+controls.addEventListener('end', () => { interacting = false; kick(); });
+controls.addEventListener('change', () => kick());
+
+function warmLightPrograms() {
+  if (shadersWarmed || !isMobile || !office.setDetailLights) return;
+  shadersWarmed = true;
+  const near = camera.position.distanceTo(controls.target) < 150;
+  const draw = () => { if (composer) composer.render(); else renderer.render(scene, camera); };
+  office.setDetailLights(true);
+  draw();
+  office.setDetailLights(false);
+  draw();
+  office.setDetailLights(near);
+}
+function step() {
   syncView();
   const now = performance.now(); const dt = Math.min((now - last) / 1000, 0.05); last = now; T += dt; const t = T;
   if (tween) {
@@ -2144,7 +2181,6 @@ function frame() {
       scene.fog.far = 220;
     }
   }
-  // keep target inside the office
   controls.target.x = THREE.MathUtils.clamp(controls.target.x, -40, 48);
   controls.target.z = THREE.MathUtils.clamp(controls.target.z, -28, 24);
   if (window.__holdCam) controls.minDistance = 1.2;
@@ -2158,13 +2194,6 @@ function frame() {
   const gliding = camera.position.distanceToSquared(prevCam) > 1e-6 || controls.target.distanceToSquared(prevTgt) > 1e-6;
   state.gliding = gliding;
   const measuring = renderer.info.autoReset === false;
-  if (!gliding && !measuring && bootFrames >= 8 && (idleSkip++ % 5) !== 0) {
-    prevCam.copy(camera.position);
-    prevTgt.copy(controls.target);
-    if (first) { first = false; setTimeout(() => $('#loading').classList.add('gone'), 150); window.__ready = true; }
-    return;
-  }
-  bootFrames++;
   if (!gliding) renderer.shadowMap.needsUpdate = true;
   if (isMobile && office.setDetailLights) office.setDetailLights(camera.position.distanceTo(controls.target) < 150);
   office.update(t, dt, state);
@@ -2174,12 +2203,42 @@ function frame() {
   labelRenderer.render(scene, camera);
   if (!gliding) layoutRoomLabels();
   syncFeedAria();
-  if (!gliding && (T % 0.5) < dt) applyClock();
   prevCam.copy(camera.position);
   prevTgt.copy(controls.target);
-  if (first) { first = false; setTimeout(() => $('#loading').classList.add('gone'), 150); window.__ready = true; }
+  if (first) {
+    first = false;
+    setTimeout(() => $('#loading').classList.add('gone'), 150);
+    window.__ready = true;
+    setTimeout(warmLightPrograms, 0);
+  }
+  bootFrames++;
+  return interacting || !!tween || homeFraming > 0 || gliding || bootFrames < 2 || measuring;
 }
-renderer.setAnimationLoop(frame);
+function enqueue() {
+  if (frameQueued) return;
+  frameQueued = true;
+  loopOn = true;
+  nativeRAF(() => {
+    frameQueued = false;
+    const again = step();
+    if (again) enqueue();
+    else loopOn = false;
+  });
+}
+function kick() { enqueue(); }
+window.requestAnimationFrame = (cb) => nativeRAF((t) => {
+  if (!loopOn && !frameQueued) {
+    const again = step();
+    if (again) enqueue();
+  }
+  cb(t);
+});
+enqueue();
+setInterval(() => {
+  const before = state.clock.day;
+  applyClock();
+  if (Math.abs(state.clock.day - before) > 0.02) kick();
+}, 1000);
 window.__app = { popBubble, selectRoom, closePanel, hidePanel, setTab, openView, office, camera, controls, renderer };
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {});
