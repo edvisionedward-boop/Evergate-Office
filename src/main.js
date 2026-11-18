@@ -878,11 +878,11 @@ function renderPanel(id) {
         <div class="sec"><h4>${esc(secret.name || '机密文件房')}</h4><div class="card">${esc(secret.description || '')}</div>${rule}</div>
         ${catList(secret.categories)}
         <div class="sec"><h4>进出登记</h4><div class="card tlist">${logBody}</div></div>
-        <div class="sec">${link}</div>`;
+        ${link ? `<div class="sec">${link}</div>` : ''}`;
       return;
     }
     const cats = catList(A.categories);
-    body.innerHTML = `<div class="ph" style="--c:#D0B993"><div class="ic">资</div><div><h3>${esc(A.name || '资料库')}</h3><div class="sub">分类目录 · 需登录 Google 查看原件</div></div></div>${cats}<div class="sec">${link}</div>`;
+    body.innerHTML = `<div class="ph" style="--c:#D0B993"><div class="ic">资</div><div><h3>${esc(A.name || '资料库')}</h3><div class="sub">分类目录 · 需登录 Google 查看原件</div></div></div>${cats}${link ? `<div class="sec">${link}</div>` : ''}`;
     return;
   }
   if (id === 'meeting') {
