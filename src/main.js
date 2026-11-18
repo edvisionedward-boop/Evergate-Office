@@ -31,6 +31,10 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPrefere
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
+// The sun's shadow camera is a fixed world box, so the map does not depend on
+// the orbit. Refresh it only while the camera is still; dragging keeps the last map.
+renderer.shadowMap.autoUpdate = false;
+renderer.shadowMap.needsUpdate = true;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.02;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -56,7 +60,7 @@ scene.add(sun);
 const fill = new THREE.DirectionalLight('#ffd8b0', 0.28); fill.position.set(22, 10, 14); scene.add(fill);
 
 /* office */
-const office = buildOffice(scene, DATA.teams);
+const office = buildOffice(scene, DATA.teams, { mobile: isMobile });
 const hue = (team) => window.EvergateBrand.teamColor(team);
 
 /* controls */
@@ -439,6 +443,7 @@ setupComposer();
    after rotation, toolbar show/hide, and visualViewport changes, and the
    CSS2D layer (anchored top-left) then slides off the WebGL image. */
 let viewW = 0, viewH = 0, viewPR = 0, viewReady = false;
+let layoutKeyLast = '';
 function syncView() {
   const w = canvas.clientWidth, h = canvas.clientHeight;
   const pr = Math.min(window.devicePixelRatio || 1, 2);
@@ -453,6 +458,9 @@ function syncView() {
   applyFitLimits();
   if (!viewReady) { viewReady = true; goHome(false); }
   else scheduleRefit();
+  measureChrome();
+  separateChrome();
+  layoutKeyLast = '';
   return true;
 }
 let refitTimer = 0;
@@ -478,6 +486,7 @@ syncView();
 
 /* ---------- picking ---------- */
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+ray.layers.enable(1);
 const hits = Object.values(office.rooms).map(r => r.hit);
 let down = null;
 canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId }; tween = null; homeFraming = 0; window.__userAimed = true; });
@@ -570,6 +579,8 @@ function applyData() {
   renderBoard();
   renderDirectory();
   paintShiftLabels();
+  refreshWorkBars();
+  layoutKeyLast = '';
   if (state.selected && !$('#panel').classList.contains('hidden')) renderPanel(state.selected);
 }
 
@@ -1400,7 +1411,16 @@ function paintLeader(el, x, y) {
   leader.style.transform = `rotate(${Math.atan2(-y, -x)}rad)`;
 }
 const labelHold = new WeakMap();
+function layoutPoseKey() {
+  const p = camera.position;
+  const t = controls.target;
+  return `${viewW}x${viewH}|${p.x.toFixed(1)}|${p.y.toFixed(1)}|${p.z.toFixed(1)}|${t.x.toFixed(1)}|${t.z.toFixed(1)}|${state.selected || ''}`;
+}
 function layoutRoomLabels() {
+  if (state.gliding) return;
+  const key = layoutPoseKey();
+  if (key === layoutKeyLast) return;
+  layoutKeyLast = key;
   const list = [...document.querySelectorAll('.rlabel')];
   const phone = phoneLayout();
   const far = camera.position.distanceTo(controls.target) > 62;
@@ -1517,6 +1537,7 @@ function layoutRoomLabels() {
     if (!moved) break;
   }
   settleBubbles();
+  settleStaffTags();
 }
 function separateChrome() {
   const feed = $('#feedToggle');
@@ -1553,6 +1574,13 @@ function settleStaffTags() {
     return;
   }
   const plates = [...document.querySelectorAll('.rlabel')];
+  const chrome = [];
+  for (const sel of ['#topbar', '#quickbar', '#legend']) {
+    const node = document.querySelector(sel);
+    if (!node) continue;
+    const box = node.getBoundingClientRect();
+    if (box.width > 2 && box.height > 2) chrome.push(box);
+  }
   const hit = (a, b) => a.left < b.right - 2 && b.left < a.right - 2 && a.top < b.bottom - 2 && b.top < a.bottom - 2;
   for (const el of tags) {
     el.style.visibility = '';
@@ -1572,6 +1600,14 @@ function settleStaffTags() {
       el.style.marginTop = `${baseT + y}px`;
       const r = el.getBoundingClientRect();
       if (r.width < 2) break;
+      const bar = chrome.find(c => hit(r, c));
+      if (bar) {
+        const overlap = Math.min(r.bottom, bar.bottom) - Math.max(r.top, bar.top);
+        const push = Math.ceil(overlap + 8);
+        if (bar.top < viewH * 0.45) y += push;
+        else y -= push;
+        continue;
+      }
       const plate = plates.find(p => hit(r, p.getBoundingClientRect()));
       if (!plate) break;
       const pr = plate.getBoundingClientRect();
@@ -1909,7 +1945,8 @@ function syncFeedAria() {
     b.el.remove();
     activeBubbles.splice(i, 1);
   }
-  btn.setAttribute('aria-expanded', activeBubbles.length ? 'true' : 'false');
+  const open = activeBubbles.length ? 'true' : 'false';
+  if (btn.getAttribute('aria-expanded') !== open) btn.setAttribute('aria-expanded', open);
 }
 function tickBubbles(dt) {
   bubbleTimer -= dt;
@@ -1931,7 +1968,8 @@ function tickBubbles(dt) {
     if (b.life < 0.4 && !b.el.classList.contains('out')) b.el.classList.add('out');
     if (b.life <= 0) { b.o.parent?.remove(b.o); b.el.remove(); activeBubbles.splice(i, 1); }
   }
-  if (!activeBubbles.length) $('#feedToggle')?.setAttribute('aria-expanded', 'false');
+  const feedBtn = $('#feedToggle');
+  if (feedBtn && !activeBubbles.length && feedBtn.getAttribute('aria-expanded') !== 'false') feedBtn.setAttribute('aria-expanded', 'false');
 }
 
 /* ---------- data loading ---------- */
@@ -1993,20 +2031,27 @@ function nextMeetingText(kl) {
 }
 function paintShiftLabels() {
   const off = state.clock.offDuty;
+  let changed = false;
+  const put = (el, text) => {
+    if (!el || el.textContent === text) return;
+    el.textContent = text;
+    changed = true;
+  };
   for (const R of Object.values(office.rooms)) {
     const t = teamOf(R.id);
     const span = R.labelEl?.querySelector('.st span');
     if (!t || !span) continue;
-    if (t.private) span.textContent = '私密';
-    else if (off && t.id === 'ed') span.textContent = '值班';
-    else if (off) span.textContent = '已下班';
+    if (t.private) put(span, '私密');
+    else if (off && t.id === 'ed') put(span, '值班');
+    else if (off) put(span, '已下班');
     else {
       const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
-      span.textContent = `${lbl} · ${t.agents ?? 0} 位成员`;
+      put(span, `${lbl} · ${t.agents ?? 0} 位成员`);
     }
   }
   const meet = office.rooms.meeting?.labelEl?.querySelector('.st span');
-  if (meet) meet.textContent = nextMeetingText(klNow());
+  if (meet) put(meet, nextMeetingText(klNow()));
+  if (changed) layoutKeyLast = '';
 }
 function lerpColor(out, a, b, t) {
   const ca = new THREE.Color(a), cb = new THREE.Color(b);
@@ -2072,6 +2117,11 @@ applyClock();
 /* ---------- loop ---------- */
 let last = performance.now(), T = 0;
 let first = true;
+const prevCam = new THREE.Vector3();
+const prevTgt = new THREE.Vector3();
+let prevPoseReady = false;
+let bootFrames = 0;
+let idleSkip = 0;
 function frame() {
   syncView();
   const now = performance.now(); const dt = Math.min((now - last) / 1000, 0.05); last = now; T += dt; const t = T;
@@ -2099,18 +2149,34 @@ function frame() {
   controls.target.z = THREE.MathUtils.clamp(controls.target.z, -28, 24);
   if (window.__holdCam) controls.minDistance = 1.2;
   else controls.target.y = 0;
+  refineOverview();
+  if (!prevPoseReady) {
+    prevCam.copy(camera.position);
+    prevTgt.copy(controls.target);
+    prevPoseReady = true;
+  }
+  const gliding = camera.position.distanceToSquared(prevCam) > 1e-6 || controls.target.distanceToSquared(prevTgt) > 1e-6;
+  state.gliding = gliding;
+  const measuring = renderer.info.autoReset === false;
+  if (!gliding && !measuring && bootFrames >= 8 && (idleSkip++ % 5) !== 0) {
+    prevCam.copy(camera.position);
+    prevTgt.copy(controls.target);
+    if (first) { first = false; setTimeout(() => $('#loading').classList.add('gone'), 150); window.__ready = true; }
+    return;
+  }
+  bootFrames++;
+  if (!gliding) renderer.shadowMap.needsUpdate = true;
+  if (isMobile && office.setDetailLights) office.setDetailLights(camera.position.distanceTo(controls.target) < 150);
   office.update(t, dt, state);
   tickBubbles(dt);
-  refreshWorkBars();
   if (composer) composer.render(); else renderer.render(scene, camera);
+  labelRenderer.sortObjects = !gliding;
   labelRenderer.render(scene, camera);
-  layoutRoomLabels();
+  if (!gliding) layoutRoomLabels();
   syncFeedAria();
-  separateChrome();
-  measureChrome();
-  refineOverview();
-  settleStaffTags();
-  if ((T % 0.5) < dt) applyClock();
+  if (!gliding && (T % 0.5) < dt) applyClock();
+  prevCam.copy(camera.position);
+  prevTgt.copy(controls.target);
   if (first) { first = false; setTimeout(() => $('#loading').classList.add('gone'), 150); window.__ready = true; }
 }
 renderer.setAnimationLoop(frame);
