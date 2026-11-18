@@ -34,11 +34,11 @@ assert.match(priv[0], /d:\s*8\.5/);
 assert.doesNotMatch(scene, /私人助理/);
 
 const sw = fs.readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8');
-assert.match(sw, /evergate-office-v73/);
+assert.match(sw, /evergate-office-v74/);
 assert.match(sw, /brand-theme\.js/);
 assert.doesNotMatch(fs.readFileSync(new URL('../public/dashboard-model.js', import.meta.url), 'utf8'), /EvergateBrand/);
 
 const modelDiff = execSync('git diff origin/main -- public/dashboard-model.js', { encoding: 'utf8' });
 assert.equal(modelDiff, '');
 
-console.log(JSON.stringify({ ok: true, cache: 'evergate-office-v73', private: colors.privfin }));
+console.log(JSON.stringify({ ok: true, cache: 'evergate-office-v74', private: colors.privfin }));
