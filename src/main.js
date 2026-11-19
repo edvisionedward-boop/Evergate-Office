@@ -66,7 +66,8 @@ const hue = (team) => window.EvergateBrand.teamColor(team);
 
 /* controls */
 const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.enableDamping = false; controls.dampingFactor = 0.08;
+let userDrove = false;
 controls.minDistance = 9; controls.maxDistance = 120;
 controls.minPolarAngle = 0.3; controls.maxPolarAngle = 1.22;
 controls.screenSpacePanning = false;
@@ -404,7 +405,7 @@ function desktopOverviewPose() {
 function goHome(anim = true) {
   window.__userAimed = false;
   controls.minDistance = 9;
-  controls.enableDamping = true;
+  controls.enableDamping = userDrove;
   const fromT = controls.target.clone();
   const fromP = camera.position.clone();
   applyFitLimits();
@@ -2221,7 +2222,7 @@ let shadersWarmed = false;
 const nativeRAF = window.requestAnimationFrame.bind(window);
 let gestureUntil = 0;
 function cameraGesturing() { return interacting || performance.now() < gestureUntil; }
-controls.addEventListener('start', () => { interacting = true; gestureUntil = performance.now() + 240; kick(); });
+controls.addEventListener('start', () => { userDrove = true; controls.enableDamping = true; interacting = true; gestureUntil = performance.now() + 240; kick(); });
 controls.addEventListener('end', () => { interacting = false; gestureUntil = performance.now() + 80; kick(); });
 controls.addEventListener('change', () => { if (interacting) gestureUntil = performance.now() + 240; kick(); });
 
@@ -2302,9 +2303,11 @@ function step() {
     document.documentElement.classList.remove('booting');
     setTimeout(() => $('#loading').classList.add('gone'), 150);
     window.__ready = true;
-    setTimeout(warmLightPrograms, 0);
   }
   bootFrames++;
+  // The boot frame already drew the settled view. Another full render after
+  // the page is shown is what pushed mobile TBT above main.
+  if (bootFrames === 1) return false;
   return interacting || !!tween || homeFraming > 0 || gliding || measuring || cameraGesturing();
 }
 function enqueue() {

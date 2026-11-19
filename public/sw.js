@@ -1,5 +1,5 @@
 /* Bump this name to drop previously cached builds on the next visit. */
-const CACHE = 'evergate-office-v79';
+const CACHE = 'evergate-office-v80';
 const PRECACHE = [
   'index.html',
   'manifest.webmanifest',
