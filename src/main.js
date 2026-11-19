@@ -480,6 +480,7 @@ function setDragLod(on) {
 }
 let dragWarm = null;
 let dragBlit = null;
+let dragSized = false;
 let layoutKeyLast = '';
 function syncView() {
   const w = canvas.clientWidth, h = canvas.clientHeight;
@@ -528,14 +529,28 @@ function renderDragFrame(present = true, blitOnly = false) {
     renderer.render(scene, camera);
   }
   dragBlit.mat.map = dragTarget.texture;
-  const dest = present ? null : dragWarm;
-  renderer.setRenderTarget(dest);
-  const dw = present ? renderer.domElement.width : 4;
-  const dh = present ? renderer.domElement.height : 4;
-  renderer.setViewport(0, 0, dw, dh);
+  if (present) {
+    if (!dragSized) {
+      renderer.setPixelRatio(1);
+      renderer.setSize(w, h, false);
+      dragSized = true;
+    }
+    renderer.setRenderTarget(null);
+    renderer.setViewport(0, 0, w, h);
+  } else {
+    renderer.setRenderTarget(dragWarm);
+    renderer.setViewport(0, 0, 4, 4);
+  }
   renderer.render(dragBlit.scene, dragBlit.cam);
   renderer.setRenderTarget(prev);
-  if (prev === null) renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
+  if (prev === null && !present) renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
+}
+function restoreFullBuffer() {
+  if (!dragSized) return;
+  dragSized = false;
+  renderer.setPixelRatio(viewPR);
+  renderer.setSize(viewW, viewH, false);
+  if (composer) { composer.setPixelRatio(viewPR); composer.setSize(viewW, viewH); }
 }
 let refitTimer = 0;
 function scheduleRefit() {
@@ -2288,13 +2303,16 @@ function step() {
     dragPresented = true;
   } else {
     setDragLod(false);
+    restoreFullBuffer();
     if (composer) composer.render(); else renderer.render(scene, camera);
     dragPresented = false;
   }
-  labelRenderer.sortObjects = !gliding;
-  labelRenderer.render(scene, camera);
-  if (!gliding) layoutRoomLabels();
-  syncFeedAria();
+  if (!gesturing) {
+    labelRenderer.sortObjects = !gliding;
+    labelRenderer.render(scene, camera);
+    if (!gliding) layoutRoomLabels();
+    syncFeedAria();
+  }
   prevCam.copy(camera.position);
   prevTgt.copy(controls.target);
   if (first) {

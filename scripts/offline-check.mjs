@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 
 const sw = fs.readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8');
-if (!sw.includes("const CACHE = 'evergate-office-v80'")) throw new Error('cache is not v80');
+if (!sw.includes("const CACHE = 'evergate-office-v81'")) throw new Error('cache is not v81');
 if (!sw.includes('index.html')) throw new Error('index.html missing from precache');
 if (!sw.includes('manifest.webmanifest')) throw new Error('manifest missing from precache');
 
@@ -62,4 +62,4 @@ await dash.waitForFunction(() => {
 }, null, { timeout: 20000 });
 await browser.close();
 preview.kill('SIGTERM');
-console.log(JSON.stringify({ ok: true, cache: 'evergate-office-v80', offline: { ready: true, manifest, chart: true }, errors }));
+console.log(JSON.stringify({ ok: true, cache: 'evergate-office-v81', offline: { ready: true, manifest, chart: true }, errors }));

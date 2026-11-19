@@ -122,6 +122,28 @@ The remaining blockers, with that evidence:
 
 A cheap shell can be shown first, and people, furniture, bloom, and shadows can be deferred. On this host that still leaves simulated LCP near 6 s and TBT near 5 s, and the mobile score stays around 30. That is the best score these runs produced. It is not 70. Real-device column: 「待真机」. The drag path was not changed. The 3-run median from 01:42–01:47 UTC stays 50 ms on both viewports, and one of those desktop runs was 51 ms. A single recheck of that same code at 02:08 UTC was phone p95 44 ms and desktop p95 55 ms, with no console errors.
 
+## Acceptance run, 2026-11-19 02:30–02:39 UTC
+
+Measured on SwiftShader, three runs each, interleaved with `main` `5e2a401`. Service worker is `evergate-office-v81`. The settled pixel-ratio cap is still 2 and the shadow maps are still PCF 512 / 1024. After a phone drag the drawing buffer returned to 780×1688 at pixel ratio 2. After a desktop drag it returned to 1440×900 at pixel ratio 1. Brand colours, room positions, scoring, and the ledger were not changed.
+
+The mobile TBT gap came from work after the first paint: two full light-variant renders in `warmLightPrograms`, plus another full frame scheduled because the boot camera move counted as gliding. Those no longer run at startup. During a drag the frame is drawn into the small target and presented into that same small buffer, which CSS scales up. Nameplate DOM updates are skipped until the pointer settles. The first desktop drag frame still spikes once, to about 363 / 377 / 391 ms, while the buffer is resized. With about 220 frames that spike is outside p95.
+
+Window: 2026-11-19 02:30:59–02:39:37 UTC (10:30:59–10:39:37 MYT).
+
+| | baseline three | baseline median | branch three | branch median |
+|---|---|---:|---|---:|
+| phone drag p95 | 940 / 1011 / 880 | 940 ms | 17 / 17 / 17 | 17 ms |
+| desktop drag p95 | 1036 / 1024 / 1019 | 1024 ms | 17.6 / 17.2 / 19 | 17.6 ms |
+| mobile Performance | 26 / 26 / 25 | 26 | 26 / 25 / 26 | 26 |
+| mobile TBT | 15819 / 8920 / 8279 | 8920 ms | 6905 / 7851 / 10522 | 7851 ms |
+| desktop Performance | 36 / 48 / 35 | 36 | 34 / 42 / 48 | 42 |
+| desktop TBT | 2835 / 2109 / 3065 | 2835 ms | 1723 / 2484 / 1223 | 1723 ms |
+| CLS | 0 / 0 / 0 | 0 | 0 / 0 / 0 | 0 |
+
+Gesture runs reported no page errors and no console errors. Lighthouse's console-error audit scored 1 on every run.
+
+Against this session's medians: drag p95 is under 50 ms on both viewports; mobile Performance 26 equals main and desktop 42 is above main 36; mobile TBT 7851 ms is under main 8920 ms and desktop TBT 1723 ms is under main 2835 ms; CLS is 0 on both. Mobile Performance 70 is not met. The median is 26. Real-device column: 「待真机」.
+
 ## Raw traces
 
 The raw Chrome traces are not in the git repo. Each file is an agent artifact under its exact filename. Capture times are the file write times.
