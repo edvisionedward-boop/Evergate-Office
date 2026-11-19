@@ -107,6 +107,21 @@ Lighthouse was remeasured on the same drag code after the light-shader warm-up w
 
 Drag p95 median is 50 ms on both viewports, which meets that line. One desktop run was 51 ms. Mobile Lighthouse median stays 26, under 70, so the gate is not met. Lighthouse does not drag. Real-device column: 「待真机」.
 
+## Why mobile Lighthouse does not reach 70
+
+Checked 2026-11-19 01:59–02:10 UTC (09:59–10:10 MYT) on SwiftShader. `data.json` is 54 KB, so the ledger file is not the load. These are single runs, not a new median, and the code was not kept.
+
+Unthrottled mobile load of the accepted build (`9646770`), 412×823: long tasks of 604 ms and 973 ms, then first contentful paint at 3132 ms. Lighthouse's mobile simulation stretches that trace. A run with bloom, shadows, and the environment map deferred, and the body allowed to paint early, scored 30 (FCP/LCP 5995 ms, TBT 8241 ms). A shell-only first frame scored 27 (LCP 7923 ms, TBT 6783 ms). A flat-shaded shell scored 31 (LCP 5928 ms, TBT 4848 ms). The best single mobile score already on the accepted build is 34, inside the median-26 set from 01:51 UTC.
+
+The remaining blockers, with that evidence:
+
+1. Lighthouse mobile simulates a 4× CPU. The two startup tasks (script evaluation plus the first WebGL frame) are about 0.6 s and 1.0 s unthrottled and land on the critical path. The simulation reports LCP around 6–8 s and TBT around 5–8 s.
+2. The first WebGL frame is `WebGLProgram.onFirstUse` plus buffer upload. It is one driver call. Splitting it into tasks under 50 ms is not available. Doing it before first paint lengthens LCP. Doing it after first paint lengthens TBT.
+3. `brand-theme.js` is about 2.1 s of main-thread time in the Lighthouse bootup audit. Team colors are read while the office is built, so it stays on the critical path.
+4. `buildOffice` is about 0.3–0.9 s unthrottled before the first frame. Together with the module evaluation it is already most of a 4 s simulated LCP, before shaders.
+
+A cheap shell can be shown first, and people, furniture, bloom, and shadows can be deferred. On this host that still leaves simulated LCP near 6 s and TBT near 5 s, and the mobile score stays around 30. That is the best score these runs produced. It is not 70. Real-device column: 「待真机」. The drag path was not changed. The 3-run median from 01:42–01:47 UTC stays 50 ms on both viewports, and one of those desktop runs was 51 ms. A single recheck of that same code at 02:08 UTC was phone p95 44 ms and desktop p95 55 ms, with no console errors.
+
 ## Raw traces
 
 The raw Chrome traces are not in the git repo. Each file is an agent artifact under its exact filename. Capture times are the file write times.
