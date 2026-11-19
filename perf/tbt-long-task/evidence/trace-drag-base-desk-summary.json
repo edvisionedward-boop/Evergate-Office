@@ -1,0 +1,223 @@
+{
+  "tag": "base",
+  "mode": "desk",
+  "traceBytes": 4447797,
+  "events": 23015,
+  "dragMarked": false,
+  "gesture": {
+    "frames": [
+      948,
+      1101,
+      1206,
+      1217,
+      1059,
+      1081
+    ],
+    "moved": 6.2
+  },
+  "traceMs": {
+    "webglGpu": 0,
+    "layout": 18,
+    "style": 0,
+    "gc": 149,
+    "paint": 2,
+    "raf": 548
+  },
+  "frames": [
+    {
+      "ms": 65,
+      "layout": 2,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 74,
+      "layout": 2,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 1,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 84,
+      "layout": 4,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 0,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 88,
+      "layout": 3,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 2,
+      "layout": 1,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 88,
+      "layout": 2,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 0,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 82,
+      "layout": 2,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 0,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 62,
+      "layout": 2,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 2,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    }
+  ],
+  "share": {
+    "webgl": {
+      "ms": 245,
+      "pct": 3.7
+    },
+    "other": {
+      "ms": 6005,
+      "pct": 89.5
+    },
+    "otherJs": {
+      "ms": 435,
+      "pct": 6.5
+    },
+    "labels": {
+      "ms": 14,
+      "pct": 0.2
+    },
+    "gc": {
+      "ms": 10,
+      "pct": 0.1
+    }
+  },
+  "top": [
+    {
+      "fn": "(idle)",
+      "ms": 6004,
+      "pct": 89.5
+    },
+    {
+      "fn": "klParts",
+      "ms": 323,
+      "pct": 4.8
+    },
+    {
+      "fn": "(program)",
+      "ms": 218,
+      "pct": 3.2
+    },
+    {
+      "fn": "layoutRoomLabels",
+      "ms": 12,
+      "pct": 0.2
+    },
+    {
+      "fn": "(garbage collector)",
+      "ms": 10,
+      "pct": 0.1
+    },
+    {
+      "fn": "updateMatrixWorld",
+      "ms": 7,
+      "pct": 0.1
+    },
+    {
+      "fn": "projectObject",
+      "ms": 6,
+      "pct": 0.1
+    },
+    {
+      "fn": "setProgram",
+      "ms": 6,
+      "pct": 0.1
+    },
+    {
+      "fn": "setValue",
+      "ms": 6,
+      "pct": 0.1
+    },
+    {
+      "fn": "uniformMatrix4fv",
+      "ms": 6,
+      "pct": 0.1
+    },
+    {
+      "fn": "getParameters",
+      "ms": 4,
+      "pct": 0.1
+    },
+    {
+      "fn": "getProgram",
+      "ms": 4,
+      "pct": 0.1
+    },
+    {
+      "fn": "drawElements",
+      "ms": 4,
+      "pct": 0.1
+    },
+    {
+      "fn": "frame",
+      "ms": 4,
+      "pct": 0.1
+    },
+    {
+      "fn": "copyArray",
+      "ms": 4,
+      "pct": 0.1
+    },
+    {
+      "fn": "klNow",
+      "ms": 3,
+      "pct": 0
+    }
+  ]
+}
