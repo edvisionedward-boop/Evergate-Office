@@ -66,22 +66,32 @@ The three changes above are in the branch after this report's first commit. Serv
 
 Desktop TBT on the fix sits in a tight band around 1.2 s, which is the 2026-11-18 baseline band and well under that day's branch median of 3600 ms. Phone drag p95 stays about half of baseline. Desktop drag p95 stays near 1 s. No new console errors in the gesture runs. The gate is not met: mobile Performance 26 is below 70, and both drag p95 numbers are above 50 ms. Real-device numbers are still 「待真机」.
 
+## Raw traces
+
+Re-hashed on 2026-11-19 01:02 UTC (09:02 MYT) from the files still on disk. The eight traces that were already listed match the SHA-256 values published before this re-hash. `trace-load-opt-prod-desk.json` was on disk but had not been listed; its hash is new in this table, and the file is not a minified capture. The files are Chrome traces, not committed, because they embed the page bundle. Times are the file modification times, which are the write times of that capture.
+
+| File | Bytes | SHA-256 | Captured (UTC) | Captured (MYT) | Build |
+|---|---:|---|---|---|---|
+| `trace-load-base-desk.json` | 11529949 | `4ad24d86c23a20b8eaa3fe370ed0e9a5da2e89f7c8a8cb7436ee6b91dc88b451` | 2026-11-19 00:36:41 | 2026-11-19 08:36:41 | Unminified `main` `5e2a401`, desktop 1440×900, load |
+| `trace-load-opt-desk.json` | 13818871 | `4d53c1442a67ef788674f8d5cf9e1391732c5858561a9d77ddbbe9a9a1217646` | 2026-11-19 00:37:12 | 2026-11-19 08:37:12 | Unminified branch `b0ec70c`, desktop 1440×900, load |
+| `trace-drag-base-desk.json` | 4447797 | `9faeb15cf26e0235d6b05214a04b4300208e5496945274d9e1c2d1a8b20d390b` | 2026-11-19 00:39:04 | 2026-11-19 08:39:04 | Unminified `main` `5e2a401`, desktop 1440×900, one drag |
+| `trace-drag-opt-desk.json` | 3618642 | `27785d71c099f03a23cadb4b19ef2a494d80e38610d301c09e4100c221d6b3c3` | 2026-11-19 00:39:35 | 2026-11-19 08:39:35 | Unminified branch `b0ec70c`, desktop 1440×900, one drag |
+| `trace-drag-base-phone.json` | 4342693 | `83c9056fab3aa7795020835711c54f0188cfe8f02d0334a687efe34021dafc36` | 2026-11-19 00:40:08 | 2026-11-19 08:40:08 | Unminified `main` `5e2a401`, phone 390×844 DPR 3, one drag |
+| `trace-drag-opt-phone.json` | 3371904 | `b8ae2b9a002043d1fa3e94f07dd149ab0d958fd93298cdac8d1ff4ffebb3f3d5` | 2026-11-19 00:40:38 | 2026-11-19 08:40:38 | Unminified branch `b0ec70c`, phone 390×844 DPR 3, one drag |
+| `trace-load-base-prod-desk.json` | 12688740 | `85dd2caab48cec2dd304d0f45acf0ba2e799c6320ab9902bfb534a85a741b872` | 2026-11-19 00:41:34 | 2026-11-19 08:41:34 | Minified `main` `5e2a401`, desktop 1440×900, load |
+| `trace-load-branch-prod-desk.json` | 12497927 | `cc2e4a429a0b203b374200a09c0add66db4308591bcc68bc63ebe0c0f9b806ac` | 2026-11-19 00:42:55 | 2026-11-19 08:42:55 | Minified branch `b0ec70c`, desktop 1440×900, load |
+| `trace-load-opt-prod-desk.json` | 12556758 | `ccebdb44e78fbdb076cd4e99dc6ddf881037b83792c09e3f08f46712b7d87b2e` | 2026-11-19 00:42:03 | 2026-11-19 08:42:03 | Not a production build. Port 4176 was still serving the unminified branch `b0ec70c`. Do not use this file as the minified trace. |
+
+No cited trace file was missing at re-hash time.
+
 ## Evidence files
 
-Raw Chrome traces and CPU profiles embed the page bundle, so they are not committed. SHA-256 of the files captured this run:
+CPU profiles and the Lighthouse JSON also embed page data, so they are not committed. Re-hashed at the same time; the SHA-256 values below still match.
 
 | SHA-256 | bytes | file |
 |---|---:|---|
-| `4ad24d86c23a20b8eaa3fe370ed0e9a5da2e89f7c8a8cb7436ee6b91dc88b451` | 11529949 | `trace-load-base-desk.json` |
-| `4d53c1442a67ef788674f8d5cf9e1391732c5858561a9d77ddbbe9a9a1217646` | 13818871 | `trace-load-opt-desk.json` |
-| `85dd2caab48cec2dd304d0f45acf0ba2e799c6320ab9902bfb534a85a741b872` | 12688740 | `trace-load-base-prod-desk.json` |
-| `cc2e4a429a0b203b374200a09c0add66db4308591bcc68bc63ebe0c0f9b806ac` | 12497927 | `trace-load-branch-prod-desk.json` |
 | `da7b286e921361e25b46509dfe72425b969c4241d76bd5f5d66b9358c7d4a365` | 496607 | `profile-load-base-desk.json` |
 | `13da3f5f93bb19e5f32acca7da7807df954478885ed93703dba2b0341df0ca22` | 546249 | `profile-load-opt-desk.json` |
-| `9faeb15cf26e0235d6b05214a04b4300208e5496945274d9e1c2d1a8b20d390b` | 4447797 | `trace-drag-base-desk.json` |
-| `27785d71c099f03a23cadb4b19ef2a494d80e38610d301c09e4100c221d6b3c3` | 3618642 | `trace-drag-opt-desk.json` |
-| `83c9056fab3aa7795020835711c54f0188cfe8f02d0334a687efe34021dafc36` | 4342693 | `trace-drag-base-phone.json` |
-| `b8ae2b9a002043d1fa3e94f07dd149ab0d958fd93298cdac8d1ff4ffebb3f3d5` | 3371904 | `trace-drag-opt-phone.json` |
 | `f9125880b87f15230ade9cf6094e966456ea00fe552705a582b8c0fec88e8bbf` | 207010 | `profile-drag-base-desk.json` |
 | `f16c6f6355f618c5a9ec00086488a449079c7ad4e151a2d2e6f0a066528f45b6` | 146921 | `profile-drag-opt-desk.json` |
 | `955f2a7a1861fdcaff3cf3d6b789eaadf9e01195b9097ec812d053577ed95894` | 208996 | `profile-drag-base-phone.json` |
