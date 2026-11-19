@@ -35,6 +35,7 @@ renderer.shadowMap.type = THREE.PCFShadowMap;
 // the orbit. Refresh it only while the camera is still; dragging keeps the last map.
 renderer.shadowMap.autoUpdate = false;
 renderer.shadowMap.needsUpdate = true;
+renderer.debug.checkShaderErrors = false;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.02;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -358,10 +359,12 @@ function flyTo(target, dist, dir, dur = 0.9) {
     window.__flying = false;
     controls.target.copy(target);
     camera.position.copy(toP);
+    kick();
     return;
   }
   window.__flying = true;
   tween = { t: 0, dur, fromT: controls.target.clone(), toT: target.clone(), fromP: camera.position.clone(), toP };
+  kick();
 }
 function applyFitLimits() {
   const d = fitDistance();
@@ -419,6 +422,7 @@ function goHome(anim = true) {
     window.__flying = false;
     controls.target.copy(pose.target);
     camera.position.copy(pose.target).addScaledVector(pose.dir, pose.dist);
+    kick();
     return;
   }
   controls.target.copy(fromT);
@@ -2128,6 +2132,7 @@ function applyClock() {
 $('#dayToggle')?.addEventListener('click', () => {
   state.clock.mode = state.clock.mode === 'auto' ? 'day' : state.clock.mode === 'day' ? 'night' : 'auto';
   applyClock();
+  kick();
 });
 applyData();
 applyClock();
@@ -2142,6 +2147,7 @@ let bootFrames = 0;
 let interacting = false;
 let loopOn = false;
 let frameQueued = false;
+let loopReady = false;
 let shadersWarmed = false;
 const nativeRAF = window.requestAnimationFrame.bind(window);
 controls.addEventListener('start', () => { interacting = true; kick(); });
@@ -2194,6 +2200,8 @@ function step() {
   const gliding = camera.position.distanceToSquared(prevCam) > 1e-6 || controls.target.distanceToSquared(prevTgt) > 1e-6;
   state.gliding = gliding;
   const measuring = renderer.info.autoReset === false;
+  const mustDraw = interacting || !!tween || homeFraming > 0 || gliding || bootFrames < 1 || measuring;
+  if (!mustDraw) return false;
   if (!gliding) renderer.shadowMap.needsUpdate = true;
   if (isMobile && office.setDetailLights) office.setDetailLights(camera.position.distanceTo(controls.target) < 150);
   office.update(t, dt, state);
@@ -2207,12 +2215,13 @@ function step() {
   prevTgt.copy(controls.target);
   if (first) {
     first = false;
+    document.documentElement.classList.remove('booting');
     setTimeout(() => $('#loading').classList.add('gone'), 150);
     window.__ready = true;
     setTimeout(warmLightPrograms, 0);
   }
   bootFrames++;
-  return interacting || !!tween || homeFraming > 0 || gliding || bootFrames < 2 || measuring;
+  return interacting || !!tween || homeFraming > 0 || gliding || measuring;
 }
 function enqueue() {
   if (frameQueued) return;
@@ -2225,7 +2234,7 @@ function enqueue() {
     else loopOn = false;
   });
 }
-function kick() { enqueue(); }
+function kick() { if (loopReady) enqueue(); }
 window.requestAnimationFrame = (cb) => nativeRAF((t) => {
   if (!loopOn && !frameQueued) {
     const again = step();
@@ -2233,6 +2242,7 @@ window.requestAnimationFrame = (cb) => nativeRAF((t) => {
   }
   cb(t);
 });
+loopReady = true;
 enqueue();
 setInterval(() => {
   const before = state.clock.day;

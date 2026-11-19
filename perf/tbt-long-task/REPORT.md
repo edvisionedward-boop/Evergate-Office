@@ -50,6 +50,22 @@ Desktop drag stays near one second per frame on both builds. Phone drag is about
 
 Do not lower the pixel ratio or the shadow map. The absolute gates (Lighthouse mobile ≥ 70, drag p95 ≤ 50 ms, CLS ≤ 0.1) are still unmet on SwiftShader.
 
+## Fix measured after the report
+
+The three changes above are in the branch after this report's first commit. Service worker cache is `evergate-office-v77`. Remeasured 2026-11-19 00:48–00:57 UTC (08:48–08:57 MYT), SwiftShader, baseline `5e2a401` and the fix interleaved three times. This session's baseline desktop TBT was noisy (2076 / 4347 / 4495, median 4347), so it is not the 1138 ms median from 2026-11-18.
+
+| | baseline median | fix median |
+|---|---:|---:|
+| desktop TBT | 4347 ms (2076 / 4347 / 4495) | 1217 ms (1224 / 1187 / 1217) |
+| desktop Performance | 47 | 48 |
+| mobile Performance | 25 (26 / 25 / 25) | 26 (25 / 26 / 26) |
+| mobile TBT | 10622 ms | 19637 ms |
+| desktop drag p95 | 1019 ms (1019 / 1031 / 1018) | 1069 ms (1112 / 1012 / 1069) |
+| phone drag p95 | 919 ms (919 / 896 / 927) | 473 ms (456 / 473 / 838) |
+| CLS | 0 | 0 |
+
+Desktop TBT on the fix sits in a tight band around 1.2 s, which is the 2026-11-18 baseline band and well under that day's branch median of 3600 ms. Phone drag p95 stays about half of baseline. Desktop drag p95 stays near 1 s. No new console errors in the gesture runs. The gate is not met: mobile Performance 26 is below 70, and both drag p95 numbers are above 50 ms. Real-device numbers are still 「待真机」.
+
 ## Evidence files
 
 Raw Chrome traces and CPU profiles embed the page bundle, so they are not committed. SHA-256 of the files captured this run:
