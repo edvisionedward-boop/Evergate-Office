@@ -86,7 +86,9 @@ The gate is not met. Mobile Performance stays at 26, under 70. Drag p95 is 110 m
 
 ## Raw traces
 
-Re-hashed on 2026-11-19 01:02 UTC (09:02 MYT) from the files still on disk. The eight traces that were already listed match the SHA-256 values published before this re-hash. `trace-load-opt-prod-desk.json` was on disk but had not been listed; its hash is new in this table, and the file is not a minified capture. The files are Chrome traces, not committed, because they embed the page bundle. Times are the file modification times, which are the write times of that capture.
+The raw Chrome traces are not in the git repo. Each file is an agent artifact under its exact filename. Capture times are the file write times.
+
+Independent check on 2026-11-19 01:33 UTC (09:33 MYT): SHA-256 was recomputed from each artifact file below. All nine match the SHA-256 values in this table. `trace-load-opt-prod-desk.json` is included and is not a minified capture: port 4176 was still serving the unminified branch.
 
 | File | Bytes | SHA-256 | Captured (UTC) | Captured (MYT) | Build |
 |---|---:|---|---|---|---|
