@@ -66,6 +66,24 @@ The three changes above are in the branch after this report's first commit. Serv
 
 Desktop TBT on the fix sits in a tight band around 1.2 s, which is the 2026-11-18 baseline band and well under that day's branch median of 3600 ms. Phone drag p95 stays about half of baseline. Desktop drag p95 stays near 1 s. No new console errors in the gesture runs. The gate is not met: mobile Performance 26 is below 70, and both drag p95 numbers are above 50 ms. Real-device numbers are still 「待真机」.
 
+## Drag-time resolution, measured 2026-11-19
+
+While a pointer or the wheel is active, the scene is drawn into an offscreen target at 14% of the CSS size on a phone and 6% on a desktop, then scaled up. Bloom is skipped for those frames. The drawing buffer for a settled frame stays at the pixel-ratio cap of 2, and the next still frame is a full render. Phone overview framing runs once instead of twelve times. Service worker cache is `evergate-office-v78`.
+
+Interleaved with `main` `5e2a401`, three runs each, 2026-11-19 01:21–01:29 UTC (09:21–09:29 MYT). SwiftShader. Gesture p95 is the pan. No new console errors. CLS is 0 on every Lighthouse run.
+
+| | baseline three | baseline median | branch three | branch median |
+|---|---|---:|---|---:|
+| phone drag p95 | 936 / 936 / 991 | 936 ms | 130 / 110 / 110 | 110 ms |
+| desktop drag p95 | 1052 / 1040 / 1021 | 1040 ms | 176 / 154 / 178 | 176 ms |
+| mobile Performance | 26 / 26 / 25 | 26 | 26 / 26 / 25 | 26 |
+| mobile TBT | 14064 / 17183 / 10065 | 14064 ms | 16383 / 16652 / 15647 | 16383 ms |
+| desktop Performance | 48 / 48 / 46 | 48 | 49 / 36 / 48 | 48 |
+| desktop TBT | 1879 / 4295 / 2107 | 2107 ms | 4781 / 3580 / 2664 | 3580 ms |
+| CLS | 0 / 0 / 0 | 0 | 0 / 0 / 0 | 0 |
+
+The gate is not met. Mobile Performance stays at 26, under 70. Drag p95 is 110 ms on the phone and 176 ms on the desktop, both over 50 ms. Lighthouse does not drag, so the low-resolution drag path does not raise that score. Real-device column: 「待真机」.
+
 ## Raw traces
 
 Re-hashed on 2026-11-19 01:02 UTC (09:02 MYT) from the files still on disk. The eight traces that were already listed match the SHA-256 values published before this re-hash. `trace-load-opt-prod-desk.json` was on disk but had not been listed; its hash is new in this table, and the file is not a minified capture. The files are Chrome traces, not committed, because they embed the page bundle. Times are the file modification times, which are the write times of that capture.

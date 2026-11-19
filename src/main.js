@@ -414,7 +414,7 @@ function goHome(anim = true) {
   camera.updateProjectionMatrix();
   if (phoneLayout()) {
     if (scene.fog) scene.fog.far = Math.max(220, pose.dist + 120);
-    homeFraming = 12;
+    homeFraming = 1;
   } else homeFraming = 0;
   const snap = !anim || qs.get('snap') === '1';
   if (snap) {
@@ -447,6 +447,10 @@ setupComposer();
    after rotation, toolbar show/hide, and visualViewport changes, and the
    CSS2D layer (anchored top-left) then slides off the WebGL image. */
 let viewW = 0, viewH = 0, viewPR = 0, viewReady = false;
+let dragTarget = null;
+let dragPresented = false;
+let dragWarm = null;
+let dragBlit = null;
 let layoutKeyLast = '';
 function syncView() {
   const w = canvas.clientWidth, h = canvas.clientHeight;
@@ -465,7 +469,44 @@ function syncView() {
   measureChrome();
   separateChrome();
   layoutKeyLast = '';
+  if (dragTarget) { dragTarget.dispose(); dragTarget = null; }
   return true;
+}
+function warmDragBlit() {
+  renderDragFrame(false, true);
+}
+function renderDragFrame(present = true, blitOnly = false) {
+  const scale = isMobile ? 0.14 : 0.06;
+  const w = Math.max(2, Math.round(canvas.clientWidth * scale));
+  const h = Math.max(2, Math.round(canvas.clientHeight * scale));
+  if (!dragTarget || dragTarget.width !== w || dragTarget.height !== h) {
+    if (dragTarget) dragTarget.dispose();
+    dragTarget = new THREE.WebGLRenderTarget(w, h, { depthBuffer: true, stencilBuffer: false });
+    dragTarget.texture.colorSpace = renderer.outputColorSpace;
+  }
+  if (!dragBlit) {
+    const blitScene = new THREE.Scene();
+    const blitCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const mat = new THREE.MeshBasicMaterial({ toneMapped: false, depthTest: false, depthWrite: false });
+    blitScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat));
+    dragBlit = { scene: blitScene, cam: blitCam, mat };
+    dragWarm = new THREE.WebGLRenderTarget(4, 4);
+  }
+  const prev = renderer.getRenderTarget();
+  if (!blitOnly) {
+    renderer.setRenderTarget(dragTarget);
+    renderer.setViewport(0, 0, w, h);
+    renderer.render(scene, camera);
+  }
+  dragBlit.mat.map = dragTarget.texture;
+  const dest = present ? null : dragWarm;
+  renderer.setRenderTarget(dest);
+  const dw = present ? renderer.domElement.width : 4;
+  const dh = present ? renderer.domElement.height : 4;
+  renderer.setViewport(0, 0, dw, dh);
+  renderer.render(dragBlit.scene, dragBlit.cam);
+  renderer.setRenderTarget(prev);
+  if (prev === null) renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
 }
 let refitTimer = 0;
 function scheduleRefit() {
@@ -2150,9 +2191,11 @@ let frameQueued = false;
 let loopReady = false;
 let shadersWarmed = false;
 const nativeRAF = window.requestAnimationFrame.bind(window);
-controls.addEventListener('start', () => { interacting = true; kick(); });
-controls.addEventListener('end', () => { interacting = false; kick(); });
-controls.addEventListener('change', () => kick());
+let gestureUntil = 0;
+function cameraGesturing() { return interacting || performance.now() < gestureUntil; }
+controls.addEventListener('start', () => { interacting = true; gestureUntil = performance.now() + 240; kick(); });
+controls.addEventListener('end', () => { interacting = false; gestureUntil = performance.now() + 240; kick(); });
+controls.addEventListener('change', () => { gestureUntil = performance.now() + 240; kick(); });
 
 function warmLightPrograms() {
   if (shadersWarmed || !isMobile || !office.setDetailLights) return;
@@ -2200,13 +2243,19 @@ function step() {
   const gliding = camera.position.distanceToSquared(prevCam) > 1e-6 || controls.target.distanceToSquared(prevTgt) > 1e-6;
   state.gliding = gliding;
   const measuring = renderer.info.autoReset === false;
-  const mustDraw = interacting || !!tween || homeFraming > 0 || gliding || bootFrames < 1 || measuring;
+  const mustDraw = interacting || !!tween || homeFraming > 0 || gliding || bootFrames < 1 || measuring || dragPresented;
   if (!mustDraw) return false;
   if (!gliding) renderer.shadowMap.needsUpdate = true;
   if (isMobile && office.setDetailLights) office.setDetailLights(camera.position.distanceTo(controls.target) < 150);
   office.update(t, dt, state);
   tickBubbles(dt);
-  if (composer) composer.render(); else renderer.render(scene, camera);
+  if (cameraGesturing()) {
+    renderDragFrame();
+    dragPresented = true;
+  } else {
+    if (composer) composer.render(); else renderer.render(scene, camera);
+    dragPresented = false;
+  }
   labelRenderer.sortObjects = !gliding;
   labelRenderer.render(scene, camera);
   if (!gliding) layoutRoomLabels();
@@ -2214,6 +2263,7 @@ function step() {
   prevCam.copy(camera.position);
   prevTgt.copy(controls.target);
   if (first) {
+    warmDragBlit();
     first = false;
     document.documentElement.classList.remove('booting');
     setTimeout(() => $('#loading').classList.add('gone'), 150);
