@@ -1167,7 +1167,9 @@ export function buildOffice(scene, teams, opts = {}) {
   noWorkBarRooms.clear();
   for (const t of teams) if (t.noWorkBar || t.private) noWorkBarRooms.add(t.id);
   const root = new THREE.Group(); scene.add(root);
-  const staticG = new THREE.Group(); root.add(staticG);
+  const staticG = new THREE.Group();
+  staticG.name = 'officeShell';
+  root.add(staticG);
   const dyn = new THREE.Group(); root.add(dyn);
   const rooms = {};
   const teamById = Object.fromEntries(teams.map(t => [t.id, t]));

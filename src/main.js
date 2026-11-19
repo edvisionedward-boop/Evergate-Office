@@ -449,6 +449,34 @@ setupComposer();
 let viewW = 0, viewH = 0, viewPR = 0, viewReady = false;
 let dragTarget = null;
 let dragPresented = false;
+let dragHidden = null;
+function setDragLod(on) {
+  const root = office.root;
+  if (!root) return;
+  if (on) {
+    if (dragHidden) return;
+    dragHidden = [];
+    for (const child of root.children) {
+      if (child.name === 'officeShell' || child.isLight) continue;
+      if (!child.visible) continue;
+      dragHidden.push(child);
+      child.visible = false;
+    }
+    const shell = root.getObjectByName('officeShell');
+    if (shell) {
+      shell.traverse((obj) => {
+        if (!obj.isMesh || !obj.visible || !obj.geometry) return;
+        const count = obj.geometry.index ? obj.geometry.index.count / 3 : 0;
+        if (count >= 200) return;
+        dragHidden.push(obj);
+        obj.visible = false;
+      });
+    }
+  } else if (dragHidden) {
+    for (const child of dragHidden) child.visible = true;
+    dragHidden = null;
+  }
+}
 let dragWarm = null;
 let dragBlit = null;
 let layoutKeyLast = '';
@@ -2194,8 +2222,8 @@ const nativeRAF = window.requestAnimationFrame.bind(window);
 let gestureUntil = 0;
 function cameraGesturing() { return interacting || performance.now() < gestureUntil; }
 controls.addEventListener('start', () => { interacting = true; gestureUntil = performance.now() + 240; kick(); });
-controls.addEventListener('end', () => { interacting = false; gestureUntil = performance.now() + 240; kick(); });
-controls.addEventListener('change', () => { gestureUntil = performance.now() + 240; kick(); });
+controls.addEventListener('end', () => { interacting = false; gestureUntil = performance.now() + 80; kick(); });
+controls.addEventListener('change', () => { if (interacting) gestureUntil = performance.now() + 240; kick(); });
 
 function warmLightPrograms() {
   if (shadersWarmed || !isMobile || !office.setDetailLights) return;
@@ -2245,14 +2273,20 @@ function step() {
   const measuring = renderer.info.autoReset === false;
   const mustDraw = interacting || !!tween || homeFraming > 0 || gliding || bootFrames < 1 || measuring || dragPresented;
   if (!mustDraw) return false;
-  if (!gliding) renderer.shadowMap.needsUpdate = true;
+  const gesturing = cameraGesturing();
+  if (!gliding && !gesturing) renderer.shadowMap.needsUpdate = true;
   if (isMobile && office.setDetailLights) office.setDetailLights(camera.position.distanceTo(controls.target) < 150);
-  office.update(t, dt, state);
-  tickBubbles(dt);
-  if (cameraGesturing()) {
+  if (!gesturing) {
+    office.update(t, dt, state);
+    tickBubbles(dt);
+  }
+  if (gesturing) {
+    setDragLod(true);
+    renderer.shadowMap.needsUpdate = false;
     renderDragFrame();
     dragPresented = true;
   } else {
+    setDragLod(false);
     if (composer) composer.render(); else renderer.render(scene, camera);
     dragPresented = false;
   }
@@ -2271,7 +2305,7 @@ function step() {
     setTimeout(warmLightPrograms, 0);
   }
   bootFrames++;
-  return interacting || !!tween || homeFraming > 0 || gliding || measuring;
+  return interacting || !!tween || homeFraming > 0 || gliding || measuring || cameraGesturing();
 }
 function enqueue() {
   if (frameQueued) return;

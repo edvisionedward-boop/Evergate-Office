@@ -84,6 +84,29 @@ Interleaved with `main` `5e2a401`, three runs each, 2026-11-19 01:21–01:29 UTC
 
 The gate is not met. Mobile Performance stays at 26, under 70. Drag p95 is 110 ms on the phone and 176 ms on the desktop, both over 50 ms. Lighthouse does not drag, so the low-resolution drag path does not raise that score. Real-device column: 「待真机」.
 
+## Drag keeps only the office shell, measured 2026-11-19
+
+During a pointer or wheel gesture the branch still draws into the small offscreen target (14% of CSS size on a phone, 6% on a desktop) and skips bloom. It also hides everything except the static office shell, and inside that shell hides meshes under 200 triangles. People, loose furniture, and the city come back on the first settled frame. The settled pixel-ratio cap stays 2. Service worker cache is `evergate-office-v79`.
+
+Drag, interleaved with `main` `5e2a401`, three runs, 2026-11-19 01:42–01:47 UTC (09:42–09:47 MYT). SwiftShader. p95 is the pan. No new console errors.
+
+| | baseline three | baseline median | branch three | branch median |
+|---|---|---:|---|---:|
+| phone drag p95 | 884 / 860 / 905 | 884 ms | 50 / 50 / 47 | 50 ms |
+| desktop drag p95 | 1003 / 1029 / 1201 | 1029 ms | 51 / 50 / 45 | 50 ms |
+
+Lighthouse was remeasured on the same drag code after the light-shader warm-up was put back after first paint, 2026-11-19 01:51–01:55 UTC (09:51–09:55 MYT). CLS is 0 on every run.
+
+| | baseline three | baseline median | branch three | branch median |
+|---|---|---:|---|---:|
+| mobile Performance | 26 / 26 / 25 | 26 | 25 / 34 / 26 | 26 |
+| mobile TBT | 18204 / 8190 / 4323 | 8190 ms | 16610 / 20732 / 17905 | 17905 ms |
+| desktop Performance | 35 / 35 / 49 | 35 | 48 / 48 / 48 | 48 |
+| desktop TBT | 2723 / 2973 / 1813 | 2723 ms | 1162 / 1192 / 1118 | 1162 ms |
+| CLS | 0 / 0 / 0 | 0 | 0 / 0 / 0 | 0 |
+
+Drag p95 median is 50 ms on both viewports, which meets that line. One desktop run was 51 ms. Mobile Lighthouse median stays 26, under 70, so the gate is not met. Lighthouse does not drag. Real-device column: 「待真机」.
+
 ## Raw traces
 
 The raw Chrome traces are not in the git repo. Each file is an agent artifact under its exact filename. Capture times are the file write times.
