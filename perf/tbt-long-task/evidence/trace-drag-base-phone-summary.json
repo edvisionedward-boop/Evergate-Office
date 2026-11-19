@@ -1,0 +1,223 @@
+{
+  "tag": "base",
+  "mode": "phone",
+  "traceBytes": 4342693,
+  "events": 22388,
+  "dragMarked": false,
+  "gesture": {
+    "frames": [
+      978,
+      994,
+      947,
+      1183,
+      1046,
+      1111
+    ],
+    "moved": 61
+  },
+  "traceMs": {
+    "webglGpu": 0,
+    "layout": 28,
+    "style": 0,
+    "gc": 133,
+    "paint": 5,
+    "raf": 628
+  },
+  "frames": [
+    {
+      "ms": 88,
+      "layout": 7,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 118,
+      "layout": 5,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 1,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 97,
+      "layout": 3,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 0,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 83,
+      "layout": 2,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 0,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 86,
+      "layout": 3,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 1,
+      "layout": 1,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 78,
+      "layout": 3,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 0,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 75,
+      "layout": 3,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 2,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    }
+  ],
+  "share": {
+    "webgl": {
+      "ms": 151,
+      "pct": 2.4
+    },
+    "other": {
+      "ms": 5700,
+      "pct": 89.6
+    },
+    "otherJs": {
+      "ms": 483,
+      "pct": 7.6
+    },
+    "labels": {
+      "ms": 22,
+      "pct": 0.3
+    },
+    "gc": {
+      "ms": 7,
+      "pct": 0.1
+    }
+  },
+  "top": [
+    {
+      "fn": "(idle)",
+      "ms": 5700,
+      "pct": 89.6
+    },
+    {
+      "fn": "klParts",
+      "ms": 360,
+      "pct": 5.7
+    },
+    {
+      "fn": "(program)",
+      "ms": 118,
+      "pct": 1.9
+    },
+    {
+      "fn": "layoutRoomLabels",
+      "ms": 20,
+      "pct": 0.3
+    },
+    {
+      "fn": "updateMatrixWorld",
+      "ms": 9,
+      "pct": 0.1
+    },
+    {
+      "fn": "setValue",
+      "ms": 7,
+      "pct": 0.1
+    },
+    {
+      "fn": "setProgram",
+      "ms": 7,
+      "pct": 0.1
+    },
+    {
+      "fn": "(garbage collector)",
+      "ms": 7,
+      "pct": 0.1
+    },
+    {
+      "fn": "setValueV3f",
+      "ms": 6,
+      "pct": 0.1
+    },
+    {
+      "fn": "getParameters",
+      "ms": 6,
+      "pct": 0.1
+    },
+    {
+      "fn": "copyArray",
+      "ms": 5,
+      "pct": 0.1
+    },
+    {
+      "fn": "getProgram",
+      "ms": 5,
+      "pct": 0.1
+    },
+    {
+      "fn": "WebGLRenderer.renderBufferDirect",
+      "ms": 5,
+      "pct": 0.1
+    },
+    {
+      "fn": "getProgramCacheKey",
+      "ms": 5,
+      "pct": 0.1
+    },
+    {
+      "fn": "paintWorkBar",
+      "ms": 5,
+      "pct": 0.1
+    },
+    {
+      "fn": "renderObject",
+      "ms": 4,
+      "pct": 0.1
+    }
+  ]
+}

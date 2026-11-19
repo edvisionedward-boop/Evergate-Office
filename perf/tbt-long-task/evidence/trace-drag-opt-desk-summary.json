@@ -1,0 +1,216 @@
+{
+  "tag": "opt",
+  "mode": "desk",
+  "traceBytes": 3618642,
+  "events": 18012,
+  "dragMarked": false,
+  "gesture": {
+    "frames": [
+      938,
+      1060,
+      1038,
+      125,
+      1077,
+      1024
+    ],
+    "moved": 6.2
+  },
+  "traceMs": {
+    "webglGpu": 0,
+    "layout": 16,
+    "style": 0,
+    "gc": 2,
+    "paint": 7,
+    "raf": 66
+  },
+  "frames": [
+    {
+      "ms": 14,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 1,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 17,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 1,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 8,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 1,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 8,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 0,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 7,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 1,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 8,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 1,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    }
+  ],
+  "share": {
+    "webgl": {
+      "ms": 118,
+      "pct": 2.2
+    },
+    "other": {
+      "ms": 5185,
+      "pct": 96.7
+    },
+    "otherJs": {
+      "ms": 56,
+      "pct": 1
+    },
+    "shadow": {
+      "ms": 2,
+      "pct": 0
+    },
+    "gc": {
+      "ms": 0,
+      "pct": 0
+    }
+  },
+  "top": [
+    {
+      "fn": "(idle)",
+      "ms": 5185,
+      "pct": 96.7
+    },
+    {
+      "fn": "(program)",
+      "ms": 104,
+      "pct": 1.9
+    },
+    {
+      "fn": "paintFooter",
+      "ms": 11,
+      "pct": 0.2
+    },
+    {
+      "fn": "renderObject",
+      "ms": 6,
+      "pct": 0.1
+    },
+    {
+      "fn": "uniformMatrix4fv",
+      "ms": 5,
+      "pct": 0.1
+    },
+    {
+      "fn": "copyArray",
+      "ms": 4,
+      "pct": 0.1
+    },
+    {
+      "fn": "updateMatrixWorld",
+      "ms": 3,
+      "pct": 0.1
+    },
+    {
+      "fn": "projectObject",
+      "ms": 3,
+      "pct": 0.1
+    },
+    {
+      "fn": "multiplyMatrices",
+      "ms": 3,
+      "pct": 0.1
+    },
+    {
+      "fn": "setProgram",
+      "ms": 3,
+      "pct": 0
+    },
+    {
+      "fn": "bufferSubData",
+      "ms": 3,
+      "pct": 0
+    },
+    {
+      "fn": "pushShadow",
+      "ms": 2,
+      "pct": 0
+    },
+    {
+      "fn": "WebGLRenderer.renderBufferDirect",
+      "ms": 2,
+      "pct": 0
+    },
+    {
+      "fn": "setFromSphericalCoords",
+      "ms": 2,
+      "pct": 0
+    },
+    {
+      "fn": "klNow",
+      "ms": 1,
+      "pct": 0
+    },
+    {
+      "fn": "_pan",
+      "ms": 1,
+      "pct": 0
+    }
+  ]
+}

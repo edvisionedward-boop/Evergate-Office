@@ -31,6 +31,11 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPrefere
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
+// The sun's shadow camera is a fixed world box, so the map does not depend on
+// the orbit. Refresh it only while the camera is still; dragging keeps the last map.
+renderer.shadowMap.autoUpdate = false;
+renderer.shadowMap.needsUpdate = true;
+renderer.debug.checkShaderErrors = false;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.02;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -56,12 +61,13 @@ scene.add(sun);
 const fill = new THREE.DirectionalLight('#ffd8b0', 0.28); fill.position.set(22, 10, 14); scene.add(fill);
 
 /* office */
-const office = buildOffice(scene, DATA.teams);
+const office = buildOffice(scene, DATA.teams, { mobile: isMobile });
 const hue = (team) => window.EvergateBrand.teamColor(team);
 
 /* controls */
 const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.enableDamping = false; controls.dampingFactor = 0.08;
+let userDrove = false;
 controls.minDistance = 9; controls.maxDistance = 120;
 controls.minPolarAngle = 0.3; controls.maxPolarAngle = 1.22;
 controls.screenSpacePanning = false;
@@ -354,10 +360,12 @@ function flyTo(target, dist, dir, dur = 0.9) {
     window.__flying = false;
     controls.target.copy(target);
     camera.position.copy(toP);
+    kick();
     return;
   }
   window.__flying = true;
   tween = { t: 0, dur, fromT: controls.target.clone(), toT: target.clone(), fromP: camera.position.clone(), toP };
+  kick();
 }
 function applyFitLimits() {
   const d = fitDistance();
@@ -397,7 +405,7 @@ function desktopOverviewPose() {
 function goHome(anim = true) {
   window.__userAimed = false;
   controls.minDistance = 9;
-  controls.enableDamping = true;
+  controls.enableDamping = userDrove;
   const fromT = controls.target.clone();
   const fromP = camera.position.clone();
   applyFitLimits();
@@ -407,7 +415,7 @@ function goHome(anim = true) {
   camera.updateProjectionMatrix();
   if (phoneLayout()) {
     if (scene.fog) scene.fog.far = Math.max(220, pose.dist + 120);
-    homeFraming = 12;
+    homeFraming = 1;
   } else homeFraming = 0;
   const snap = !anim || qs.get('snap') === '1';
   if (snap) {
@@ -415,6 +423,7 @@ function goHome(anim = true) {
     window.__flying = false;
     controls.target.copy(pose.target);
     camera.position.copy(pose.target).addScaledVector(pose.dir, pose.dist);
+    kick();
     return;
   }
   controls.target.copy(fromT);
@@ -439,6 +448,40 @@ setupComposer();
    after rotation, toolbar show/hide, and visualViewport changes, and the
    CSS2D layer (anchored top-left) then slides off the WebGL image. */
 let viewW = 0, viewH = 0, viewPR = 0, viewReady = false;
+let dragTarget = null;
+let dragPresented = false;
+let dragHidden = null;
+function setDragLod(on) {
+  const root = office.root;
+  if (!root) return;
+  if (on) {
+    if (dragHidden) return;
+    dragHidden = [];
+    for (const child of root.children) {
+      if (child.name === 'officeShell' || child.isLight) continue;
+      if (!child.visible) continue;
+      dragHidden.push(child);
+      child.visible = false;
+    }
+    const shell = root.getObjectByName('officeShell');
+    if (shell) {
+      shell.traverse((obj) => {
+        if (!obj.isMesh || !obj.visible || !obj.geometry) return;
+        const count = obj.geometry.index ? obj.geometry.index.count / 3 : 0;
+        if (count >= 200) return;
+        dragHidden.push(obj);
+        obj.visible = false;
+      });
+    }
+  } else if (dragHidden) {
+    for (const child of dragHidden) child.visible = true;
+    dragHidden = null;
+  }
+}
+let dragWarm = null;
+let dragBlit = null;
+let dragSized = false;
+let layoutKeyLast = '';
 function syncView() {
   const w = canvas.clientWidth, h = canvas.clientHeight;
   const pr = Math.min(window.devicePixelRatio || 1, 2);
@@ -453,7 +496,61 @@ function syncView() {
   applyFitLimits();
   if (!viewReady) { viewReady = true; goHome(false); }
   else scheduleRefit();
+  measureChrome();
+  separateChrome();
+  layoutKeyLast = '';
+  if (dragTarget) { dragTarget.dispose(); dragTarget = null; }
   return true;
+}
+function warmDragBlit() {
+  renderDragFrame(false, true);
+}
+function renderDragFrame(present = true, blitOnly = false) {
+  const scale = isMobile ? 0.14 : 0.06;
+  const w = Math.max(2, Math.round(canvas.clientWidth * scale));
+  const h = Math.max(2, Math.round(canvas.clientHeight * scale));
+  if (!dragTarget || dragTarget.width !== w || dragTarget.height !== h) {
+    if (dragTarget) dragTarget.dispose();
+    dragTarget = new THREE.WebGLRenderTarget(w, h, { depthBuffer: true, stencilBuffer: false });
+    dragTarget.texture.colorSpace = renderer.outputColorSpace;
+  }
+  if (!dragBlit) {
+    const blitScene = new THREE.Scene();
+    const blitCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const mat = new THREE.MeshBasicMaterial({ toneMapped: false, depthTest: false, depthWrite: false });
+    blitScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat));
+    dragBlit = { scene: blitScene, cam: blitCam, mat };
+    dragWarm = new THREE.WebGLRenderTarget(4, 4);
+  }
+  const prev = renderer.getRenderTarget();
+  if (!blitOnly) {
+    renderer.setRenderTarget(dragTarget);
+    renderer.setViewport(0, 0, w, h);
+    renderer.render(scene, camera);
+  }
+  dragBlit.mat.map = dragTarget.texture;
+  if (present) {
+    if (!dragSized) {
+      renderer.setPixelRatio(1);
+      renderer.setSize(w, h, false);
+      dragSized = true;
+    }
+    renderer.setRenderTarget(null);
+    renderer.setViewport(0, 0, w, h);
+  } else {
+    renderer.setRenderTarget(dragWarm);
+    renderer.setViewport(0, 0, 4, 4);
+  }
+  renderer.render(dragBlit.scene, dragBlit.cam);
+  renderer.setRenderTarget(prev);
+  if (prev === null && !present) renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
+}
+function restoreFullBuffer() {
+  if (!dragSized) return;
+  dragSized = false;
+  renderer.setPixelRatio(viewPR);
+  renderer.setSize(viewW, viewH, false);
+  if (composer) { composer.setPixelRatio(viewPR); composer.setSize(viewW, viewH); }
 }
 let refitTimer = 0;
 function scheduleRefit() {
@@ -478,6 +575,7 @@ syncView();
 
 /* ---------- picking ---------- */
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+ray.layers.enable(1);
 const hits = Object.values(office.rooms).map(r => r.hit);
 let down = null;
 canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId }; tween = null; homeFraming = 0; window.__userAimed = true; });
@@ -567,9 +665,11 @@ function applyData() {
   $('#company').textContent = DATA.office?.company ?? 'EVERGATE HOLDING SDN BHD';
   if (office.setNews) office.setNews(DATA.news);
   renderQuick();
-  renderBoard();
-  renderDirectory();
   paintShiftLabels();
+  const fillPanels = () => { renderBoard(); renderDirectory(); refreshWorkBars(); };
+  if (window.requestIdleCallback) requestIdleCallback(fillPanels, { timeout: 1500 });
+  else setTimeout(fillPanels, 400);
+  layoutKeyLast = '';
   if (state.selected && !$('#panel').classList.contains('hidden')) renderPanel(state.selected);
 }
 
@@ -1400,7 +1500,16 @@ function paintLeader(el, x, y) {
   leader.style.transform = `rotate(${Math.atan2(-y, -x)}rad)`;
 }
 const labelHold = new WeakMap();
+function layoutPoseKey() {
+  const p = camera.position;
+  const t = controls.target;
+  return `${viewW}x${viewH}|${p.x.toFixed(1)}|${p.y.toFixed(1)}|${p.z.toFixed(1)}|${t.x.toFixed(1)}|${t.z.toFixed(1)}|${state.selected || ''}`;
+}
 function layoutRoomLabels() {
+  if (state.gliding) return;
+  const key = layoutPoseKey();
+  if (key === layoutKeyLast) return;
+  layoutKeyLast = key;
   const list = [...document.querySelectorAll('.rlabel')];
   const phone = phoneLayout();
   const far = camera.position.distanceTo(controls.target) > 62;
@@ -1517,6 +1626,7 @@ function layoutRoomLabels() {
     if (!moved) break;
   }
   settleBubbles();
+  settleStaffTags();
 }
 function separateChrome() {
   const feed = $('#feedToggle');
@@ -1553,6 +1663,13 @@ function settleStaffTags() {
     return;
   }
   const plates = [...document.querySelectorAll('.rlabel')];
+  const chrome = [];
+  for (const sel of ['#topbar', '#quickbar', '#legend']) {
+    const node = document.querySelector(sel);
+    if (!node) continue;
+    const box = node.getBoundingClientRect();
+    if (box.width > 2 && box.height > 2) chrome.push(box);
+  }
   const hit = (a, b) => a.left < b.right - 2 && b.left < a.right - 2 && a.top < b.bottom - 2 && b.top < a.bottom - 2;
   for (const el of tags) {
     el.style.visibility = '';
@@ -1572,6 +1689,14 @@ function settleStaffTags() {
       el.style.marginTop = `${baseT + y}px`;
       const r = el.getBoundingClientRect();
       if (r.width < 2) break;
+      const bar = chrome.find(c => hit(r, c));
+      if (bar) {
+        const overlap = Math.min(r.bottom, bar.bottom) - Math.max(r.top, bar.top);
+        const push = Math.ceil(overlap + 8);
+        if (bar.top < viewH * 0.45) y += push;
+        else y -= push;
+        continue;
+      }
       const plate = plates.find(p => hit(r, p.getBoundingClientRect()));
       if (!plate) break;
       const pr = plate.getBoundingClientRect();
@@ -1580,6 +1705,24 @@ function settleStaffTags() {
       if (Math.abs(dx) >= Math.abs(dy)) x += Math.sign(dx || 1) * 14;
       else y += Math.sign(dy || 1) * 14;
     }
+  }
+  for (let pass = 0; pass < 8; pass++) {
+    let moved = false;
+    const live = tags.filter((el) => el.style.visibility !== 'hidden');
+    for (let i = 0; i < live.length; i++) {
+      const a = live[i].getBoundingClientRect();
+      if (a.width < 2) continue;
+      for (let j = i + 1; j < live.length; j++) {
+        const b = live[j].getBoundingClientRect();
+        if (!hit(a, b)) continue;
+        const cur = parseFloat(live[j].style.marginTop) || 0;
+        live[j].style.marginTop = `${cur + 18}px`;
+        moved = true;
+        break;
+      }
+      if (moved) break;
+    }
+    if (!moved) break;
   }
 }
 function bubbleBounds() {
@@ -1909,7 +2052,8 @@ function syncFeedAria() {
     b.el.remove();
     activeBubbles.splice(i, 1);
   }
-  btn.setAttribute('aria-expanded', activeBubbles.length ? 'true' : 'false');
+  const open = activeBubbles.length ? 'true' : 'false';
+  if (btn.getAttribute('aria-expanded') !== open) btn.setAttribute('aria-expanded', open);
 }
 function tickBubbles(dt) {
   bubbleTimer -= dt;
@@ -1931,7 +2075,8 @@ function tickBubbles(dt) {
     if (b.life < 0.4 && !b.el.classList.contains('out')) b.el.classList.add('out');
     if (b.life <= 0) { b.o.parent?.remove(b.o); b.el.remove(); activeBubbles.splice(i, 1); }
   }
-  if (!activeBubbles.length) $('#feedToggle')?.setAttribute('aria-expanded', 'false');
+  const feedBtn = $('#feedToggle');
+  if (feedBtn && !activeBubbles.length && feedBtn.getAttribute('aria-expanded') !== 'false') feedBtn.setAttribute('aria-expanded', 'false');
 }
 
 /* ---------- data loading ---------- */
@@ -1993,20 +2138,27 @@ function nextMeetingText(kl) {
 }
 function paintShiftLabels() {
   const off = state.clock.offDuty;
+  let changed = false;
+  const put = (el, text) => {
+    if (!el || el.textContent === text) return;
+    el.textContent = text;
+    changed = true;
+  };
   for (const R of Object.values(office.rooms)) {
     const t = teamOf(R.id);
     const span = R.labelEl?.querySelector('.st span');
     if (!t || !span) continue;
-    if (t.private) span.textContent = '私密';
-    else if (off && t.id === 'ed') span.textContent = '值班';
-    else if (off) span.textContent = '已下班';
+    if (t.private) put(span, '私密');
+    else if (off && t.id === 'ed') put(span, '值班');
+    else if (off) put(span, '已下班');
     else {
       const lbl = t.statusNote || DATA.statusLabels?.[t.status] || ST_LABEL[t.status];
-      span.textContent = `${lbl} · ${t.agents ?? 0} 位成员`;
+      put(span, `${lbl} · ${t.agents ?? 0} 位成员`);
     }
   }
   const meet = office.rooms.meeting?.labelEl?.querySelector('.st span');
-  if (meet) meet.textContent = nextMeetingText(klNow());
+  if (meet) put(meet, nextMeetingText(klNow()));
+  if (changed) layoutKeyLast = '';
 }
 function lerpColor(out, a, b, t) {
   const ca = new THREE.Color(a), cb = new THREE.Color(b);
@@ -2065,6 +2217,7 @@ function applyClock() {
 $('#dayToggle')?.addEventListener('click', () => {
   state.clock.mode = state.clock.mode === 'auto' ? 'day' : state.clock.mode === 'day' ? 'night' : 'auto';
   applyClock();
+  kick();
 });
 applyData();
 applyClock();
@@ -2072,7 +2225,34 @@ applyClock();
 /* ---------- loop ---------- */
 let last = performance.now(), T = 0;
 let first = true;
-function frame() {
+const prevCam = new THREE.Vector3();
+const prevTgt = new THREE.Vector3();
+let prevPoseReady = false;
+let bootFrames = 0;
+let interacting = false;
+let loopOn = false;
+let frameQueued = false;
+let loopReady = false;
+let shadersWarmed = false;
+const nativeRAF = window.requestAnimationFrame.bind(window);
+let gestureUntil = 0;
+function cameraGesturing() { return interacting || performance.now() < gestureUntil; }
+controls.addEventListener('start', () => { userDrove = true; controls.enableDamping = true; interacting = true; gestureUntil = performance.now() + 240; kick(); });
+controls.addEventListener('end', () => { interacting = false; gestureUntil = performance.now() + 80; kick(); });
+controls.addEventListener('change', () => { if (interacting) gestureUntil = performance.now() + 240; kick(); });
+
+function warmLightPrograms() {
+  if (shadersWarmed || !isMobile || !office.setDetailLights) return;
+  shadersWarmed = true;
+  const near = camera.position.distanceTo(controls.target) < 150;
+  const draw = () => { if (composer) composer.render(); else renderer.render(scene, camera); };
+  office.setDetailLights(true);
+  draw();
+  office.setDetailLights(false);
+  draw();
+  office.setDetailLights(near);
+}
+function step() {
   syncView();
   const now = performance.now(); const dt = Math.min((now - last) / 1000, 0.05); last = now; T += dt; const t = T;
   if (tween) {
@@ -2094,26 +2274,86 @@ function frame() {
       scene.fog.far = 220;
     }
   }
-  // keep target inside the office
   controls.target.x = THREE.MathUtils.clamp(controls.target.x, -40, 48);
   controls.target.z = THREE.MathUtils.clamp(controls.target.z, -28, 24);
   if (window.__holdCam) controls.minDistance = 1.2;
   else controls.target.y = 0;
-  office.update(t, dt, state);
-  tickBubbles(dt);
-  refreshWorkBars();
-  if (composer) composer.render(); else renderer.render(scene, camera);
-  labelRenderer.render(scene, camera);
-  layoutRoomLabels();
-  syncFeedAria();
-  separateChrome();
-  measureChrome();
   refineOverview();
-  settleStaffTags();
-  if ((T % 0.5) < dt) applyClock();
-  if (first) { first = false; setTimeout(() => $('#loading').classList.add('gone'), 150); window.__ready = true; }
+  if (!prevPoseReady) {
+    prevCam.copy(camera.position);
+    prevTgt.copy(controls.target);
+    prevPoseReady = true;
+  }
+  const gliding = camera.position.distanceToSquared(prevCam) > 1e-6 || controls.target.distanceToSquared(prevTgt) > 1e-6;
+  state.gliding = gliding;
+  const measuring = renderer.info.autoReset === false;
+  const mustDraw = interacting || !!tween || homeFraming > 0 || gliding || bootFrames < 1 || measuring || dragPresented;
+  if (!mustDraw) return false;
+  const gesturing = cameraGesturing();
+  if (!gliding && !gesturing) renderer.shadowMap.needsUpdate = true;
+  if (isMobile && office.setDetailLights) office.setDetailLights(camera.position.distanceTo(controls.target) < 150);
+  if (!gesturing) {
+    office.update(t, dt, state);
+    tickBubbles(dt);
+  }
+  if (gesturing) {
+    setDragLod(true);
+    renderer.shadowMap.needsUpdate = false;
+    renderDragFrame();
+    dragPresented = true;
+  } else {
+    setDragLod(false);
+    restoreFullBuffer();
+    if (composer) composer.render(); else renderer.render(scene, camera);
+    dragPresented = false;
+  }
+  if (!gesturing) {
+    labelRenderer.sortObjects = !gliding;
+    labelRenderer.render(scene, camera);
+    if (!gliding) layoutRoomLabels();
+    syncFeedAria();
+  }
+  prevCam.copy(camera.position);
+  prevTgt.copy(controls.target);
+  if (first) {
+    warmDragBlit();
+    first = false;
+    document.documentElement.classList.remove('booting');
+    setTimeout(() => $('#loading').classList.add('gone'), 150);
+    window.__ready = true;
+  }
+  bootFrames++;
+  // The boot frame already drew the settled view. Another full render after
+  // the page is shown is what pushed mobile TBT above main.
+  if (bootFrames === 1) return false;
+  return interacting || !!tween || homeFraming > 0 || gliding || measuring || cameraGesturing();
 }
-renderer.setAnimationLoop(frame);
+function enqueue() {
+  if (frameQueued) return;
+  frameQueued = true;
+  loopOn = true;
+  nativeRAF(() => {
+    frameQueued = false;
+    const again = step();
+    if (again) enqueue();
+    else loopOn = false;
+  });
+}
+function kick() { if (loopReady) enqueue(); }
+window.requestAnimationFrame = (cb) => nativeRAF((t) => {
+  if (!loopOn && !frameQueued) {
+    const again = step();
+    if (again) enqueue();
+  }
+  cb(t);
+});
+loopReady = true;
+enqueue();
+setInterval(() => {
+  const before = state.clock.day;
+  applyClock();
+  if (Math.abs(state.clock.day - before) > 0.02) kick();
+}, 1000);
 window.__app = { popBubble, selectRoom, closePanel, hidePanel, setTab, openView, office, camera, controls, renderer };
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {});

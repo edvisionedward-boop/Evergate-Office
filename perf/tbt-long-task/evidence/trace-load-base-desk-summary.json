@@ -1,0 +1,47 @@
+{
+  "tag": "base",
+  "bytes": 11529949,
+  "fcp": null,
+  "longTasks": [
+    {
+      "ms": 2290,
+      "ts": 10777942818,
+      "calls": [
+        {
+          "ms": 2269,
+          "fn": "onAnimationFrame",
+          "url": "?snap=1",
+          "line": 22260
+        },
+        {
+          "ms": 0,
+          "fn": "",
+          "url": "?snap=1",
+          "line": 43136
+        }
+      ]
+    },
+    {
+      "ms": 1640,
+      "ts": 10776302368,
+      "calls": []
+    },
+    {
+      "ms": 95,
+      "ts": 10780241008,
+      "calls": []
+    },
+    {
+      "ms": 82,
+      "ts": 10780335970,
+      "calls": [
+        {
+          "ms": 80,
+          "fn": "onAnimationFrame",
+          "url": "?snap=1",
+          "line": 22260
+        }
+      ]
+    }
+  ]
+}

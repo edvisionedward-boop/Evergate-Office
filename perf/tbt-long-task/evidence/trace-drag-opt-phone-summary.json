@@ -1,0 +1,222 @@
+{
+  "tag": "opt",
+  "mode": "phone",
+  "traceBytes": 3371904,
+  "events": 17778,
+  "dragMarked": false,
+  "gesture": {
+    "frames": [
+      417,
+      529,
+      495,
+      543,
+      483,
+      483
+    ],
+    "moved": 61
+  },
+  "traceMs": {
+    "webglGpu": 0,
+    "layout": 6,
+    "style": 0,
+    "gc": 1,
+    "paint": 2,
+    "raf": 80
+  },
+  "frames": [
+    {
+      "ms": 14,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 10,
+      "layout": 1,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 1,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 10,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 1,
+      "layout": 1,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 10,
+      "layout": 1,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 1,
+      "layout": 1,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 7,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 1,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 7,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 1,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 8,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 1,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    },
+    {
+      "ms": 8,
+      "layout": 0,
+      "style": 0,
+      "gc": 0,
+      "paint": 0
+    }
+  ],
+  "share": {
+    "webgl": {
+      "ms": 112,
+      "pct": 3.7
+    },
+    "other": {
+      "ms": 2886,
+      "pct": 94.6
+    },
+    "otherJs": {
+      "ms": 53,
+      "pct": 1.7
+    }
+  },
+  "top": [
+    {
+      "fn": "(idle)",
+      "ms": 2886,
+      "pct": 94.6
+    },
+    {
+      "fn": "(program)",
+      "ms": 102,
+      "pct": 3.3
+    },
+    {
+      "fn": "updateMatrixWorld",
+      "ms": 8,
+      "pct": 0.3
+    },
+    {
+      "fn": "setProgram",
+      "ms": 6,
+      "pct": 0.2
+    },
+    {
+      "fn": "applyMatrix4",
+      "ms": 4,
+      "pct": 0.1
+    },
+    {
+      "fn": "klNow",
+      "ms": 3,
+      "pct": 0.1
+    },
+    {
+      "fn": "officeUpdatedAt",
+      "ms": 3,
+      "pct": 0.1
+    },
+    {
+      "fn": "dispatchEvent",
+      "ms": 3,
+      "pct": 0.1
+    },
+    {
+      "fn": "multiplyMatrices",
+      "ms": 2,
+      "pct": 0.1
+    },
+    {
+      "fn": "refreshFogUniforms",
+      "ms": 2,
+      "pct": 0.1
+    },
+    {
+      "fn": "renderObject",
+      "ms": 2,
+      "pct": 0.1
+    },
+    {
+      "fn": "syncView",
+      "ms": 2,
+      "pct": 0.1
+    },
+    {
+      "fn": "get",
+      "ms": 2,
+      "pct": 0.1
+    },
+    {
+      "fn": "projectObject",
+      "ms": 2,
+      "pct": 0.1
+    },
+    {
+      "fn": "_pan",
+      "ms": 2,
+      "pct": 0.1
+    },
+    {
+      "fn": "getBindingState",
+      "ms": 1,
+      "pct": 0
+    }
+  ]
+}

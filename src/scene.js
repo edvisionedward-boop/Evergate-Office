@@ -32,8 +32,12 @@ function B(color, o = {}) {
 
 const geoCache = new Map();
 function G(key, fn) { if (!geoCache.has(key)) geoCache.set(key, fn()); return geoCache.get(key); }
+let MOBILE = false;
 const boxG = (w, h, d) => G(`b${w},${h},${d}`, () => new THREE.BoxGeometry(w, h, d));
-const rboxG = (w, h, d, r = 0.04) => G(`rb${w},${h},${d},${r}`, () => new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2.01, h / 2.01, d / 2.01)));
+const rboxG = (w, h, d, r = 0.04) => {
+  const seg = MOBILE ? 1 : 2;
+  return G(`rb${w},${h},${d},${r},${seg}`, () => new RoundedBoxGeometry(w, h, d, seg, Math.min(r, w / 2.01, h / 2.01, d / 2.01)));
+};
 const cylG = (rt, rb, h, s = 12) => G(`c${rt},${rb},${h},${s}`, () => new THREE.CylinderGeometry(rt, rb, h, s));
 const sphG = (r, ws = 12, hs = 8) => G(`s${r},${ws},${hs}`, () => new THREE.SphereGeometry(r, ws, hs));
 
@@ -46,7 +50,8 @@ function box(parent, w, h, d, x, y, z, mat, o = {}) {
   parent.add(m); return m;
 }
 function cyl(parent, rt, rb, h, x, y, z, mat, s = 12, o = {}) {
-  const m = new THREE.Mesh(cylG(rt, rb, h, s), mat);
+  const seg = MOBILE ? Math.min(s, 8) : s;
+  const m = new THREE.Mesh(cylG(rt, rb, h, seg), mat);
   m.position.set(x, y + h / 2, z); m.castShadow = o.cast ?? true; m.receiveShadow = true;
   parent.add(m); return m;
 }
@@ -256,12 +261,12 @@ export function makeAgent(o = {}) {
   const legs = [];
   for (const sx of [-1, 1]) {
     const p = new THREE.Group(); p.position.set(sx * 0.1, 0, 0); hips.add(p);
-    const leg = new THREE.Mesh(G('leg', () => new THREE.CapsuleGeometry(0.075, 0.34, 3, 8)), pants);
+    const leg = new THREE.Mesh(MOBILE ? G('legM', () => new THREE.CapsuleGeometry(0.075, 0.34, 2, 5)) : G('leg', () => new THREE.CapsuleGeometry(0.075, 0.34, 3, 8)), pants);
     leg.position.y = -0.24; leg.castShadow = true; p.add(leg);
     const s = new THREE.Mesh(boxG(0.13, 0.07, 0.2), shoe); s.position.set(0, -0.47, 0.04); s.castShadow = true; p.add(s);
     legs.push(p);
   }
-  const torso = new THREE.Mesh(G('torso', () => new THREE.CapsuleGeometry(0.19, 0.26, 4, 10)), shirt);
+  const torso = new THREE.Mesh(MOBILE ? G('torsoM', () => new THREE.CapsuleGeometry(0.19, 0.26, 2, 6)) : G('torso', () => new THREE.CapsuleGeometry(0.19, 0.26, 4, 10)), shirt);
   torso.position.y = 0.74; torso.scale.set(1.05, 1, 0.78); torso.castShadow = true; root.add(torso);
   const belt = new THREE.Mesh(boxG(0.4, 0.06, 0.28), M('#1f2937', { r: .5 }));
   belt.position.set(0, 0.58, 0.02); root.add(belt);
@@ -269,21 +274,21 @@ export function makeAgent(o = {}) {
   const arms = [];
   for (const sx of [-1, 1]) {
     const p = new THREE.Group(); p.position.set(sx * 0.24, 0.92, 0); root.add(p);
-    const a = new THREE.Mesh(G('arm', () => new THREE.CapsuleGeometry(0.058, 0.3, 3, 8)), shirt);
+    const a = new THREE.Mesh(MOBILE ? G('armM', () => new THREE.CapsuleGeometry(0.058, 0.3, 2, 5)) : G('arm', () => new THREE.CapsuleGeometry(0.058, 0.3, 3, 8)), shirt);
     a.position.y = -0.18; a.castShadow = true; p.add(a);
     const h = new THREE.Mesh(sphG(0.06, 8, 6), skin); h.position.y = -0.37; p.add(h);
     arms.push(p);
   }
   const headG = new THREE.Group(); headG.position.y = 1.2; root.add(headG);
   const neck = new THREE.Mesh(cylG(0.06, 0.06, 0.1, 8), skin); neck.position.y = -0.1; headG.add(neck);
-  const head = new THREE.Mesh(sphG(0.22, 16, 12), skin); head.position.y = 0.12; head.castShadow = true; headG.add(head);
-  const hairM = new THREE.Mesh(G('hair', () => new THREE.SphereGeometry(0.235, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55)), hair);
+  const head = new THREE.Mesh(sphG(0.22, MOBILE ? 10 : 16, MOBILE ? 7 : 12), skin); head.position.y = 0.12; head.castShadow = true; headG.add(head);
+  const hairM = new THREE.Mesh(G(MOBILE ? 'hairM' : 'hair', () => new THREE.SphereGeometry(0.235, MOBILE ? 10 : 16, MOBILE ? 6 : 10, 0, Math.PI * 2, 0, Math.PI * 0.55)), hair);
   hairM.position.set(0, 0.14, -0.015); hairM.rotation.x = -0.25; hairM.castShadow = true; headG.add(hairM);
   const eyeM = M('#0b0f19', { r: .3 });
   for (const sx of [-1, 1]) { const e = new THREE.Mesh(sphG(0.025, 6, 5), eyeM); e.position.set(sx * 0.08, 0.13, 0.2); headG.add(e); }
   // status dot
   const dot = new THREE.Mesh(sphG(0.055, 10, 8), B(o.private ? '#AEB7C2' : '#22c55e'));
-  dot.material = dot.material.clone(); dot.position.y = 0.55; dot.castShadow = false; headG.add(dot);
+  dot.material = dot.material.clone(); dot.position.y = 0.55; dot.castShadow = false; dot.userData.live = true; headG.add(dot);
   // document in hand
   const doc = new THREE.Mesh(boxG(0.22, 0.3, 0.015), M('#f8fafc', { r: .5 }));
   doc.position.set(0, -0.42, 0.1); doc.rotation.x = -1.2; doc.visible = false; arms[1].add(doc);
@@ -1155,12 +1160,16 @@ export const LAYOUT = {
   showroom: { x: 37.7, z: 11.9, w: 8.2, d: 8.0, icon: '展', color: '#D0B993', door: 'north', gallery: true, sign: '品牌展厅', signSub: 'BRAND HALL', label: '品牌展厅' },
 };
 
-export function buildOffice(scene, teams) {
+export function buildOffice(scene, teams, opts = {}) {
+  MOBILE = !!opts.mobile;
+  let syncInstances = () => {};
   seed = 11;
   noWorkBarRooms.clear();
   for (const t of teams) if (t.noWorkBar || t.private) noWorkBarRooms.add(t.id);
   const root = new THREE.Group(); scene.add(root);
-  const staticG = new THREE.Group(); root.add(staticG);
+  const staticG = new THREE.Group();
+  staticG.name = 'officeShell';
+  root.add(staticG);
   const dyn = new THREE.Group(); root.add(dyn);
   const rooms = {};
   const teamById = Object.fromEntries(teams.map(t => [t.id, t]));
@@ -1656,20 +1665,50 @@ export function buildOffice(scene, teams) {
   let newsTick = 0, newsShift = 0;
   let occTick = 0;
 
-  /* merge static geometry by material to cut draw calls */
+  /* merge static geometry. Same roughness/metalness share one material; color is baked into vertices. */
   staticG.updateMatrixWorld(true);
   const buckets = new Map();
+  const batchMats = new Map();
   const toRemove = [];
+  const paintColor = (gg, color) => {
+    const n = gg.attributes.position.count;
+    const arr = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { arr[i * 3] = color.r; arr[i * 3 + 1] = color.g; arr[i * 3 + 2] = color.b; }
+    gg.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+  };
   staticG.traverse(o => {
-    if (!o.isMesh || o.isInstancedMesh || o.material.transparent || o.userData.keep) return;
-    if (o.material.map && o.material.map.isCanvasTexture && o.geometry.type === 'PlaneGeometry' && o.material.isMeshBasicMaterial) { /* screens ok */ }
-    const k = o.material.uuid + (o.castShadow ? 'c' : 'n');
-    if (!buckets.has(k)) buckets.set(k, { mat: o.material, cast: o.castShadow, geos: [] });
+    if (!o.isMesh || o.isInstancedMesh || o.userData.keep || o.userData.live) return;
+    const mat = o.material;
+    if (!mat || Array.isArray(mat) || mat.map || mat.alphaMap) return;
+    const emissiveOn = mat.emissive && (mat.emissive.r + mat.emissive.g + mat.emissive.b) > 1e-4 && (mat.emissiveIntensity ?? 1) > 0;
+    if (emissiveOn) return;
+    if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+    const span = o.geometry.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z);
+    if (span < 0.16) o.castShadow = false;
+    const cast = o.castShadow ? 1 : 0;
+    let key, outMat, vertex = false;
+    if (mat.isMeshStandardMaterial && !mat.transparent) {
+      key = `b|${mat.roughness}|${mat.metalness}|${mat.flatShading ? 1 : 0}|${mat.side}|${cast}`;
+      if (!batchMats.has(key)) {
+        batchMats.set(key, new THREE.MeshStandardMaterial({
+          color: 0xffffff, roughness: mat.roughness, metalness: mat.metalness,
+          vertexColors: true, flatShading: !!mat.flatShading, side: mat.side,
+        }));
+      }
+      outMat = batchMats.get(key);
+      vertex = true;
+    } else {
+      key = `m|${mat.uuid}|${cast}`;
+      outMat = mat;
+    }
+    if (!buckets.has(key)) buckets.set(key, { mat: outMat, cast: !!cast, geos: [], vertex });
     let gg = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
     for (const name of Object.keys(gg.attributes)) if (!['position', 'normal', 'uv'].includes(name)) gg.deleteAttribute(name);
     if (!gg.attributes.uv) gg.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(gg.attributes.position.count * 2), 2));
+    if (!gg.attributes.normal) gg.computeVertexNormals();
+    if (vertex) paintColor(gg, mat.color);
     gg.applyMatrix4(o.matrixWorld);
-    buckets.get(k).geos.push(gg); toRemove.push(o);
+    buckets.get(key).geos.push(gg); toRemove.push(o);
   });
   toRemove.forEach(o => o.parent.remove(o));
   const merged = new THREE.Group(); root.add(merged);
@@ -1677,7 +1716,41 @@ export function buildOffice(scene, teams) {
     const mg = mergeGeometries(geos, false); if (!mg) continue;
     const mesh = new THREE.Mesh(mg, mat); mesh.castShadow = cast; mesh.receiveShadow = true; merged.add(mesh);
   }
-  // remaining (transparent etc.) stay in staticG
+
+  /* repeated body parts: one instanced draw per geometry+material instead of one draw per person */
+  {
+    const groups = new Map();
+    const records = [];
+    const hidden = new THREE.Matrix4().makeScale(0, 0, 0);
+    dyn.updateMatrixWorld(true);
+    dyn.traverse(mesh => {
+      if (!mesh.isMesh || mesh.userData.live || mesh.isInstancedMesh) return;
+      let p = mesh.parent, agent = false;
+      while (p) { if (p.userData?.legs) { agent = true; break; } p = p.parent; }
+      if (!agent) return;
+      const key = mesh.geometry.uuid + '|' + mesh.material.uuid + '|' + (mesh.castShadow ? 1 : 0);
+      if (!groups.has(key)) groups.set(key, { geo: mesh.geometry, mat: mesh.material, cast: mesh.castShadow, meshes: [] });
+      groups.get(key).meshes.push(mesh);
+    });
+    const instanced = [];
+    for (const g of groups.values()) {
+      const im = new THREE.InstancedMesh(g.geo, g.mat, g.meshes.length);
+      im.castShadow = g.cast; im.receiveShadow = true; im.frustumCulled = false;
+      g.meshes.forEach((mesh, i) => {
+        mesh.layers.set(1);
+        mesh.castShadow = false;
+        records.push({ mesh, im, i });
+      });
+      dyn.add(im); instanced.push(im);
+    }
+    const shown = (mesh) => { let p = mesh; while (p) { if (p.visible === false) return false; p = p.parent; } return true; };
+    syncInstances = () => {
+      dyn.updateMatrixWorld(true);
+      for (const rec of records) rec.im.setMatrixAt(rec.i, shown(rec.mesh) ? rec.mesh.matrixWorld : hidden);
+      for (const im of instanced) im.instanceMatrix.needsUpdate = true;
+    };
+    syncInstances();
+  }
 
   const tmp = new THREE.Vector3();
   function update(t, dt, state) {
@@ -1750,20 +1823,23 @@ export function buildOffice(scene, teams) {
         for (const person of R.agents || []) person.visible = true;
       }
     }
-    newsTick += dt;
-    if (newsTick > 0.08) { newsTick = 0; newsShift += 2; drawNews(newsShift); newsMap.needsUpdate = true; }
-    if (loungeTv) { loungeTv.tick += dt; if (loungeTv.tick > 0.12) { loungeTv.tick = 0; paintLoungeTv(t); } }
-    if (chartScreens.length && Math.floor(t * 8) !== Math.floor((t - dt) * 8)) paintCharts(t);
-    // server LEDs
-    if (rooms.info?.leds) rooms.info.leds.forEach((o, i) => { o.m.color.copy(o.base).multiplyScalar((Math.sin(t * (3 + i * 1.7) + i) > 0.2) ? 1.4 : 0.35); });
-    const hall = rooms.archive?.rackLeds;
-    if (hall && Math.floor(t * 5) !== Math.floor((t - dt) * 5)) {
-      const { leds, phases, on, dim } = hall;
-      for (let i = 0; i < phases.length; i++) leds.setColorAt(i, Math.sin(t * 2.4 + phases[i]) > 0.2 ? on : dim);
-      if (leds.instanceColor) leds.instanceColor.needsUpdate = true;
+    // Canvas textures and LED buffers are decorative. Rebuilding them while the
+    // camera is moving uploads pixels on the same frames as the drag.
+    if (!state.gliding) {
+      newsTick += dt;
+      if (newsTick > 0.08) { newsTick = 0; newsShift += 2; drawNews(newsShift); newsMap.needsUpdate = true; }
+      if (loungeTv) { loungeTv.tick += dt; if (loungeTv.tick > 0.12) { loungeTv.tick = 0; paintLoungeTv(t); } }
+      if (chartScreens.length && Math.floor(t * 8) !== Math.floor((t - dt) * 8)) paintCharts(t);
+      if (rooms.info?.leds) rooms.info.leds.forEach((o, i) => { o.m.color.copy(o.base).multiplyScalar((Math.sin(t * (3 + i * 1.7) + i) > 0.2) ? 1.4 : 0.35); });
+      const hall = rooms.archive?.rackLeds;
+      if (hall && Math.floor(t * 5) !== Math.floor((t - dt) * 5)) {
+        const { leds, phases, on, dim } = hall;
+        for (let i = 0; i < phases.length; i++) leds.setColorAt(i, Math.sin(t * 2.4 + phases[i]) > 0.2 ? on : dim);
+        if (leds.instanceColor) leds.instanceColor.needsUpdate = true;
+      }
+      for (const m of screenMats.values()) { if (m.map) m.map.offset.y = (Math.floor(t * 2) % 8) * 0.004; }
     }
-    // screens subtle scroll
-    for (const m of screenMats.values()) { if (m.map) m.map.offset.y = (Math.floor(t * 2) % 8) * 0.004; }
+    syncInstances();
   }
   const cityLights = [];
   for (const [x, y, z] of [[-28, 10, -32], [-8, 12, -33], [12, 9, -32], [30, 11, -30], [-48, 8, 4]]) {
@@ -1795,7 +1871,15 @@ export function buildOffice(scene, teams) {
     const lines = (items || []).map(n => n && n.title).filter(Boolean);
     if (lines.length) newsLines = lines;
   }
-  return { rooms, update, walkers, root, ground: campus, applyAmbience, setNews };
+  const detailLights = [];
+  root.traverse((o) => { if (o.isPointLight || o.isSpotLight) detailLights.push(o); });
+  let detailOn = true;
+  function setDetailLights(on) {
+    if (on === detailOn) return;
+    detailOn = on;
+    for (const light of detailLights) light.visible = on;
+  }
+  return { rooms, update, walkers, root, ground: campus, applyAmbience, setNews, setDetailLights };
 }
 
 function furnishMeeting(g, def) {
